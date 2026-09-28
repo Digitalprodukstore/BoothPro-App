@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#09090b">
+<title>BoothPro v3.0 PRO - Self Photobooth</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Pacifico&family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+body{font-family:'Plus Jakarta Sans',sans-serif;background-color:var(--bp-bg,#09090b);background-image:var(--bp-bg-image,none);background-size:cover;background-position:center;background-attachment:fixed;-webkit-tap-highlight-color:transparent}
+.capture-review-shell{width:100%;display:flex;justify-content:center;align-items:center;min-height:0;overflow:hidden;padding:2px}
+.capture-review-shell .editor-frame{width:min(100%,300px);height:auto;max-height:none;aspect-ratio:2/3}
+.dashboard-grid{max-height:70vh;overflow:auto}
+.text-indigo-400,.text-indigo-300{color:var(--bp-accent,#818cf8)!important}
+.bg-indigo-600{background-color:var(--bp-accent,#4f46e5)!important}
+.border-indigo-500{border-color:var(--bp-accent,#818cf8)!important}
+.animate-fadeIn{animation:fadeIn .25s ease-out}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.editor-frame{position:relative;width:min(100%,300px);height:auto;aspect-ratio:2/3;max-height:none;overflow:hidden;box-sizing:border-box;flex:0 0 auto;border-radius:10px;contain:layout paint}.editor-frame canvas{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center}
+.preview-shell{width:100%;display:flex;justify-content:center;align-items:center;min-height:0;overflow:hidden;padding:2px}
+.preview-shell .editor-frame{width:min(100%,300px);max-width:300px;max-height:none}
+.pro-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:800;letter-spacing:.08em;padding:2px 7px;border-radius:99px;background:linear-gradient(90deg,#f59e0b,#f97316);color:#1c1005}
+
+.category-card { transition: all 0.25s ease; cursor: pointer; }
+.category-card:hover { transform: translateY(-4px) scale(1.02); border-color: var(--bp-accent, #818cf8); }
+</style>
+</head>
+<body class="bg-zinc-900 text-zinc-100 min-h-screen flex flex-col overflow-x-hidden">
+<div id="flashLayer" class="fixed inset-0 bg-white pointer-events-none opacity-0 z-[100] transition-opacity duration-100"></div>
+<header class="border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-md sticky top-0 z-40 px-4 md:px-6 py-3 flex justify-between items-center">
+ <div class="flex items-center gap-3">
+   <div id="brandLogoWrap" class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg"><i id="brandLogoIcon" class="fa-solid fa-camera text-lg"></i></div>
+   <div><span id="brandNameDisplay" class="text-lg font-black tracking-wider">BOOTH<span class="text-indigo-400">PRO</span></span><p id="brandTaglineDisplay" class="text-[10px] text-zinc-500 font-medium tracking-widest uppercase">Self Photobooth</p></div>
+ </div>
+ <div class="flex items-center gap-1.5"><button onclick="resetToHome()" class="text-sm text-zinc-400 hover:text-white px-3 py-2 rounded-lg hover:bg-zinc-800"><i class="fa-solid fa-rotate-left"></i><span class="hidden sm:inline ml-1">Reset</span></button></div>
+</header>
+
+<main class="flex-1 w-full max-w-7xl mx-auto p-4 md:p-8 flex items-start justify-center">
+
+<!-- 1 WELCOME -->
+<section id="step-welcome" class="w-full max-w-4xl text-center py-12 flex flex-col items-center justify-center space-y-8 animate-fadeIn">
+  <div class="relative"><div class="h-24 w-24 rounded-3xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-4xl text-indigo-400 shadow-2xl"><i class="fa-solid fa-bolt-lightning"></i></div></div>
+  <div class="space-y-3"><h1 id="homeTitleDisplay" class="text-4xl md:text-6xl font-extrabold tracking-tight">Capture Your Best <br><span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-400 to-pink-400">Moments Instantly.</span></h1><p id="homeSubtitleDisplay" class="text-zinc-400 max-w-lg mx-auto text-sm md:text-base">Pilih paket & frame, lakukan pembayaran, ambil foto, sesuaikan frame, edit, lalu cetak.</p></div>
+  <button onclick="goToStep(2)" class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-bold text-lg shadow-xl flex items-center gap-3">Mulai Sesi Foto <i class="fa-solid fa-arrow-right"></i></button>
+</section>
+
+<!-- 2 PACKAGE + FRAME PRESELECT -->
+<section id="step-package" class="hidden w-full max-w-6xl animate-fadeIn">
+  <div class="mb-6">
+    <span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 01</span>
+    <h2 class="text-3xl font-extrabold mt-2">Pilih Paket & Frame</h2>
+    <p class="text-zinc-400 text-sm mt-1">Pilih paket foto dan kategori frame interaktif favorit Anda sebelum melanjutkan pembayaran.</p>
+  </div>
+  
+  <div class="grid lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-wider text-zinc-400 mb-3">1. Pilih Paket Foto</h3>
+        <div id="packageGrid" class="grid md:grid-cols-3 gap-4"></div>
+      </div>
+
+      <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-zinc-400">2. Pilih Kategori Frame</h3>
+          <button id="backToCatBtn" onclick="showCategoryList()" class="hidden text-xs text-indigo-400 hover:underline font-bold">
+            <i class="fa-solid fa-arrow-left mr-1"></i>Kembali ke Kategori
+          </button>
+        </div>
+
+        <div id="categoryCardGrid" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div onclick="selectCategoryView('VINTAGE')" class="category-card p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-center">
+            <div class="text-2xl mb-1 text-amber-400"><i class="fa-solid fa-camera-retro"></i></div>
+            <div class="font-bold text-sm">VINTAGE</div>
+          </div>
+          <div onclick="selectCategoryView('MODERN')" class="category-card p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-center">
+            <div class="text-2xl mb-1 text-indigo-400"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <div class="font-bold text-sm">MODERN</div>
+          </div>
+          <div onclick="selectCategoryView('MINIMAL')" class="category-card p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-center">
+            <div class="text-2xl mb-1 text-zinc-300"><i class="fa-solid fa-square-minus"></i></div>
+            <div class="font-bold text-sm">MINIMAL</div>
+          </div>
+          <div onclick="selectCategoryView('PASTEL')" class="category-card p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-center">
+            <div class="text-2xl mb-1 text-pink-400"><i class="fa-solid fa-heart"></i></div>
+            <div class="font-bold text-sm">PASTEL</div>
+          </div>
+          <div onclick="selectCategoryView('BOLD')" class="category-card p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-center">
+            <div class="text-2xl mb-1 text-cyan-400"><i class="fa-solid fa-bolt"></i></div>
+            <div class="font-bold text-sm">BOLD</div>
+          </div>
+          <div onclick="selectCategoryView('ALL')" class="category-card p-4 rounded-2xl bg-zinc-900 border border-zinc-800 text-center">
+            <div class="text-2xl mb-1 text-emerald-400"><i class="fa-solid fa-border-all"></i></div>
+            <div class="font-bold text-sm">SEMUA</div>
+          </div>
+        </div>
+
+        <div id="subGalleryContainer" class="hidden mt-2">
+          <p id="activeCategoryTitle" class="text-xs font-bold text-indigo-300 mb-3"></p>
+          <div id="preFrameGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[220px] overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex flex-col justify-between">
+      <div>
+        <h3 class="font-bold mb-4">Ringkasan Pilihan</h3>
+        <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-3">
+          <div>
+            <div class="text-xs text-zinc-500">Paket dipilih</div>
+            <div id="selectedPackageSummary" class="font-bold mt-0.5">Belum dipilih</div>
+          </div>
+          <div>
+            <div class="text-xs text-zinc-500">Frame Pilihan Awal</div>
+            <div id="selectedFrameSummaryName" class="font-bold mt-0.5 text-xs text-zinc-300">Aura One</div>
+          </div>
+          <div class="pt-2 border-t border-zinc-800">
+            <div class="text-xs text-zinc-500">Total Harga</div>
+            <div id="selectedPackagePrice" class="text-indigo-300 font-black text-2xl mt-0.5">Rp0</div>
+          </div>
+        </div>
+      </div>
+      <button id="toPaymentBtn" disabled onclick="goToPayment()" class="mt-6 w-full py-4 rounded-xl bg-indigo-600 text-white font-bold disabled:bg-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed transition">
+        <i class="fa-solid fa-lock mr-2"></i>Lanjut ke Pembayaran
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- 3 PAYMENT -->
+<section id="step-payment" class="hidden w-full max-w-5xl animate-fadeIn">
+  <div class="mb-6"><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 02</span><h2 class="text-3xl font-extrabold mt-2">Pembayaran</h2></div>
+  <div class="grid lg:grid-cols-2 gap-6">
+    <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-6">
+      <div class="flex justify-between items-start">
+        <div><div class="text-xs text-zinc-500">Pesanan</div><div id="paymentPackageName" class="font-extrabold text-xl mt-1"></div></div>
+        <div id="paymentAmount" class="text-2xl font-black text-indigo-300"></div>
+      </div>
+      <div class="mt-5 grid grid-cols-2 gap-3 text-sm">
+        <div class="p-3 rounded-xl bg-zinc-900"><span class="text-zinc-500">Foto</span><b id="paymentPhotoCount" class="block"></b></div>
+        <div class="p-3 rounded-xl bg-zinc-900"><span class="text-zinc-500">Cetak</span><b id="paymentPrintCount" class="block"></b></div>
+      </div>
+    </div>
+    
+    <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-6">
+      <div class="flex gap-2 mb-4">
+        <button id="btnMethodQris" onclick="switchMethod('qris')" class="flex-1 py-3 rounded-xl bg-indigo-600 font-bold text-sm text-white">QRIS Manual</button>
+        <button id="btnMethodVoucher" onclick="switchMethod('voucher')" class="flex-1 py-3 rounded-xl bg-zinc-800 text-zinc-400 font-bold text-sm">Voucher</button>
+      </div>
+
+      <div id="boxQris">
+        <div class="text-sm font-bold mb-2">Scan QRIS Merchant</div>
+        <div class="bg-white rounded-2xl p-3 mx-auto w-fit min-h-[200px] flex items-center justify-center">
+          <img id="qrisImage" class="max-w-[200px] max-h-[200px] object-contain">
+        </div>
+        <button onclick="confirmAndStart()" class="mt-4 w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold text-white">
+          <i class="fa-solid fa-circle-check mr-2"></i>Saya Sudah Bayar (Lanjut Sesi)
+        </button>
+      </div>
+
+      <div id="boxVoucher" class="hidden">
+        <label class="text-xs text-zinc-500">Kode voucher</label>
+        <input id="voucherInput" class="mt-2 w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 outline-none focus:border-indigo-500" placeholder="Masukkan kode voucher">
+        <button onclick="confirmVoucher()" class="mt-3 w-full py-3.5 bg-emerald-600 rounded-xl font-bold text-white">Gunakan Voucher & Lanjut</button>
+        <p id="voucherMsg" class="text-xs mt-2 text-zinc-500"></p>
+      </div>
+
+      <button onclick="goToStep(2)" class="mt-3 w-full py-2 text-zinc-400 hover:text-white text-sm">← Kembali pilih paket</button>
+    </div>
+  </div>
+</section>
+
+<!-- 4 CAMERA (CAPTURE) -->
+<section id="step-capture" class="hidden w-full max-w-6xl animate-fadeIn">
+  <div class="flex justify-between items-center mb-4">
+    <div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 03</span><h2 class="text-2xl font-extrabold mt-1">Sesi Take Foto</h2></div>
+  </div>
+  <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 text-center space-y-4">
+    <div class="aspect-video bg-black rounded-2xl flex items-center justify-center relative overflow-hidden">
+      <video id="webcam" class="w-full h-full object-cover scale-x-[-1]" autoplay playsinline muted></video>
+      <div id="countdownOverlay" class="hidden absolute inset-0 bg-black/40 flex items-center justify-center z-20"><span id="countdownText" class="text-8xl font-black">3</span></div>
+    </div>
+    <button onclick="takePhoto()" class="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg">Ambil Foto</button>
+  </div>
+</section>
+
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const CONFIG_KEY='boothpro_config_v300';
+const LEGACY_CONFIG_KEY='boothpro_config_v212';
+
+let selectedPackageId = null;
+let selectedFrameId = 'builtin-01';
+let requiredPhotosCount = 4;
+
+const BUILTIN_FRAME_DEFS=[
+ {id:'builtin-01',name:'Aura One',category:'VINTAGE'},
+ {id:'builtin-02',name:'Minimal One',category:'MINIMAL'},
+ {id:'builtin-03',name:'Sunset One',category:'BOLD'},
+ {id:'builtin-04',name:'Lime One',category:'MODERN'},
+ {id:'builtin-05',name:'Editorial One',category:'MODERN'},
+ {id:'builtin-06',name:'Candy Quad',category:'PASTEL'}
+];
+
+const defaultConfig={
+  packages:[
+    {id:'basic',name:'1 Strip Basic',price:25000,photos:4,prints:1,desc:'4 foto · 1 strip'},
+    {id:'dual',name:'2 Strip Duo',price:40000,photos:4,prints:2,desc:'4 foto · 2 strip'}
+  ]
+};
+
+function loadConfig(){
+  try {
+    const raw = localStorage.getItem(CONFIG_KEY) || localStorage.getItem(LEGACY_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : defaultConfig;
+  } catch(e){ return defaultConfig; }
+}
+
+let config = loadConfig();
+
+function renderPackages() {
+  const grid = $('packageGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  const pkgs = config.packages || defaultConfig.packages;
+  pkgs.forEach(p => {
+    const isSel = selectedPackageId === p.id;
+    const card = document.createElement('div');
+    card.className = `cursor-pointer p-4 rounded-2xl border-2 transition ${isSel ? 'border-indigo-500 bg-indigo-500/10' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-700'}`;
+    card.onclick = () => {
+      selectedPackageId = p.id;
+      requiredPhotosCount = p.photos || 4;
+      $('selectedPackageSummary').innerText = p.name;
+      $('selectedPackagePrice').innerText = 'Rp' + (Number(p.price)\vert{}\vert{}0).toLocaleString('id-ID');$('toPaymentBtn').disabled = false;
+      renderPackages();
+    };
+    card.innerHTML = `
+      <div class="font-bold text-lg">${p.name}</div>
+      <div class="text-xs text-zinc-400 mt-1">${p.desc||''}</div>
+      <div class="text-indigo-400 font-extrabold text-xl mt-3">Rp${(Number(p.price)||0).toLocaleString('id-ID')}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function selectCategoryView(cat) {
+  $('categoryCardGrid').classList.add('hidden');$('subGalleryContainer').classList.remove('hidden');
+  $('backToCatBtn').classList.remove('hidden');$('activeCategoryTitle').innerText = 'KATEGORI: ' + cat;
+  renderSubGalleryFrames(cat);
+}
+
+function showCategoryList() {
+  $('categoryCardGrid').classList.remove('hidden');
+  $('subGalleryContainer').classList.add('hidden');$('backToCatBtn').classList.add('hidden');
+}
+
+function renderSubGalleryFrames(cat) {
+  const container = $('preFrameGrid');
+  container.innerHTML = '';
+  const filtered = cat === 'ALL' ? BUILTIN_FRAME_DEFS : BUILTIN_FRAME_DEFS.filter(f => f.category === cat);
+
+  filtered.forEach(f => {
+    const isSelected = selectedFrameId === f.id;
+    const card = document.createElement('div');
+    card.className = `relative cursor-pointer rounded-xl border-2 p-2 bg-zinc-900 transition ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/40' : 'border-zinc-800 hover:border-zinc-600'}`;
+    card.onclick = () => selectFrame(f);
+    
+    // Tanda Ceklis Hijau jika Terpilih
+    const checkBadge = isSelected ? `<div class="absolute top-1 right-1 bg-emerald-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold shadow-md z-10"><i class="fa-solid fa-check"></i></div>` : '';
+
+    card.innerHTML = `
+      ${checkBadge}
+      <div class="aspect-[2/3] w-full rounded-lg bg-zinc-950 flex items-center justify-center border border-zinc-800">
+        <i class="fa-solid fa-image text-zinc-600 text-2xl"></i>
+      </div>
+      <div class="text-[10px] font-bold text-center mt-1 truncate px-1 text-zinc-300">${f.name}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function selectFrame(f) {
+  selectedFrameId = f.id;
+  $('selectedFrameSummaryName').innerText = f.name;
+  const catText = $('activeCategoryTitle').innerText.replace('KATEGORI: ', '');
+  if(catText) renderSubGalleryFrames(catText);
+}
+
+function switchMethod(method) {
+  if(method === 'qris') {
+    $('boxQris').classList.remove('hidden');$('boxVoucher').classList.add('hidden');
+    $('btnMethodQris').className = 'flex-1 py-3 rounded-xl bg-indigo-600 font-bold text-sm text-white';$('btnMethodVoucher').className = 'flex-1 py-3 rounded-xl bg-zinc-800 text-zinc-400 font-bold text-sm';
+  } else {
+    $('boxQris').classList.add('hidden');$('boxVoucher').classList.remove('hidden');
+    $('btnMethodVoucher').className = 'flex-1 py-3 rounded-xl bg-indigo-600 font-bold text-sm text-white';$('btnMethodQris').className = 'flex-1 py-3 rounded-xl bg-zinc-800 text-zinc-400 font-bold text-sm';
+  }
+}
+
+function confirmAndStart() {
+  goToStep(4);
+}
+
+function confirmVoucher() {
+  const code = $('voucherInput').value.trim();
+  if(!code) {
+    $('voucherMsg').innerText = 'Masukkan kode voucher terlebih dahulu.';
+    return;
+  }
+  confirmAndStart();
+}
+
+function goToStep(stepNum) {
+  document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+  if(stepNum === 1) $('step-welcome').classList.remove('hidden');
+  if(stepNum === 2) { $('step-package').classList.remove('hidden'); renderPackages(); showCategoryList(); }
+  if(stepNum === 3) $('step-payment').classList.remove('hidden');
+  if(stepNum === 4) $('step-capture').classList.remove('hidden');
+}
+
+function goToPayment() {
+  const pkg = (config.packages || defaultConfig.packages).find(p => p.id === selectedPackageId);
+  if(!pkg) return;
+  $('paymentPackageName').innerText = pkg.name;
+  $('paymentAmount').innerText = 'Rp' + (Number(pkg.price)||0).toLocaleString('id-ID');
+  $('paymentPhotoCount').innerText = (pkg.photos\vert{}\vert{}4) + ' Pose';$('paymentPrintCount').innerText = (pkg.prints||1) + ' Strip';
+  goToStep(3);
+}
+
+function resetToHome() {
+  selectedPackageId = null;
+  goToStep(1);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  renderPackages();
+});
+</script>
+</body>
+</html>

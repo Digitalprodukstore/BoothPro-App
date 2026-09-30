@@ -4211,3 +4211,40 @@ window.addEventListener('boothpro-config-updated',()=>setTimeout(render,20));
 window.addEventListener('boothpro-frames-updated',()=>setTimeout(render,20));
 })();
 </script>
+
+<!-- C9.4 LARGE FRAME PICKER + EXPLICIT NAV -->
+<style id="c9-4-frame-picker-css">
+#preFrameGrid .bp-c93-box{padding:14px!important;overflow:visible!important}
+#preFrameGrid .bp-c93-head{min-height:34px!important}
+#preFrameGrid .bp-c93-row{height:220px!important;min-height:220px!important;gap:12px!important;padding:6px 6px 14px!important;overflow-x:scroll!important;overflow-y:hidden!important;scrollbar-width:thin!important;touch-action:pan-x!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important}
+#preFrameGrid .bp-c93-card{flex:0 0 142px!important;width:142px!important;min-width:142px!important;height:198px!important;min-height:198px!important;border-width:3px!important;border-radius:16px!important;z-index:100!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:rgba(129,140,248,.25)!important}
+#preFrameGrid .bp-c93-card img{width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important}
+#preFrameGrid .bp-c93-nav{display:flex!important;align-items:center!important;justify-content:center!important;gap:10px!important;margin-top:10px!important}
+#preFrameGrid .bp-c93-nav button{width:48px!important;height:42px!important;border-radius:12px!important;border:1px solid #3f3f46!important;background:#27272a!important;color:#fff!important;font-size:18px!important;font-weight:900!important;pointer-events:auto!important;touch-action:manipulation!important}
+#preFrameGrid .bp-c93-nav span{font-size:10px!important;color:#a1a1aa!important;font-weight:800!important}
+</style>
+<script id="c9-4-frame-picker-script">
+(function(){
+'use strict';
+function enhance(){
+ const host=document.getElementById('preFrameGrid');if(!host)return;
+ const row=host.querySelector('.bp-c93-row');if(!row||host.querySelector('.bp-c93-nav'))return;
+ const nav=document.createElement('div');nav.className='bp-c93-nav';
+ const prev=document.createElement('button');prev.type='button';prev.setAttribute('aria-label','Frame sebelumnya');prev.textContent='‹';
+ const info=document.createElement('span');info.textContent='Geser atau gunakan tombol';
+ const next=document.createElement('button');next.type='button';next.setAttribute('aria-label','Frame berikutnya');next.textContent='›';
+ prev.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();row.scrollBy({left:-154,behavior:'smooth'})},{passive:false});
+ next.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();row.scrollBy({left:154,behavior:'smooth'})},{passive:false});
+ nav.append(prev,info,next);host.querySelector('.bp-c93-box').appendChild(nav);
+ /* Keep the native iOS scroll surface active even if legacy kiosk CSS tries to constrain it. */
+ row.style.setProperty('overflow-x','scroll','important');row.style.setProperty('overflow-y','hidden','important');row.style.setProperty('touch-action','pan-x','important');row.style.setProperty('pointer-events','auto','important');
+ host.querySelectorAll('.bp-c93-card').forEach(function(card){card.style.setProperty('pointer-events','auto','important');card.style.setProperty('touch-action','manipulation','important');card.style.setProperty('z-index','100','important')});
+}
+function boot(){setTimeout(enhance,20);setTimeout(enhance,150);setTimeout(enhance,700)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+const old=window.boothProRenderFrameAuthority;
+window.boothProRenderFrameAuthority=function(){if(typeof old==='function')old();setTimeout(enhance,0);setTimeout(enhance,120)};
+window.addEventListener('boothpro-config-updated',()=>setTimeout(enhance,30));
+window.addEventListener('boothpro-frames-updated',()=>setTimeout(enhance,30));
+})();
+</script>

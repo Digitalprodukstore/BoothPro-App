@@ -3906,5 +3906,149 @@ window.addEventListener('boothpro-frames-updated',()=>setTimeout(render,100));
 window.addEventListener('boothpro-config-updated',()=>setTimeout(render,100));
 })();
 </script>
-</body>
-</html>
+
+<script id="m3-9-26-step1-touch-authority">
+(function(){
+'use strict';
+/* M3.9.26: final Step 1 touch/click authority.
+   Goals: scrolling must NOT select packages; frame tap selects immediately;
+   payment button is never left natively disabled after a valid selection. */
+const STEP1={down:null,open:''};
+function id(x){return String(x||'')}
+function currentFrame(){
+  try{return (typeof getFrameChoicesSafe==='function'?(getFrameChoicesSafe()||[]):[]).find(f=>id(f.id)===id(selectedFrameId))||null}catch(e){return null}
+}
+function refreshPayment(){
+  try{if(typeof updatePackageSummary==='function')updatePackageSummary()}catch(e){}
+  const p=(()=>{try{return (config.packages||[]).find(x=>id(x.id)===id(selectedPackageId))}catch(e){return null}})();
+  const f=currentFrame();
+  const ready=!!(p&&f&&selectedFrameId&&frameSelectionConfirmed);
+  const b=document.getElementById('toPaymentBtn');
+  const l=document.getElementById('toPaymentLabel');
+  if(b){
+    b.disabled=!ready;
+    b.removeAttribute('aria-disabled');
+    b.style.pointerEvents='auto';
+    b.style.touchAction='manipulation';
+    b.style.cursor=ready?'pointer':'not-allowed';
+    b.classList.toggle('bpC16Ready',ready);
+  }
+  if(l)l.textContent=ready?'Lanjut ke Pembayaran · '+p.name+' · '+(typeof fmt==='function'?fmt(p.price):''):p?'Pilih Frame · '+p.name+' · '+(typeof fmt==='function'?fmt(p.price):''):'Lanjut ke Pembayaran';
+  return ready;
+}
+function choosePackage(pkg){
+  if(!pkg)return;
+  try{selectPackage(pkg.id)}catch(e){
+    selectedPackageId=pkg.id;
+    const p=(config.packages||[]).find(x=>id(x.id)===id(pkg.id));
+    if(p){selectedLayoutType=p.layout;requiredPhotosCount=Math.max(1,Number(p.photos)||4)}
+  }
+  frameSelectionConfirmed=!!selectedFrameId;
+  refreshPayment();
+  try{if(typeof renderPackageStep==='function')renderPackageStep()}catch(e){}
+  setTimeout(refreshPayment,30);
+}
+function chooseFrame(f){
+  if(!f||!f.id)return;
+  /* Do not wait for asset hydration. Selection itself must be synchronous. */
+  try{selectFrame(f)}catch(e){
+    selectedFrameId=id(f.id);
+    selectedFrameSrc=f.src||'';
+    frameSelectionConfirmed=!!selectedPackageId;
+    try{if(!f.src){frameBg=frameColor(f.id);frameFg=f.id==='plain-dark'?'#f4f4f5':'#27272a'}}catch(_){}
+  }
+  selectedFrameId=id(f.id);
+  selectedFrameSrc=f.src||selectedFrameSrc||'';
+  frameSelectionConfirmed=!!selectedPackageId;
+  refreshPayment();
+  try{
+    document.querySelectorAll('[data-frame-id]').forEach(el=>{
+      const on=id(el.dataset.frameId)===id(selectedFrameId);
+      el.classList.toggle('is-selected',on);
+      el.classList.toggle('border-indigo-500',on);
+      el.classList.toggle('ring-2',on);
+      el.classList.toggle('ring-indigo-500/30',on);
+      const ck=el.querySelector('.m3912-check,.frame-selected-badge,.m3912-check');
+      if(ck)ck.classList.toggle('hidden',!on);
+    });
+  }catch(e){}
+  /* Re-render only after state is committed, and keep the open category. */
+  try{
+    if(window.BoothProM3925?.render)window.BoothProM3925.render();
+    else if(window.BoothProM3924?.render)window.BoothProM3924.render();
+    else if(typeof renderPreFrames==='function')renderPreFrames();
+  }catch(e){}
+  setTimeout(refreshPayment,20);
+}
+function bindTarget(root,kind){
+  if(!root||root.dataset.bp926Bound==='1')return;
+  root.dataset.bp926Bound='1';
+  root.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    STEP1.down={x:e.clientX,y:e.clientY,target:e.target};
+  },{passive:true,capture:true});
+  root.addEventListener('pointerup',e=>{
+    const d=STEP1.down;STEP1.down=null;if(!d)return;
+    const moved=Math.hypot(e.clientX-d.x,e.clientY-d.y)>12;
+    if(moved)return;
+    const el=e.target.closest?.(kind==='package'?'#packageGrid button':'#preFrameGrid button');
+    if(!el||!root.contains(el))return;
+    e.preventDefault();e.stopPropagation();
+    if(kind==='package'){
+      const packageId=el.dataset.packageId||el.getAttribute('data-package-id');
+      const pkg=(config.packages||[]).find(p=>id(p.id)===id(packageId));
+      if(pkg)choosePackage(pkg);
+    }else{
+      const frameId=el.dataset.frameId;
+      const f=(typeof getFrameChoicesSafe==='function'?(getFrameChoicesSafe()||[]):[]).find(x=>id(x.id)===id(frameId));
+      if(f)chooseFrame(f);
+      else if(window.BoothProM3925?.pick)window.BoothProM3925.pick({id:frameId});
+    }
+  },{passive:false,capture:true});
+}
+function bindPackages(){
+  const g=document.getElementById('packageGrid');if(!g)return;
+  g.querySelectorAll('button').forEach((b,i)=>{
+    if(!b.dataset.packageId){
+      const p=(config.packages||[])[i];if(p)b.dataset.packageId=p.id;
+    }
+    b.style.touchAction='pan-y';
+    b.style.pointerEvents='auto';
+    b.style.userSelect='none';
+  });
+  bindTarget(g,'package');
+}
+function bindFrames(){
+  const g=document.getElementById('preFrameGrid');if(!g)return;
+  g.style.touchAction='pan-y';
+  g.style.pointerEvents='auto';
+  bindTarget(g,'frame');
+}
+function bindPayment(){
+  const b=document.getElementById('toPaymentBtn');if(!b||b.dataset.bp926PaymentBound==='1')return;
+  b.dataset.bp926PaymentBound='1';
+  b.addEventListener('click',e=>{
+    const ready=refreshPayment();
+    if(!ready){
+      e.preventDefault();e.stopImmediatePropagation();
+      const p=(()=>{try{return (config.packages||[]).find(x=>id(x.id)===id(selectedPackageId))}catch(_){return null}})();
+      alert(p?'Pilih frame terlebih dahulu.':'Pilih paket terlebih dahulu.');
+      return;
+    }
+    e.preventDefault();e.stopImmediatePropagation();
+    try{if(typeof window.goToPayment==='function')window.goToPayment()}catch(err){console.warn('M3.9.26 payment:',err)}
+  },{capture:true});
+}
+function boot(){
+  bindPackages();bindFrames();bindPayment();refreshPayment();
+}
+const observer=new MutationObserver(()=>{bindPackages();bindFrames();bindPayment();});
+observer.observe(document.body,{subtree:true,childList:true});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('pageshow',()=>setTimeout(boot,100));
+window.addEventListener('boothpro-config-updated',()=>setTimeout(boot,80));
+window.addEventListener('boothpro-frames-updated',()=>setTimeout(boot,80));
+window.BoothProM3926={boot,choosePackage,chooseFrame,refreshPayment};
+})();
+</script>
+\n</body>\n</html>

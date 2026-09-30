@@ -1,0 +1,13 @@
+{
+  "name": "BoothPro Audit & Guard",
+  "version": "0.1.0",
+  "productionUrl": "https://booth-pro-app.vercel.app",
+  "criticalFlow": ["welcome","package","frame","payment","capture","adjust","edit","result"],
+  "protectedFeatures": ["camera","package-selection","frame-selection","payment-readiness","capture","retake","editor","download","print","soft-copy"],
+  "policy": {
+    "failOnCritical": true,
+    "failOnWarning": false,
+    "neverAutoPatchProduction": true,
+    "neverModifyIndexDuringAudit": true
+  }
+}

@@ -4638,3 +4638,36 @@ function boot(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
+
+<!-- C10: remove duplicate experimental pickers and auto-select a safe built-in default -->
+<style id="c10-frame-cleanup">
+#bpC96Open,#bpC96Overlay,#bpC98,#bpC99{display:none!important}
+</style>
+<script id="c10-frame-default-safe">
+(function(){
+'use strict';
+var lastPackage='';
+function fs(){return typeof window.boothProC93Catalog==='function'?window.boothProC93Catalog():[]}
+function ensureDefault(){
+  try{
+    var pkg=window.selectedPackageId;
+    if(!pkg)return;
+    if(window.selectedFrameId)return;
+    var list=fs(), f=list[0];
+    if(!f)return;
+    if(typeof window.selectFrame==='function')window.selectFrame(f);
+    else if(typeof selectFrame==='function')selectFrame(f);
+  }catch(e){console.warn('C10 default frame',e)}
+}
+function sync(){
+  var step=document.getElementById('step-package');
+  if(!step||step.classList.contains('hidden'))return;
+  ensureDefault();
+}
+function boot(){
+  sync();
+  setInterval(sync,300);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>

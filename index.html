@@ -4098,5 +4098,68 @@ window.addEventListener('pageshow',()=>setTimeout(boot,250));
 })();
 </script>
 
+
+<!-- M3.9.2 FINAL FRAME/STEP-1 STABILIZER -->
+<style id="m392-frame-selection-stabilizer">
+#preFrameGrid{position:relative!important;z-index:60!important;pointer-events:auto!important;overflow:visible!important}
+.m392-frame-selected{outline:2px solid #818cf8!important;outline-offset:1px;box-shadow:0 0 0 3px rgba(129,140,248,.22)!important}
+#toPaymentBtn{position:relative;z-index:80!important;touch-action:manipulation!important;pointer-events:auto!important;-webkit-tap-highlight-color:transparent}
+</style>
+<script id="m392-frame-selection-stabilizer">
+(function(){
+'use strict';
+function el(id){return document.getElementById(id)}
+function choices(){
+  try{if(typeof getFrameChoicesSafe==='function')return (getFrameChoicesSafe()||[]).filter(Boolean)}catch(e){}
+  try{if(typeof getFrameChoices==='function')return (getFrameChoices()||[]).filter(Boolean)}catch(e){}
+  return [];
+}
+function selected(){return choices().find(f=>String(f.id)===String(window.selectedFrameId||selectedFrameId))||null}
+function refreshSummary(){
+  const p=(config&&Array.isArray(config.packages)?config.packages:[]).find(x=>x&&x.id===selectedPackageId);
+  const f=selected();
+  const name=el('selectedPackageSummary'),price=el('selectedPackagePrice'),desc=el('selectedPackageDesc'),btn=el('toPaymentBtn'),label=el('toPaymentLabel');
+  if(name)name.innerHTML=p?escapeHtml(p.name)+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+escapeHtml((f&&f.name)||'Belum dipilih')+'</div>':'Belum dipilih';
+  if(price)price.textContent=p?fmt(p.price):'Rp0';
+  if(desc)desc.textContent=p?p.photos+' foto · '+(p.prints||1)+' print · '+(window.frameSelectionConfirmed?'Frame siap digunakan':'Pilih frame terlebih dahulu'):'Pilih paket terlebih dahulu';
+  const ready=!!(p&&f&&window.frameSelectionConfirmed);
+  if(btn){btn.disabled=!ready;btn.style.opacity=ready?'1':'.72';btn.style.pointerEvents='auto';btn.style.cursor=ready?'pointer':'not-allowed';btn.setAttribute('aria-disabled',String(!ready));}
+  if(label)label.textContent=ready?'Lanjut ke Pembayaran · '+p.name+' · '+fmt(p.price):(p?'Pilih Frame · '+p.name+' · '+fmt(p.price):'Lanjut ke Pembayaran');
+}
+function patchSelect(){
+  const fn=window.selectFrame;
+  if(typeof fn!=='function'||fn.__m392)return false;
+  const wrapped=function(f){
+    const r=fn.apply(this,arguments);
+    try{window.frameSelectionConfirmed=true}catch(e){}
+    setTimeout(function(){
+      try{refreshSummary()}catch(e){}
+      document.querySelectorAll('[data-frame-id]').forEach(c=>c.classList.toggle('m392-frame-selected',String(c.dataset.frameId)===String(window.selectedFrameId||selectedFrameId)));
+    },0);
+    return r;
+  };
+  wrapped.__m392=true;window.selectFrame=wrapped;return true;
+}
+function patchPayment(){
+  const btn=el('toPaymentBtn');if(!btn||btn.__m392)return false;
+  btn.__m392=true;
+  btn.addEventListener('click',function(e){
+    e.preventDefault();e.stopPropagation();
+    const p=(config&&Array.isArray(config.packages)?config.packages:[]).find(x=>x&&x.id===selectedPackageId);
+    const f=selected();
+    if(!p){alert('Pilih paket terlebih dahulu.');return}
+    if(!f){alert('Pilih frame terlebih dahulu sebelum melanjutkan ke pembayaran.');return}
+    window.frameSelectionConfirmed=true;refreshSummary();
+    try{if(typeof goToStep==='function')goToStep(3)}catch(err){console.warn('M3.9.2 payment navigation:',err)}
+  },true);
+  return true;
+}
+function install(){patchSelect();patchPayment();refreshSummary()}
+let tries=0;const timer=setInterval(function(){install();if((el('toPaymentBtn')?.__m392&&window.selectFrame?.__m392)||++tries>80)clearInterval(timer)},100);
+setTimeout(install,250);setTimeout(install,1000);
+window.addEventListener('boothpro-frames-updated',function(){setTimeout(install,30)});
+window.addEventListener('boothpro-config-updated',function(){setTimeout(install,30)});
+})();
+</script>
 </body>
 </html>

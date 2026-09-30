@@ -594,10 +594,11 @@ function getFrameChoicesSafe(){
   let uploads=[];
   try{
     const slots=Array.isArray(config?.frameSlots)?config.frameSlots:[];
-    uploads=frameGallery
-      .filter(f=>f&&(!requiredPhotosCount||!f.photos||f.photos===requiredPhotosCount))
+    const gallery=Array.isArray(frameGallery)?frameGallery:[];
+    uploads=gallery
+      .filter(f=>f&&(!requiredPhotosCount||!f.photos||Number(f.photos)===Number(requiredPhotosCount)))
       .map(f=>{
-        const st=slots.find(x=>x&&x.frameId===f.id);
+        const st=slots.find(x=>x&&String(x.frameId||'')===String(f.id||''));
         return st ? {...f,category:String(st.category||f.category||'CUSTOM').toUpperCase(),enabled:st.enabled!==false,slotIndex:slots.indexOf(st)} : f;
       })
       .filter(f=>f.slotIndex==null||f.enabled!==false);

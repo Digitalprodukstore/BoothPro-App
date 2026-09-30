@@ -3478,6 +3478,88 @@ if(typeof oldSelect==='function'&&!oldSelect.__m33){
 </script>
 
 
+<!-- M3.9.2 GUARANTEED STEP 1 FRAME CATEGORY RENDER -->
+<style id="m392-step1-frame-guarantee">
+#preFrameGrid{display:block!important;visibility:visible!important;opacity:1!important}
+.bp392-frame-index{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%}
+.bp392-category{appearance:none;-webkit-appearance:none;width:100%;min-height:118px;border:1px solid #3f3f46;border-radius:16px;background:#18181b;color:#fff;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;touch-action:manipulation;cursor:pointer}
+.bp392-category:active{transform:scale(.98);border-color:#6366f1}
+.bp392-thumb{width:54px;height:54px;border-radius:13px;background:#27272a;border:1px solid #52525b;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.bp392-thumb img{width:100%;height:100%;object-fit:contain}
+.bp392-name{font-size:12px;font-weight:900;letter-spacing:.05em}
+.bp392-count{font-size:9px;color:#a1a1aa}
+@media(min-width:700px){.bp392-frame-index{grid-template-columns:repeat(5,minmax(0,1fr))}}
+</style>
+<script id="m392-step1-frame-guarantee">
+(function(){
+'use strict';
+function bp392Choices(){
+  try{
+    const list=typeof getFrameChoicesSafe==='function'?getFrameChoicesSafe():[];
+    if(Array.isArray(list)&&list.length)return list;
+  }catch(e){}
+  try{return typeof getBuiltinFrames==='function'?getBuiltinFrames():[]}catch(e){return[]}
+}
+function bp392Render(){
+  const host=document.getElementById('preFrameGrid');
+  if(!host)return;
+  const choices=bp392Choices().filter(Boolean);
+  const cats=['VINTAGE','MODERN','MINIMAL','PASTEL','BOLD'];
+  const groups={VINTAGE:[],MODERN:[],MINIMAL:[],PASTEL:[],BOLD:[],CUSTOM:[]};
+  choices.forEach((f,i)=>{
+    const cat=groups[f.category]?f.category:(f.builtin?cats[Math.floor(i/10)]||'CUSTOM':'CUSTOM');
+    groups[cat].push(f);
+  });
+  const wrap=document.createElement('div');
+  wrap.className='bp392-frame-index';
+  cats.concat(groups.CUSTOM.length?['CUSTOM']:[]).forEach(cat=>{
+    const items=groups[cat]||[];
+    if(!items.length)return;
+    const b=document.createElement('button');
+    b.type='button';b.className='bp392-category';
+    const first=items[0];
+    const thumb=document.createElement('div');thumb.className='bp392-thumb';
+    if(first&&first.src){const im=document.createElement('img');im.src=first.src;im.alt='';thumb.appendChild(im)}
+    else thumb.textContent='🖼️';
+    const nm=document.createElement('div');nm.className='bp392-name';nm.textContent=cat;
+    const ct=document.createElement('div');ct.className='bp392-count';ct.textContent=items.length+' frame · Ketuk untuk buka';
+    b.append(thumb,nm,ct);
+    b.onclick=function(e){
+      e.preventDefault();
+      window.preFrameCategoryOpen=cat;
+      if(typeof renderPreFrameDetail==='function')renderPreFrameDetail(cat,items);
+      else if(typeof renderFrameCategoryDetail==='function')renderFrameCategoryDetail(true,cat);
+    };
+    wrap.appendChild(b);
+  });
+  host.innerHTML='';
+  const title=document.createElement('div');
+  title.className='mb-3 text-xs font-black tracking-wide text-zinc-200';
+  title.textContent='FRAME GALLERY · PILIH KATEGORI';
+  host.append(title,wrap);
+  if(!wrap.children.length){
+    const empty=document.createElement('div');
+    empty.className='p-4 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-400';
+    empty.textContent='Frame belum tersedia.';
+    host.appendChild(empty);
+  }
+}
+window.BoothProM392={render:bp392Render};
+const oldRenderPackageStep=window.renderPackageStep;
+if(typeof oldRenderPackageStep==='function'&&!oldRenderPackageStep.__m392){
+  const w=function(){const r=oldRenderPackageStep.apply(this,arguments);setTimeout(bp392Render,0);return r};
+  w.__m392=true;window.renderPackageStep=w;
+}
+const oldGo=window.goToStep;
+if(typeof oldGo==='function'&&!oldGo.__m392){
+  const w=function(n){const r=oldGo.apply(this,arguments);if(Number(n)===2)setTimeout(bp392Render,0);return r};
+  w.__m392=true;window.goToStep=w;
+}
+document.addEventListener('DOMContentLoaded',()=>setTimeout(bp392Render,0));
+setTimeout(bp392Render,350);
+})();
+</script>
+
 <!-- M3.9.1 STEP 1 FRAME FLOW STABILIZER -->
 <script id="m391-step1-frame-flow">
 (function(){

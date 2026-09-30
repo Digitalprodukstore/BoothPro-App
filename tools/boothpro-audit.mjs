@@ -13,7 +13,7 @@ if (!source.includes('<!DOCTYPE html>')) warn('Missing DOCTYPE.');
 if (source.length > 450000) warn('index.html is over 450 KB; modularization/performance review recommended.');
 else ok('HTML size is within the 450 KB warning budget.');
 
-const scripts = [...source.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)].map(m => m[1]);
+const scripts = [...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m => m[1]);
 let syntaxOk = 0;
 for (let i = 0; i < scripts.length; i++) {
   const code = scripts[i].trim();
@@ -26,7 +26,7 @@ for (let i = 0; i < scripts.length; i++) {
 }
 ok('Inline JavaScript blocks syntax-checked: ' + syntaxOk + '.');
 
-const ids = [...source.matchAll(/\\bid=["']([^"']+)["']/gi)].map(m => m[1]);
+const ids = [...source.matchAll(/\bid=["']([^"']+)["']/gi)].map(m => m[1]);
 const counts = {};
 for (const id of ids) counts[id] = (counts[id] || 0) + 1;
 for (const id of Object.keys(counts)) if (counts[id] > 1) fail('Duplicate HTML id #' + id + ' appears ' + counts[id] + ' times.');
@@ -47,10 +47,10 @@ for (const name of ['selectedPackageId','selectedFrameId','selectedFrameSrc','fr
   if (n > 3) warn('State variable ' + name + ' has ' + n + ' assignments; competing controllers may exist.');
 }
 
-for (const re of [/eval\\s*\\(/i, /new\\s+Function\\s*\\(/i]) if (re.test(source)) warn('Risky dynamic-code pattern detected: ' + re);
+for (const re of [/eval\s*\(/i, /new\s+Function\s*\(/i]) if (re.test(source)) warn('Risky dynamic-code pattern detected: ' + re);
 for (const re of [/-----BEGIN (?:RSA|EC|OPENSSH|PRIVATE) KEY-----/, /AIza[0-9A-Za-z_-]{30,}/, /sk-[A-Za-z0-9]{20,}/]) if (re.test(source)) fail('Possible credential/secret pattern detected: ' + re);
 
-const urls = [...new Set([...source.matchAll(/https?:\\/\\/[^"'\\s<>]+/g)].map(m => m[0]))];
+const urls = [...new Set([...source.matchAll(/https?:\/\/[^"'\s<>]+/g)].map(m => m[0]))];
 ok('External URL references found: ' + urls.length + '.');
 
 const report = [
@@ -67,7 +67,7 @@ const report = [
   ...(warnings.length ? ['### Warnings', ...warnings.map(x => '- ⚠️ ' + x), ''] : []),
   '### Checks',
   ...checks.map(x => '- ✅ ' + x)
-].join('\\n');
+].join('\n');
 
 fs.writeFileSync('audit-report.md', report);
 console.log(report);

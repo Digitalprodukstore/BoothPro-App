@@ -3690,5 +3690,107 @@ window.BoothProM36={addDashboardEntry,hydrateGallery};
 })();
 </script>
 
+
+<!-- M3.9 FINAL STEP 1 FRAME AUTHORITY -->
+<style id="m39-step1-frame-authority">
+#preFrameGrid{display:block!important;visibility:visible!important;min-height:180px!important;position:relative!important;z-index:50!important;pointer-events:auto!important}
+.m39-frame-index{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.m39-frame-cat{min-height:112px;border:1px solid #27272a;border-radius:16px;background:#18181b;padding:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#f4f4f5;touch-action:manipulation;pointer-events:auto;cursor:pointer}
+.m39-frame-cat:hover,.m39-frame-cat:active{border-color:#6366f1;background:#1e1b2f}
+.m39-frame-cat-thumb{width:52px;height:68px;border-radius:10px;overflow:hidden;background:#09090b;border:1px solid #3f3f46;display:flex;align-items:center;justify-content:center}
+.m39-frame-cat-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+.m39-frame-detail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-height:460px;overflow-y:auto;padding:2px}
+.m39-frame-card{position:relative;min-width:0;aspect-ratio:2/3;border:2px solid #27272a;border-radius:14px;overflow:hidden;background:#09090b;touch-action:manipulation;pointer-events:auto;cursor:pointer}
+.m39-frame-card img{width:100%;height:100%;object-fit:contain;display:block}
+.m39-frame-card .m39-name{position:absolute;left:5px;right:5px;bottom:5px;padding:5px;border-radius:7px;background:rgba(0,0,0,.72);font-size:9px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m39-frame-card .m39-check{position:absolute;right:6px;top:6px;width:24px;height:24px;border-radius:999px;background:#4f46e5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}
+@media(max-width:640px){.m39-frame-index,.m39-frame-detail{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.m39-frame-cat{min-height:104px}}
+</style>
+<script id="m39-step1-frame-authority">
+(function(){
+'use strict';
+const CATS=['VINTAGE','MODERN','MINIMAL','PASTEL','BOLD','CUSTOM'];
+let openCat='';
+function m39Choices(){
+  let built=[];
+  try{built=(typeof getBuiltinFrames==='function'?getBuiltinFrames():[]).filter(Boolean)}catch(e){built=[]}
+  let uploads=[];
+  try{uploads=(Array.isArray(window.frameGallery)?window.frameGallery:[]).filter(f=>f&&f.src)}catch(e){uploads=[]}
+  const base=[
+    {id:'plain-white',name:'White',src:'',category:'MINIMAL'},
+    {id:'plain-dark',name:'Dark',src:'',category:'MINIMAL'},
+    {id:'plain-pink',name:'Pink',src:'',category:'PASTEL'},
+    {id:'plain-indigo',name:'Indigo',src:'',category:'MODERN'}
+  ];
+  const all=[...base,...built,...uploads];
+  const seen=new Set();
+  return all.filter(f=>{if(!f||!f.id||seen.has(f.id))return false;seen.add(f.id);return true});
+}
+function m39Groups(){
+  const groups={VINTAGE:[],MODERN:[],MINIMAL:[],PASTEL:[],BOLD:[],CUSTOM:[]};
+  m39Choices().forEach(f=>{const cat=groups[f.category]?f.category:'CUSTOM';groups[cat].push(f)});
+  return groups;
+}
+function m39Select(f){
+  try{
+    if(typeof selectFrame==='function')selectFrame(f);
+    frameSelectionConfirmed=!!selectedPackageId;
+    if(typeof updatePackageSummary==='function')updatePackageSummary();
+    if(typeof renderPreFrames==='function')renderPreFrames();
+  }catch(e){console.warn('M3.9 frame select:',e)}
+}
+function m39Card(f){
+  const b=document.createElement('button');b.type='button';b.className='m39-frame-card';
+  b.dataset.frameId=f.id;
+  if(selectedFrameId===f.id)b.style.borderColor='#6366f1';
+  if(f.src){
+    const im=document.createElement('img');im.src=f.src;im.alt=f.name||'Frame';im.loading='lazy';im.decoding='async';b.appendChild(im);
+  }else{
+    const box=document.createElement('div');box.style.cssText='width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:'+(typeof frameColor==='function'?frameColor(f.id):'#18181b');
+    box.innerHTML='<i class="fa-solid fa-image text-zinc-400 text-xl"></i>';b.appendChild(box);
+  }
+  const n=document.createElement('span');n.className='m39-name';n.textContent=f.name||'Frame';b.appendChild(n);
+  if(selectedFrameId===f.id){const ck=document.createElement('span');ck.className='m39-check';ck.textContent='✓';b.appendChild(ck)}
+  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();m39Select(f)});
+  return b;
+}
+window.renderPreFrames=function(){
+  const host=document.getElementById('preFrameGrid');if(!host)return;
+  const groups=m39Groups();host.innerHTML='';
+  host.style.cssText='display:block!important;visibility:visible!important;min-height:180px!important;position:relative!important;z-index:50!important;pointer-events:auto!important;';
+  if(!openCat){
+    const title=document.createElement('div');title.className='text-[10px] font-black uppercase tracking-widest text-indigo-300 mb-3';title.textContent='FRAME GALLERY';host.appendChild(title);
+    const sub=document.createElement('div');sub.className='text-[10px] text-zinc-500 mb-3';sub.textContent='Pilih kategori untuk melihat frame yang tersedia.';host.appendChild(sub);
+    const index=document.createElement('div');index.className='m39-frame-index';
+    CATS.forEach(cat=>{
+      const items=groups[cat]||[];if(!items.length)return;
+      const b=document.createElement('button');b.type='button';b.className='m39-frame-cat';
+      const first=items[0];const thumb=document.createElement('div');thumb.className='m39-frame-cat-thumb';
+      if(first&&first.src){const im=document.createElement('img');im.src=first.src;im.loading='lazy';thumb.appendChild(im)}
+      else thumb.innerHTML='<span class="text-2xl text-indigo-300">▦</span>';
+      const nm=document.createElement('div');nm.className='text-xs font-black';nm.textContent=cat;
+      const ct=document.createElement('div');ct.className='text-[9px] text-zinc-500';ct.textContent=items.length+' frame';
+      b.append(thumb,nm,ct);b.onclick=e=>{e.preventDefault();e.stopPropagation();openCat=cat;window.renderPreFrames()};index.appendChild(b);
+    });
+    host.appendChild(index);
+  }else{
+    const items=groups[openCat]||[];
+    const head=document.createElement('div');head.className='flex items-center justify-between gap-2 mb-3';
+    const back=document.createElement('button');back.type='button';back.className='px-3 py-2 rounded-xl bg-zinc-800 text-xs font-bold';back.textContent='← Kembali';back.onclick=e=>{e.preventDefault();e.stopPropagation();openCat='';window.renderPreFrames()};
+    const title=document.createElement('div');title.className='text-xs font-black text-indigo-200';title.textContent=openCat+' · '+items.length+' frame';
+    head.append(back,title);host.appendChild(head);
+    const grid=document.createElement('div');grid.className='m39-frame-detail';items.forEach(f=>grid.appendChild(m39Card(f)));host.appendChild(grid);
+  }
+  const chosen=m39Choices().find(f=>f.id===selectedFrameId);
+  const status=document.createElement('div');status.className='mt-3 px-3 py-2 rounded-xl bg-zinc-900 text-center text-[10px] text-zinc-400';
+  status.innerHTML=selectedFrameId?'✓ Frame terpilih: <b class="text-indigo-300">'+escapeHtml((chosen&&chosen.name)||'Frame')+'</b>':'Belum ada frame dipilih';
+  host.appendChild(status);
+};
+window.addEventListener('boothpro-frames-updated',()=>{if(document.getElementById('preFrameGrid'))window.renderPreFrames()});
+window.addEventListener('boothpro-config-updated',()=>{if(document.getElementById('preFrameGrid'))window.renderPreFrames()});
+setTimeout(()=>{try{window.renderPreFrames()}catch(e){}},120);
+})();
+</script>
+
 </body>
 </html>

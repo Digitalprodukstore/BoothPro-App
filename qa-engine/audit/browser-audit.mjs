@@ -2,10 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
 
-const REPORT_DIR = path.resolve(process.cwd(), "reports");
+const candidateRoot = process.env.GITHUB_WORKSPACE || process.cwd();
+const ROOT = fs.existsSync(path.join(candidateRoot, "index.html"))
+  ? candidateRoot
+  : path.resolve(candidateRoot, "..");
+const REPORT_DIR = path.join(ROOT, "qa-engine", "reports");
 fs.mkdirSync(REPORT_DIR, { recursive: true });
 
-const url = process.env.BOOTHPro_URL || process.env.BOOTHPRO_URL || "http://127.0.0.1:4173";
+const url = process.env.BOOTHPRO_URL || "http://127.0.0.1:4173/index.html";
 const findings = [];
 const checks = [];
 const consoleErrors = [];
@@ -32,12 +36,11 @@ page.on("pageerror", err => pageErrors.push(String(err)));
 try {
   const response = await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
   check("Kiosk page responds", !!response && response.ok(), response ? response.status() : "no response", "critical");
-
   await page.waitForTimeout(500);
 
-  check("Step 1 package grid is present", await page.locator("#packageGrid").count() === 1, "DOM selector #packageGrid", "critical");
-  check("Step 1 frame grid is present", await page.locator("#preFrameGrid").count() === 1, "DOM selector #preFrameGrid", "critical");
-  check("Payment button is present", await page.locator("#toPaymentBtn").count() === 1, "DOM selector #toPaymentBtn", "critical");
+  for (const selector of ["#packageGrid", "#preFrameGrid", "#toPaymentBtn"]) {
+    check(`Required selector exists: ${selector}`, await page.locator(selector).count() === 1, selector, "critical");
+  }
 
   const buttons = page.locator("#packageGrid button[data-package-id]");
   const buttonCount = await buttons.count();
@@ -46,12 +49,14 @@ try {
   if (buttonCount > 0) {
     const first = buttons.first();
     const packageId = await first.getAttribute("data-package-id");
-    await first.click({ force: false });
+    await first.scrollIntoViewIfNeeded();
+    await first.click({ timeout: 5000 });
     await page.waitForTimeout(150);
 
-    const selected = await first.evaluate(el => ({
+    const state = await first.evaluate(el => ({
       ariaPressed: el.getAttribute("aria-pressed"),
       className: el.className,
+      disabled: el.disabled,
       text: el.textContent?.trim()
     }));
     const summary = await page.locator("#selectedPackageSummary").textContent().catch(() => "");
@@ -60,14 +65,13 @@ try {
     check(
       "Package click produces selection state",
       !!packageId && (
-        selected.ariaPressed === "true" ||
-        /selected|active|ring|border/i.test(selected.className) ||
+        state.ariaPressed === "true" ||
+        /selected|active|ring|border/i.test(state.className) ||
         !/belum dipilih/i.test(summary || "")
       ),
-      { packageId, selected, summary, price },
+      { packageId, state, summary, price },
       "critical"
     );
-
     check("Package price becomes non-zero after selection", !/^Rp0\s*$/.test((price || "").trim()), { price }, "critical");
   }
 
@@ -76,11 +80,15 @@ try {
   check("Frame choices render", frameCount > 0, { frameCount }, "critical");
 
   if (frameCount > 0) {
-    await frameButtons.first().click();
+    await frameButtons.first().click({ timeout: 5000 });
     await page.waitForTimeout(100);
-    const frameSummary = await page.locator("#selectedPackageDesc").textContent().catch(() => "");
-    check("Frame click does not crash UI", !pageErrors.length, { pageErrors, frameSummary }, "critical");
+    check("Frame click does not produce uncaught errors", pageErrors.length === 0, { pageErrors }, "critical");
   }
+
+  const payment = page.locator("#toPaymentBtn");
+  check("Payment control is not permanently blocked", !(await payment.isDisabled()) || buttonCount === 0, {
+    disabled: await payment.isDisabled()
+  }, "warning");
 
   const storage = await page.evaluate(() => {
     const inspect = storageArea => {
@@ -103,7 +111,6 @@ try {
     };
   });
   check("Browser storage JSON is parseable", !storage.localStorageErrors.length && !storage.sessionStorageErrors.length, storage, "warning");
-
   check("No browser console errors", consoleErrors.length === 0, consoleErrors.slice(0, 20), "critical");
   check("No uncaught page errors", pageErrors.length === 0, pageErrors.slice(0, 20), "critical");
 
@@ -145,7 +152,9 @@ fs.writeFileSync(
     `**Critical:** ${result.summary.critical}  `,
     `**Warnings:** ${result.summary.warnings}`,
     "",
-    findings.length ? "## Findings\n" + findings.map(f => `- **[${f.severity}] ${f.name}** — \`\${JSON.stringify(f.detail)}\``).join("\n") : "## Findings\nNo findings."
+    findings.length
+      ? "## Findings\n" + findings.map(f => `- **[${f.severity}] ${f.name}** — ${JSON.stringify(f.detail)}`).join("\n")
+      : "## Findings\nNo findings."
   ].join("\n")
 );
 

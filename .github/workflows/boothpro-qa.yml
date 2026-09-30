@@ -34,6 +34,7 @@ jobs:
     name: Browser regression audit
     runs-on: ubuntu-latest
     needs: static-audit
+    if: ${{ always() }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

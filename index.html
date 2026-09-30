@@ -3152,6 +3152,94 @@ window.addEventListener('boothpro-config-updated',function(){setTimeout(repair,3
 window.addEventListener('boothpro-frames-updated',function(){setTimeout(repair,30)});
 })();
 </script>
+
+<!-- C9.6 OUT-OF-DOM FRAME PICKER: bypass kiosk touch/overlay conflicts -->
+<style id="c9-6-frame-modal-css">
+#bpC96Open{position:fixed!important;right:16px!important;bottom:18px!important;z-index:2147483000!important;display:none;align-items:center!important;gap:8px!important;padding:13px 16px!important;border:1px solid rgba(129,140,248,.55)!important;border-radius:999px!important;background:#4f46e5!important;color:#fff!important;font-size:12px!important;font-weight:900!important;box-shadow:0 12px 35px rgba(0,0,0,.45)!important;pointer-events:auto!important;touch-action:manipulation!important}
+#bpC96Overlay{position:fixed!important;inset:0!important;z-index:2147483001!important;display:none!important;align-items:flex-end!important;justify-content:center!important;background:rgba(0,0,0,.62)!important;backdrop-filter:blur(8px)!important;pointer-events:auto!important;touch-action:auto!important}
+#bpC96Overlay.open{display:flex!important}
+#bpC96Panel{width:min(760px,100vw)!important;max-height:82vh!important;background:#09090b!important;border:1px solid #27272a!important;border-radius:24px 24px 0 0!important;padding:16px!important;box-shadow:0 -20px 70px rgba(0,0,0,.55)!important;pointer-events:auto!important;touch-action:auto!important}
+#bpC96PanelHead{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;margin-bottom:12px!important}
+#bpC96PanelTitle{font-size:14px!important;font-weight:900!important;color:#fff!important}
+#bpC96Close{width:38px!important;height:38px!important;border-radius:12px!important;border:1px solid #3f3f46!important;background:#18181b!important;color:#fff!important;font-size:18px!important;font-weight:900!important;pointer-events:auto!important;touch-action:manipulation!important}
+#bpC96Grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;max-height:calc(82vh - 90px)!important;overflow-y:auto!important;overflow-x:hidden!important;padding:2px!important;touch-action:pan-y!important}
+#bpC96Grid button{position:relative!important;width:100%!important;min-width:0!important;height:170px!important;border:2px solid #27272a!important;border-radius:14px!important;background:#111!important;overflow:hidden!important;padding:0!important;pointer-events:auto!important;touch-action:manipulation!important}
+#bpC96Grid button.active{border-color:#818cf8!important;box-shadow:0 0 0 3px rgba(129,140,248,.22)!important}
+#bpC96Grid img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important}
+#bpC96Grid .nm{position:absolute!important;left:5px!important;right:5px!important;bottom:5px!important;padding:5px!important;border-radius:7px!important;background:rgba(0,0,0,.76)!important;color:#fff!important;font-size:9px!important;font-weight:900!important;text-align:center!important;pointer-events:none!important}
+#bpC96Grid .ck{position:absolute!important;right:6px!important;top:6px!important;width:24px!important;height:24px!important;border-radius:50%!important;background:#4f46e5!important;color:#fff!important;display:flex!important;align-items:center!important;justify-content:center!important;font-weight:900!important;pointer-events:none!important}
+@media(max-width:480px){#bpC96Grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#bpC96Grid button{height:190px!important}}
+</style>
+<script id="c9-6-out-of-dom-frame-picker">
+(function(){
+'use strict';
+var overlay,grid,openBtn,closeBtn;
+
+function frames(){
+  return typeof window.boothProC93Catalog==='function'?window.boothProC93Catalog():[];
+}
+function choose(f){
+  try{
+    if(typeof window.selectFrame==='function')window.selectFrame(f);
+    else if(typeof selectFrame==='function')selectFrame(f);
+  }catch(e){console.error('C9.6 select',e)}
+  render();
+}
+function render(){
+  if(!grid)return;
+  grid.innerHTML='';
+  frames().forEach(function(f){
+    var b=document.createElement('button');
+    b.type='button';
+    b.className=window.selectedFrameId===f.id?'active':'';
+    b.setAttribute('aria-label','Pilih '+f.name);
+    var im=document.createElement('img');im.src=f.src;im.alt=f.name;im.draggable=false;
+    var nm=document.createElement('span');nm.className='nm';nm.textContent=f.name;
+    b.append(im,nm);
+    if(window.selectedFrameId===f.id){var ck=document.createElement('span');ck.className='ck';ck.textContent='✓';b.appendChild(ck)}
+    b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();choose(f)},{passive:false});
+    grid.appendChild(b);
+  });
+}
+function open(){
+  render();
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden','false');
+}
+function close(){
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden','true');
+}
+function build(){
+  if(document.getElementById('bpC96Overlay'))return;
+  openBtn=document.createElement('button');openBtn.id='bpC96Open';openBtn.type='button';openBtn.innerHTML='▣ Pilih Frame';
+  overlay=document.createElement('div');overlay.id='bpC96Overlay';overlay.setAttribute('aria-hidden','true');
+  var panel=document.createElement('div');panel.id='bpC96Panel';
+  var head=document.createElement('div');head.id='bpC96PanelHead';
+  var title=document.createElement('div');title.id='bpC96PanelTitle';title.textContent='Frame 2026 · Pilih Frame';
+  closeBtn=document.createElement('button');closeBtn.id='bpC96Close';closeBtn.type='button';closeBtn.textContent='×';closeBtn.setAttribute('aria-label','Tutup');
+  grid=document.createElement('div');grid.id='bpC96Grid';
+  head.append(title,closeBtn);panel.append(head,grid);overlay.appendChild(panel);
+  document.body.append(openBtn,overlay);
+  openBtn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();open()},{passive:false});
+  closeBtn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();close()},{passive:false});
+  overlay.addEventListener('click',function(e){if(e.target===overlay)close()});
+}
+function sync(){
+  if(!openBtn)return;
+  var step=document.getElementById('step-package');
+  var visible=step&& !step.classList.contains('hidden');
+  openBtn.style.display=visible?'inline-flex':'none';
+}
+function boot(){
+  build();sync();
+  setInterval(sync,250);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('boothpro-config-updated',function(){render();sync()});
+window.addEventListener('boothpro-frames-updated',function(){render();sync()});
+})();
+</script>
 </body>
 </html>
 

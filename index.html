@@ -4281,5 +4281,90 @@ window.addEventListener('click',function(e){
 })();
 </script>
 
+
+<!-- M3.9.6 FINAL FRAME SELECTION AUTHORITY -->
+<style id="m396-final-frame-selection">
+#preFrameGrid [data-frame-id]{position:relative!important;z-index:999!important;pointer-events:auto!important;touch-action:manipulation!important}
+#preFrameGrid .bp-step1-frame-card.bp-m396-selected{border-color:#6366f1!important;box-shadow:0 0 0 3px rgba(99,102,241,.28)!important}
+</style>
+<script id="m396-final-frame-selection">
+(function(){
+'use strict';
+function choices(){
+  const out=[];
+  const add=a=>(Array.isArray(a)?a:[]).forEach(f=>{if(f&&f.id&&!out.some(x=>String(x.id)===String(f.id)))out.push(f)});
+  try{if(typeof getFrameChoicesSafe==='function')add(getFrameChoicesSafe())}catch(e){}
+  try{if(typeof getFrameChoices==='function')add(getFrameChoices())}catch(e){}
+  try{add(window.frameGallery)}catch(e){}
+  try{
+    (Array.isArray(window.BUILTIN_FRAME_DEFS)?window.BUILTIN_FRAME_DEFS:[]).forEach((d,i)=>{
+      if(!d||!d.id)return;
+      const f={...d,builtin:true,category:typeof builtinCategoryForIndex==='function'?builtinCategoryForIndex(i):d.category||'MODERN'};
+      try{if(!f.src&&typeof builtinFrameSvg==='function')f.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(builtinFrameSvg(f))}catch(e){}
+      add([f]);
+    });
+  }catch(e){}
+  return out;
+}
+function resolve(id){
+  const s=String(id||'');
+  return choices().find(f=>String(f.id)===s)||null;
+}
+function summary(){
+  try{
+    if(typeof updatePackageSummary==='function')updatePackageSummary();
+  }catch(e){}
+  const p=(window.config&&Array.isArray(config.packages)?config.packages:[]).find(x=>x&&x.id===window.selectedPackageId);
+  const f=resolve(window.selectedFrameId);
+  const el=document.getElementById('selectedPackageSummary');
+  if(el&&p){
+    const safe=typeof escapeHtml==='function'?escapeHtml:String;
+    el.innerHTML=safe(p.name)+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+safe(f?.name||'Belum dipilih')+'</div>';
+  }
+  document.querySelectorAll('#preFrameGrid [data-frame-id]').forEach(card=>{
+    const on=String(card.dataset.frameId)===String(window.selectedFrameId||'');
+    card.classList.toggle('bp-m396-selected',on);
+    const badge=card.querySelector('.bp-m396-check');
+    if(badge)badge.classList.toggle('hidden',!on);
+  });
+}
+function choose(id){
+  const f=resolve(id);
+  if(!f)return false;
+  try{
+    if(typeof window.selectFrame==='function')window.selectFrame(f);
+    else{window.selectedFrameId=f.id;window.selectedFrameSrc=f.src||''}
+  }catch(e){
+    try{window.selectedFrameId=f.id;window.selectedFrameSrc=f.src||''}catch(_){}
+  }
+  try{window.selectedFrameId=f.id;window.selectedFrameSrc=f.src||''}catch(_){}
+  try{window.frameSelectionConfirmed=!!window.selectedPackageId}catch(_){}
+  summary();
+  setTimeout(summary,30);
+  setTimeout(summary,150);
+  return true;
+}
+function cardFromTarget(t){
+  try{return t&&t.closest?t.closest('#preFrameGrid [data-frame-id]'):null}catch(e){return null}
+}
+function intercept(e){
+  const card=cardFromTarget(e.target);
+  if(!card)return;
+  const id=card.dataset.frameId;
+  if(!id||!resolve(id))return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  choose(id);
+}
+window.addEventListener('pointerup',intercept,true);
+window.addEventListener('touchend',intercept,true);
+window.addEventListener('click',intercept,true);
+window.addEventListener('boothpro-frames-updated',()=>setTimeout(summary,40));
+window.addEventListener('boothpro-config-updated',()=>setTimeout(summary,40));
+setTimeout(summary,100);
+setTimeout(summary,500);
+})();
+</script>
+
 </body>
 </html>

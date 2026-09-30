@@ -655,16 +655,46 @@ function getPreFrameGroupsSafe(){
   return groups;
 }
 function renderPreFrames(){
-  const host=$('preFrameGrid'); if(!host)return; host.innerHTML='';
-  const choices=getFrameChoicesSafe().filter(Boolean);
-  if(!choices.length){host.innerHTML='<div class="text-xs text-zinc-400 p-4 rounded-xl bg-zinc-900 border border-zinc-800">Belum ada frame. Upload frame dari Dashboard.</div>';return}
-  const box=document.createElement('div');box.className='rounded-2xl border border-zinc-800 bg-zinc-950/70 p-3 overflow-hidden';
-  const head=document.createElement('div');head.className='flex items-center justify-between gap-2 mb-2';
-  head.innerHTML='<div class="text-xs font-black tracking-wide text-zinc-200">FRAME GALLERY</div><div class="text-[10px] font-bold text-indigo-300">Geser → · '+choices.length+' frame</div>';box.appendChild(head);
-  const row=document.createElement('div');row.style.cssText='display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 10px;-webkit-overflow-scrolling:touch;touch-action:pan-x;scroll-snap-type:x proximity;';
-  choices.forEach(f=>{const card=makeFrameCard(f,true);card.style.cssText='flex:0 0 118px;width:118px;height:177px;min-width:118px;scroll-snap-align:start;touch-action:manipulation;';row.appendChild(card)});box.appendChild(row);
-  const status=document.createElement('div');status.className='mt-2 px-3 py-2 rounded-xl bg-zinc-900 text-center text-[11px]';
-  const chosen=choices.find(x=>x.id===selectedFrameId);status.innerHTML=selectedFrameId&&frameSelectionConfirmed?'✓ Frame dipilih · '+escapeHtml((chosen&&chosen.name)||'Frame'):'Pilih satu frame untuk melanjutkan ke pembayaran.';box.appendChild(status);host.appendChild(box);
+  const host=$('preFrameGrid');if(!host)return;
+  host.innerHTML='';
+  let choices=[];
+  try{choices=getFrameChoicesSafe().filter(Boolean)}catch(e){console.warn('Step 1 frame choices:',e)}
+  if(!choices.length){
+    host.innerHTML='<div class="text-xs text-zinc-400 p-4 rounded-xl bg-zinc-900 border border-zinc-800">Frame belum tersedia. Muat ulang atau upload dari Dashboard.</div>';
+    return;
+  }
+  /* M3.9: Step 1 is always a visible category index.
+     Do not depend on cloud Brand Gallery or a remote image to make the
+     customer-facing frame selector appear. Built-in SVG frames are local. */
+  const wrap=document.createElement('div');
+  wrap.className='rounded-2xl border border-zinc-800 bg-zinc-950/70 p-3 overflow-hidden';
+  const head=document.createElement('div');
+  head.className='flex items-center justify-between gap-2 mb-3';
+  head.innerHTML='<div class="text-xs font-black tracking-wide text-zinc-200">FRAME GALLERY</div><div class="text-[10px] font-bold text-indigo-300">Pilih kategori</div>';
+  wrap.appendChild(head);
+  const index=document.createElement('div');
+  index.className='pre-category-index';
+  const groups=frameCategoryItems();
+  let visible=0;
+  Object.entries(groups).forEach(([cat,items])=>{
+    if(!items.length)return;
+    visible++;
+    index.appendChild(makeFrameCategoryCard(cat,items,true));
+  });
+  wrap.appendChild(index);
+  const status=document.createElement('div');
+  status.className='mt-3 px-3 py-2 rounded-xl bg-zinc-900 text-center text-[11px]';
+  const chosen=choices.find(x=>x.id===selectedFrameId);
+  status.innerHTML=selectedFrameId
+    ? '✓ Frame: '+escapeHtml((chosen&&chosen.name)||'Frame')+' · '+(frameSelectionConfirmed?'siap digunakan':'pilih paket')
+    : 'Pilih kategori lalu pilih frame.';
+  wrap.appendChild(status);
+  host.appendChild(wrap);
+  if(preFrameCategoryOpen){
+    const cat=preFrameCategoryOpen;
+    const items=groups[cat]||[];
+    if(items.length)renderPreFrameDetail(cat,items);
+  }
 }
 function renderPreFrameDetail(cat,items){
   const host=$('preFrameGrid');
@@ -3396,7 +3426,14 @@ window.addEventListener('boothpro:m3-ready',()=>{try{M.brandGroups=M.brandGroups
 const startBtn=document.querySelector('#step-welcome button[onclick="goToStep(2)"]');
 const originalGo=window.goToStep;
 window.__bpM32OriginalGoToStep=originalGo;
-if(startBtn)startBtn.onclick=async function(ev){ev?.preventDefault?.();const used=await startFlow();if(!used&&originalGo)originalGo(2)};
+/* M3.9: keep Step 1 as the direct customer flow.
+   Cloud Brand Gallery hydrates in the background; it must never replace
+   the package + frame selector with an empty/remote-only screen. */
+if(startBtn)startBtn.onclick=function(ev){
+  ev?.preventDefault?.();
+  if(originalGo)originalGo(2);
+  setTimeout(()=>{try{window.BoothProM32?.kioskLoad?.()}catch(e){}},180);
+};
 if(typeof window.openDashboardUnlocked==='function'){
  const old=window.openDashboardUnlocked;
  if(!old.__bpM32CloudSave){

@@ -1,0 +1,7 @@
+{
+  "name":"boothpro-audit-engine",
+  "private":true,
+  "version":"1.0.0",
+  "scripts":{"audit":"node audit/static-audit.mjs","browser":"node audit/browser-audit.mjs"},
+  "devDependencies":{"playwright":"^1.55.0"}
+}

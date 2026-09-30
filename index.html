@@ -4556,3 +4556,85 @@ window.addEventListener('boothpro-config-updated',()=>setTimeout(enhance,30));
 window.addEventListener('boothpro-frames-updated',()=>setTimeout(enhance,30));
 })();
 </script>
+
+<!-- C9.9 FINAL FRAME SELECTOR: appended last so no legacy script can overwrite it -->
+<style id="c9-9-final-frame-selector">
+#bpC99{position:relative!important;display:block!important;z-index:2147483640!important;margin:12px 0!important;padding:12px!important;border:1px solid #27272a!important;border-radius:16px!important;background:#09090b!important}
+#bpC99 label{display:block!important;margin-bottom:7px!important;color:#a1a1aa!important;font-size:11px!important;font-weight:900!important}
+#bpC99 select{display:block!important;position:relative!important;z-index:2147483641!important;width:100%!important;height:52px!important;border:2px solid #52525b!important;border-radius:12px!important;background:#18181b!important;color:#fff!important;padding:0 12px!important;font-size:15px!important;font-weight:900!important;pointer-events:auto!important;touch-action:manipulation!important;opacity:1!important;visibility:visible!important}
+#bpC99 .bp99-status{margin-top:7px!important;color:#a1a1aa!important;font-size:11px!important}
+#bpC99 .bp99-status.ok{color:#a5b4fc!important;font-weight:900!important}
+</style>
+<script id="c9-9-final-frame-selector">
+(function(){
+'use strict';
+var root,select,status,observer,building=false;
+
+function catalog(){
+ return typeof window.boothProC93Catalog==='function'?window.boothProC93Catalog():[];
+}
+function current(){
+ var fs=catalog();
+ return fs.find(function(f){return f.id===window.selectedFrameId})||null;
+}
+function setFrame(f){
+ if(!f)return;
+ try{
+   /* Call the real application API. It updates frameSelectionConfirmed,
+      package summary and payment button. */
+   if(typeof window.selectFrame==='function')window.selectFrame(f);
+   else if(typeof selectFrame==='function')selectFrame(f);
+ }catch(e){console.error('C9.9 selectFrame',e)}
+ setTimeout(refresh,20);
+ setTimeout(refresh,150);
+}
+function refresh(){
+ if(!select||building)return;
+ var fs=catalog(),cur=current();
+ building=true;
+ select.innerHTML='';
+ var empty=document.createElement('option');empty.value='';empty.textContent='— Pilih Frame 2026 —';select.appendChild(empty);
+ fs.forEach(function(f){
+   var o=document.createElement('option');o.value=f.id;o.textContent=f.name;
+   if(cur&&cur.id===f.id)o.selected=true;
+   select.appendChild(o);
+ });
+ if(cur){select.value=cur.id;status.textContent='✓ Frame terpilih: '+cur.name;status.className='bp99-status ok'}
+ else {status.textContent='Pilih satu frame untuk mengaktifkan pembayaran.';status.className='bp99-status'}
+ building=false;
+}
+function sync(){
+ if(!root)return;
+ var step=document.getElementById('step-package');
+ root.style.display=step&&!step.classList.contains('hidden')?'block':'none';
+ refresh();
+}
+function build(){
+ if(document.getElementById('bpC99'))return;
+ var host=document.getElementById('preFrameGrid');
+ if(!host||!host.parentNode)return;
+ root=document.createElement('div');root.id='bpC99';
+ var lab=document.createElement('label');lab.setAttribute('for','bpC99Select');lab.textContent='Pilih Frame 2026';
+ select=document.createElement('select');select.id='bpC99Select';select.setAttribute('aria-label','Pilih Frame 2026');
+ status=document.createElement('div');status.className='bp99-status';
+ root.append(lab,select,status);
+ host.parentNode.insertBefore(root,host);
+ select.addEventListener('change',function(){
+   var f=catalog().find(function(x){return x.id===select.value});
+   setFrame(f);
+ },false);
+ sync();
+}
+function boot(){
+ build();
+ if(!root){setTimeout(boot,100);return}
+ observer=new MutationObserver(function(){sync()});
+ var step=document.getElementById('step-package');
+ if(step)observer.observe(step,{attributes:true,attributeFilter:['class']});
+ window.addEventListener('boothpro-config-updated',sync);
+ window.addEventListener('boothpro-frames-updated',sync);
+ setInterval(sync,700);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>

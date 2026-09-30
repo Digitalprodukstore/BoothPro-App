@@ -4366,5 +4366,57 @@ setTimeout(summary,500);
 })();
 </script>
 
+
+<!-- M3.9.7 DIRECT FRAME CARD SELECTION REPAIR -->
+<style id="m397-direct-frame-selection">
+#preFrameGrid [data-frame-id]{pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important}
+#preFrameGrid [data-frame-id].bp-m397-selected{border-color:#6366f1!important;box-shadow:0 0 0 3px rgba(99,102,241,.28)!important}
+</style>
+<script id="m397-direct-frame-selection">
+(function(){
+'use strict';
+function cardFrame(card){
+  if(!card)return null;
+  const id=card.getAttribute('data-frame-id');
+  if(!id)return null;
+  let f=null;
+  try{if(typeof getFrameChoicesSafe==='function')f=(getFrameChoicesSafe()||[]).find(x=>String(x.id)===String(id))||null}catch(e){}
+  if(!f)try{if(typeof getFrameChoices==='function')f=(getFrameChoices()||[]).find(x=>String(x.id)===String(id))||null}catch(e){}
+  if(!f)try{f=(Array.isArray(window.frameGallery)?window.frameGallery:[]).find(x=>String(x.id)===String(id))||null}catch(e){}
+  if(f)return f;
+  const img=card.querySelector('img'), label=card.querySelector('span');
+  return {id:id,name:(label&&label.textContent||'Frame').trim(),src:img&&img.currentSrc||img&&img.src||'',photos:requiredPhotosCount||4,category:window.bpStep1OpenCat||'CUSTOM'};
+}
+function mark(card){
+  const id=card&&card.getAttribute('data-frame-id');
+  document.querySelectorAll('#preFrameGrid [data-frame-id]').forEach(c=>{
+    const on=String(c.getAttribute('data-frame-id'))===String(id);
+    c.classList.toggle('bp-m397-selected',on);
+    const b=c.querySelector('.frame-selected-badge,.bp-m396-check');
+    if(b)b.classList.toggle('hidden',!on);
+    c.querySelectorAll('span').forEach(x=>{if(x.textContent.trim()==='✓')x.classList.toggle('hidden',!on)});
+  });
+}
+function pick(card){
+  const f=cardFrame(card); if(!f)return false;
+  try{selectFrame(f)}catch(e){try{selectedFrameId=f.id;selectedFrameSrc=f.src||'';frameSelectionConfirmed=!!selectedPackageId}catch(_){}}
+  try{selectedFrameId=f.id;selectedFrameSrc=f.src||'';frameSelectionConfirmed=!!selectedPackageId}catch(_){}
+  try{updatePackageSummary()}catch(_){}
+  mark(card);
+  return true;
+}
+function intercept(e){
+  const card=e.target&&e.target.closest?e.target.closest('#preFrameGrid [data-frame-id]'):null;
+  if(!card)return;
+  if(!pick(card))return;
+  e.preventDefault();e.stopImmediatePropagation();
+}
+window.addEventListener('pointerdown',intercept,true);
+window.addEventListener('pointerup',intercept,true);
+window.addEventListener('touchend',intercept,true);
+window.addEventListener('click',intercept,true);
+})();
+</script>
+
 </body>
 </html>

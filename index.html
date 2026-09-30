@@ -4779,3 +4779,86 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 window.addEventListener('boothpro-config-updated',function(){setTimeout(render,30)});
 })();
 </script>
+
+<!-- C14: authoritative package + frame + payment state -->
+<script id="c14-package-frame-payment-authority">
+(function(){
+  'use strict';
+
+  function bpC14Sync(){
+    try{
+      var p=(config.packages||[]).find(function(x){return x.id===selectedPackageId});
+      var ready=!!(p && selectedFrameId && frameSelectionConfirmed);
+
+      var name=document.getElementById('selectedPackageSummary');
+      var price=document.getElementById('selectedPackagePrice');
+      var desc=document.getElementById('selectedPackageDesc');
+      var btn=document.getElementById('toPaymentBtn');
+      var label=document.getElementById('toPaymentLabel');
+
+      if(name)name.textContent=p?p.name:'Belum dipilih';
+      if(price)price.textContent=p?fmt(p.price):'Rp0';
+      if(desc)desc.textContent=p
+        ? (p.photos+' foto · '+(p.prints||1)+' print · '+(ready?'Frame siap digunakan':'Pilih frame terlebih dahulu'))
+        : 'Pilih paket terlebih dahulu';
+
+      if(btn){
+        btn.disabled=!ready;
+        btn.style.opacity=ready?'1':'0.72';
+        btn.style.cursor=ready?'pointer':'not-allowed';
+      }
+      if(label){
+        label.textContent=ready
+          ? 'Lanjut ke Pembayaran · '+p.name+' · '+fmt(p.price)
+          : (!p?'Lanjut ke Pembayaran':!selectedFrameId?'Pilih Frame · '+p.name+' · '+fmt(p.price):'Pilih Frame · '+p.name+' · '+fmt(p.price));
+      }
+    }catch(e){console.warn('C14 payment sync:',e)}
+  }
+
+  /* C7.1 incorrectly required an uploaded Dashboard frame. C12's Frame 2026
+     built-ins are valid selections too. Use the authoritative selection flag. */
+  var oldUpdate=window.updatePackageSummary;
+  window.updatePackageSummary=function(){
+    bpC14Sync();
+  };
+
+  var oldSelectFrame=window.selectFrame;
+  if(typeof oldSelectFrame==='function'&&!oldSelectFrame.__bpC14Wrapped){
+    var wrappedFrame=function(f){
+      var r=oldSelectFrame.apply(this,arguments);
+      setTimeout(bpC14Sync,0);
+      return r;
+    };
+    wrappedFrame.__bpC14Wrapped=true;
+    window.selectFrame=wrappedFrame;
+  }
+
+  var oldSelectPackage=window.selectPackage;
+  if(typeof oldSelectPackage==='function'&&!oldSelectPackage.__bpC14Wrapped){
+    var wrappedPackage=function(id){
+      var r=oldSelectPackage.apply(this,arguments);
+      setTimeout(bpC14Sync,0);
+      return r;
+    };
+    wrappedPackage.__bpC14Wrapped=true;
+    window.selectPackage=wrappedPackage;
+  }
+
+  /* Final gate: built-in Frame 2026 and Dashboard-uploaded frames follow the
+     same payment rule. No dependency on userFrames()/uploaded-only gallery. */
+  window.goToPayment=function(){
+    var p=(config.packages||[]).find(function(x){return x.id===selectedPackageId});
+    if(!p){alert('Pilih paket terlebih dahulu.');return}
+    if(!selectedFrameId||!frameSelectionConfirmed){
+      alert('Pilih frame terlebih dahulu sebelum melanjutkan ke pembayaran.');
+      return;
+    }
+    bpC14Sync();
+    goToStep(3);
+  };
+
+  function boot(){setTimeout(bpC14Sync,0);setTimeout(bpC14Sync,120)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else boot();
+})();
+</script>

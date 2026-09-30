@@ -3356,12 +3356,23 @@ async function kioskLoad(){
      M.selectedBrandId='';
      M.selectedFrameId='';
      for(const b of brands)for(const f of b.frames){
-       if(!Array.isArray(window.frameGallery))continue;
-       const existing=window.frameGallery.find(x=>x&&x.id===f.id);
-       const item=existing||{id:f.id,name:f.name,category:f.category,originalType:'image/png',autoTransparent:true};
-       item.name=f.name;item.category='CUSTOM';item.brandId=b.id;item.storagePath=f.storagePath;item.publicUrl=f.publicUrl;item.src=f.publicUrl||item.src||'';
-       if(!existing)window.frameGallery.push(item);
+       /* M3.9: the kiosk uses the top-level lexical frameGallery store.
+          window.frameGallery is NOT the same binding as `let frameGallery`,
+          so writing only to window.frameGallery made Cloud frames appear in
+          Brand data/name lists but remain invisible to the real frame catalog. */
+       const store=Array.isArray(frameGallery)?frameGallery:[];
+       const existing=store.find(x=>x&&x.id===f.id);
+       const item=existing||{id:f.id,name:f.name,category:'CUSTOM',originalType:'image/png',autoTransparent:true};
+       item.name=f.name;
+       item.category=f.category||item.category||'CUSTOM';
+       item.brandId=b.id;
+       item.storagePath=f.storagePath||'';
+       item.publicUrl=f.publicUrl||'';
+       item.src=f.publicUrl||item.src||'';
+       if(!existing)store.push(item);
      }
+     frameGallery=Array.isArray(frameGallery)?frameGallery:[];
+     try{saveFrameMetadata()}catch(e){}
      try{saveFrameMetadata()}catch(e){}
      try{if(typeof renderPreFrames==='function')renderPreFrames()}catch(e){}
      return brands;

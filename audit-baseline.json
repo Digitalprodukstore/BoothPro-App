@@ -1,0 +1,13 @@
+{
+  "schema": "boothpro-audit-baseline-v1",
+  "protected_areas": [
+    "camera",
+    "payment",
+    "step1-package",
+    "step1-frame",
+    "editor",
+    "print",
+    "dashboard"
+  ],
+  "rule": "Audit changes first; do not silently modify kiosk code."
+}

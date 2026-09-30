@@ -2306,6 +2306,8 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
   function slotFrame(i){return userFrames()[i]||null}
   function slotTitle(i,f){return (f&&f.name)||slots()[i]?.name||('Frame '+String(i+1).padStart(2,'0'))}
   function renderUserGallery(){
+    /* M3.9.21: C7.1 is dashboard-only. Never overwrite Step 1's M3.9.12 kiosk renderer. */
+    if(typeof currentStep!=='undefined' && currentStep===2)return;
     const host=document.getElementById('preFrameGrid'); if(!host)return;
     const frames=userFrames(), ss=slots(); host.innerHTML='';
     const note=document.createElement('div'); note.className='bp-frame-empty-note';

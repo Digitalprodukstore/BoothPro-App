@@ -1,0 +1,51 @@
+name: BoothPro Audit & Guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Static + Production Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run BoothPro Audit
+        id: audit
+        run: python3 tools/boothpro_audit.py
+        continue-on-error: true
+      - name: Publish audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boothpro-audit-report
+          path: audit-report.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Job summary
+        if: always()
+        run: |
+          echo "## BoothPro Audit & Guard" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f audit-report.json ]; then
+            python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+import json
+d=json.load(open("audit-report.json"))
+s=d["summary"]
+print(f"- FAIL: {s['fail']}")
+print(f"- WARN: {s['warn']}")
+print(f"- PASS: {s['pass']}")
+PY
+          fi
+      - name: Fail on critical findings
+        if: steps.audit.outcome == 'failure'
+        run: exit 1

@@ -4074,3 +4074,64 @@ window.__BOOTHPRO_C8_4_AUTH_READY__=true;
 <!-- C14: authoritative package + frame + payment state -->
 <!-- C16: final deterministic package-frame-payment bridge -->
 
+<!-- C21: absolute final kiosk demo frame gallery -->
+<script id="c21-absolute-final-frame-gallery">
+(function(){
+'use strict';
+const DEMOS=[
+['c21-aurora','Aurora','#7c3aed','#06b6d4'],['c21-velvet','Velvet','#be185d','#7f1d1d'],
+['c21-bloom','Bloom','#db2777','#f59e0b'],['c21-emerald','Emerald','#047857','#14b8a6'],
+['c21-sunset','Sunset','#ea580c','#facc15'],['c21-ocean','Ocean','#1d4ed8','#0ea5e9'],
+['c21-lavender','Lavender','#6d28d9','#c084fc'],['c21-ruby','Ruby','#991b1b','#f43f5e']
+];
+function svg(name,c1,c2){return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(
+'<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><defs><linearGradient id="g"><stop stop-color="'+c1+'"/><stop offset="1" stop-color="'+c2+'"/></linearGradient></defs>'+
+'<rect width="600" height="900" rx="28" fill="url(#g)"/><rect x="34" y="34" width="532" height="832" rx="22" fill="none" stroke="#fff" stroke-width="12"/>'+
+'<rect x="72" y="100" width="456" height="610" rx="16" fill="#111827" fill-opacity=".34" stroke="#fff" stroke-opacity=".55" stroke-width="4"/>'+
+'<text x="300" y="410" text-anchor="middle" fill="#fff" font-family="Arial" font-size="34" font-weight="700">PHOTO AREA</text>'+
+'<text x="300" y="460" text-anchor="middle" fill="#fff" fill-opacity=".8" font-family="Arial" font-size="18">Frame Preview</text>'+
+'<text x="300" y="790" text-anchor="middle" fill="#fff" font-family="Arial" font-size="30" font-weight="800">'+name.toUpperCase()+'</text>'+
+'<text x="300" y="825" text-anchor="middle" fill="#fff" fill-opacity=".78" font-family="Arial" font-size="15">BOOTHPRO 2026</text></svg>');}
+const frames=DEMOS.map(d=>({id:d[0],name:d[1],category:'Frame 2026',src:svg(d[1],d[2],d[3]),originalType:'image/svg+xml'}));
+function render(){
+ const h=document.getElementById('preFrameGrid');if(!h)return;
+ const selected=window.__bpC21SelectedFrame||'';
+ h.innerHTML='<div style="margin-top:10px;padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(24,24,27,.62);overflow:hidden;position:relative;z-index:50">'+
+ '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:12px;letter-spacing:.08em">GALLERY FRAME</b><span style="font-size:10px;color:#a78bfa;font-weight:800">Geser → · 8 frame</span></div>'+
+ '<div id="c21FrameRow" style="display:flex;gap:10px;overflow-x:auto;padding:2px 2px 10px;touch-action:pan-x;overscroll-behavior-x:contain"></div></div>';
+ const row=document.getElementById('c21FrameRow');
+ frames.forEach(f=>{
+  const c=document.createElement('button');c.type='button';c.dataset.frameId=f.id;
+  c.style.cssText='position:relative;flex:0 0 112px;width:112px;height:168px;border:2px solid '+(selected===f.id?'#818cf8':'#27272a')+';border-radius:14px;overflow:hidden;background:#09090b;padding:0;cursor:pointer;touch-action:manipulation;z-index:51';
+  c.innerHTML='<img src="'+f.src+'" style="width:100%;height:100%;object-fit:cover;pointer-events:none"><span style="position:absolute;left:5px;right:5px;bottom:5px;padding:4px;border-radius:7px;background:#000b;font-size:9px;font-weight:800;color:#fff">'+f.name+'</span><span class="c21check" style="position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:#4f46e5;color:#fff;display:'+(selected===f.id?'flex':'none')+';align-items:center;justify-content:center">✓</span>';
+  const choose=e=>{e.preventDefault();e.stopPropagation();window.__bpC21SelectedFrame=f.id;try{if(typeof selectFrame==='function')selectFrame(f)}catch(x){console.warn(x)}render();syncSummary(f)};
+  c.addEventListener('click',choose);c.addEventListener('pointerup',choose,{passive:false});c.addEventListener('touchend',choose,{passive:false});
+  row.appendChild(c);
+ });
+}
+function syncSummary(f){
+ try{
+  const p=(config.packages||[]).find(x=>x.id===window.__bpC21PackageId),n=document.getElementById('selectedPackageSummary'),pr=document.getElementById('selectedPackagePrice'),ds=document.getElementById('selectedPackageDesc'),b=document.getElementById('toPaymentBtn'),l=document.getElementById('toPaymentLabel');
+  if(p&&n)n.innerHTML=String(p.name||'Paket')+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+f.name+'</div>';
+  if(p&&pr)pr.innerText=typeof fmt==='function'?fmt(p.price):'Rp'+Number(p.price||0).toLocaleString('id-ID');
+  if(p&&ds)ds.innerText=String(p.photos||4)+' foto · '+String(p.prints||1)+' print · Frame siap digunakan';
+  if(b){b.disabled=false;b.style.opacity='1';} if(l&&p)l.textContent='Lanjut ke Pembayaran · '+(typeof fmt==='function'?fmt(p.price):'Rp'+Number(p.price||0).toLocaleString('id-ID'));
+ }catch(e){console.warn('C21 summary',e)}
+}
+function wrapPackage(){
+ if(typeof window.selectPackage!=='function'||window.selectPackage.__c21)return;
+ const old=window.selectPackage;
+ const w=function(id){window.__bpC21PackageId=id;window.__bpC21SelectedFrame='';const r=old.apply(this,arguments);setTimeout(render,20);return r};
+ w.__c21=true;window.selectPackage=w;
+}
+function boot(){
+ wrapPackage();
+ if(typeof window.renderPackageStep==='function'&&!window.renderPackageStep.__c21){
+  const old=window.renderPackageStep,w=function(){const r=old.apply(this,arguments);setTimeout(render,20);return r};w.__c21=true;window.renderPackageStep=w;
+ }
+ setTimeout(()=>{wrapPackage();render()},100);
+ setTimeout(()=>{wrapPackage()},700);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>

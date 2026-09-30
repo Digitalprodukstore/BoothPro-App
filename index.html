@@ -3060,7 +3060,160 @@ try{if(document.readyState==='loading'){document.addEventListener('DOMContentLoa
 <!-- C9.8: native HTML form frame selector, no delegated touch / no legacy picker dependency -->
 
 </body>
-</html>
+
+<script id="c19-package-frame-payment-authority">
+(function(){
+  'use strict';
+  /*
+   C19: final Step 1 authority.
+   - Keep C18 package touch behavior intact.
+   - If Dashboard Gallery is empty, expose temporary selectable demo frames
+     generated from the existing frame engine.
+   - Dashboard uploads remain the production source and automatically replace
+     the demo list once available.
+   - No camera/session code is touched.
+  */
+  function esc(v){
+    return typeof escapeHtml==='function' ? escapeHtml(String(v??'')) :
+      String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function demoFrames(){
+    const photos=Math.max(1,Number(requiredPhotosCount)||4);
+    const out=[];
+    try{
+      const defs=Array.isArray(BUILTIN_FRAME_DEFS)?BUILTIN_FRAME_DEFS:[];
+      defs.slice(0,8).forEach((d,i)=>{
+        const x=Object.assign({},d,{
+          id:'demo-frame-'+String(i+1).padStart(2,'0'),
+          name:(d.name||('Template '+(i+1))),
+          photos,
+          layout:typeof adaptiveBuiltinLayout==='function'?adaptiveBuiltinLayout(photos,i):d.layout,
+          builtin:true,
+          demo:true,
+          src:''
+        });
+        try{
+          if(typeof builtinFrameSvg==='function'){
+            x.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(builtinFrameSvg(x));
+          }
+        }catch(e){}
+        if(x.src)out.push(x);
+      });
+    }catch(e){console.warn('C19 demo frame catalog:',e)}
+    return out;
+  }
+  function choices(){
+    const uploaded=(Array.isArray(frameGallery)?frameGallery:[]).filter(f=>f&&f.id&&f.src);
+    return uploaded.length ? uploaded : demoFrames();
+  }
+  function card(f){
+    const b=document.createElement('button');
+    b.type='button';
+    b.dataset.frameId=f.id;
+    b.className='relative overflow-hidden rounded-xl border-2 bg-zinc-900 '+(selectedFrameId===f.id?'border-indigo-500 ring-2 ring-indigo-500/30':'border-zinc-800');
+    b.style.cssText='width:100%;min-width:0;height:210px;touch-action:manipulation;pointer-events:auto;cursor:pointer;position:relative;z-index:30;';
+    if(f.src){
+      const im=document.createElement('img');
+      im.src=f.src;im.alt=f.name||'Frame';im.loading='lazy';im.decoding='async';
+      im.style.cssText='width:100%;height:100%;display:block;object-fit:contain;background:#09090b;';
+      b.appendChild(im);
+    }
+    const label=document.createElement('span');
+    label.className='absolute bottom-1 left-1 right-1 text-[9px] font-bold bg-black/75 rounded px-1 py-1 truncate text-white';
+    label.textContent=f.name||'Frame';
+    b.appendChild(label);
+    if(f.demo){
+      const tag=document.createElement('span');
+      tag.className='absolute top-1 left-1 text-[8px] font-black bg-zinc-800/90 text-zinc-200 rounded px-1.5 py-1';
+      tag.textContent='DEMO';
+      b.appendChild(tag);
+    }
+    const check=document.createElement('span');
+    check.className='absolute top-1 right-1 w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-black flex items-center justify-center '+(selectedFrameId===f.id?'':'hidden');
+    check.textContent='✓';b.appendChild(check);
+    const choose=function(e){
+      if(e){e.preventDefault();e.stopPropagation();}
+      try{selectFrame(f);}catch(err){console.error('C19 select frame:',err);return false;}
+      renderPreFrames();
+      updatePackageSummary();
+      return false;
+    };
+    b.onclick=choose;
+    b.addEventListener('pointerup',choose,{passive:false});
+    b.addEventListener('touchend',choose,{passive:false});
+    return b;
+  }
+  window.renderPreFrames=function(){
+    const host=document.getElementById('preFrameGrid');
+    if(!host)return;
+    const list=choices();
+    host.innerHTML='';
+    host.style.cssText='display:block!important;visibility:visible!important;position:relative!important;z-index:10!important;min-height:180px!important;pointer-events:auto!important;';
+    const head=document.createElement('div');
+    head.className='flex items-center justify-between gap-2 mb-3';
+    const title=document.createElement('div');
+    title.className='text-xs font-black text-indigo-200';
+    title.textContent='Gallery Frame';
+    const hint=document.createElement('div');
+    hint.className='text-[9px] text-zinc-500';
+    hint.textContent=(Array.isArray(frameGallery)&&frameGallery.some(f=>f&&f.src))
+      ? list.length+' frame upload · tersinkron Dashboard'
+      : list.length+' template demo · upload frame dari Dashboard nanti';
+    head.append(title,hint);host.appendChild(head);
+    const grid=document.createElement('div');
+    grid.className='grid grid-cols-2 gap-2 max-h-[440px] overflow-y-auto pr-1';
+    grid.style.cssText='position:relative;z-index:20;pointer-events:auto;';
+    list.forEach(f=>grid.appendChild(card(f)));
+    host.appendChild(grid);
+    const note=document.createElement('div');
+    note.className='text-[9px] text-zinc-500 text-center mt-3';
+    note.textContent='Pilih satu frame → ringkasan paket akan tersinkron → lanjut ke pembayaran.';
+    host.appendChild(note);
+  };
+  window.updatePackageSummary=function(){
+    const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
+    const f=choices().find(x=>x.id===selectedFrameId);
+    const name=document.getElementById('selectedPackageSummary');
+    const price=document.getElementById('selectedPackagePrice');
+    const desc=document.getElementById('selectedPackageDesc');
+    const btn=document.getElementById('toPaymentBtn');
+    const label=document.getElementById('toPaymentLabel');
+    if(name)name.innerHTML=p
+      ? esc(p.name)+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+esc(f?.name||'Belum dipilih')+'</div>'
+      : 'Belum dipilih';
+    if(price)price.textContent=p?fmt(p.price):'Rp0';
+    if(desc)desc.textContent=p
+      ? (p.photos+' foto · '+(p.prints||1)+' print · '+(f?'Frame siap digunakan':'Pilih frame dari gallery'))
+      : 'Pilih paket terlebih dahulu';
+    const ready=!!(p&&f&&selectedFrameId&&frameSelectionConfirmed);
+    if(btn){
+      btn.disabled=!ready;
+      btn.style.opacity=ready?'1':'.7';
+      btn.style.cursor=ready?'pointer':'not-allowed';
+      btn.classList.toggle('ring-2',ready);
+      btn.classList.toggle('ring-indigo-300/50',ready);
+    }
+    if(label)label.textContent=ready?'Lanjut ke Pembayaran · '+fmt(p.price):(!p?'Pilih Paket':!f?'Pilih Frame':'Lanjut ke Pembayaran');
+  };
+  const previousSelectPackage=window.selectPackage;
+  window.boothProC19Refresh=function(){
+    try{renderPreFrames();updatePackageSummary();}catch(e){console.warn('C19 refresh:',e)}
+  };
+  if(typeof previousSelectPackage==='function' && !previousSelectPackage.__c19){
+    window.selectPackage=function(id){
+      const r=previousSelectPackage(id);
+      setTimeout(()=>{try{renderPreFrames();updatePackageSummary()}catch(e){}},0);
+      return r;
+    };
+    window.selectPackage.__c19=true;
+  }
+  window.addEventListener('boothpro-frames-updated',()=>setTimeout(window.boothProC19Refresh,20));
+  window.addEventListener('boothpro-config-updated',()=>setTimeout(window.boothProC19Refresh,50));
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(window.boothProC19Refresh,350),{once:true});
+  else setTimeout(window.boothProC19Refresh,350);
+})();
+</script>
+\n</html>
 
 <script id="c8-2-7-frame-kiosk-authority">
 (function(){

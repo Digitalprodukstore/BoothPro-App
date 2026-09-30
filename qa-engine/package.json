@@ -1,0 +1,14 @@
+{
+  "name": "boothpro-qa-engine",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Automated QA, regression and integrity audit engine for BoothPro.",
+  "scripts": {
+    "audit:static": "node audit/static-audit.mjs",
+    "audit:browser": "node audit/browser-audit.mjs",
+    "audit": "npm run audit:static && npm run audit:browser"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0"
+  }
+}

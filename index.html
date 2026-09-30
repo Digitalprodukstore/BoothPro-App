@@ -4132,3 +4132,82 @@ window.__BOOTHPRO_C8_4_AUTH_READY__=true;
   window.addEventListener('boothpro-frames-updated',function(){setTimeout(repair,30)});
 })();
 </script>
+
+<!-- C9.3 SELF-CONTAINED FRAME 2026 FALLBACK -->
+<style id="c9-3-self-contained-frame-catalog-css">
+#preFrameGrid .bp-c93-box{display:block!important;width:100%!important;min-height:220px!important;margin-top:10px;padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(24,24,27,.72);overflow:hidden!important;position:relative;z-index:20}
+#preFrameGrid .bp-c93-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+#preFrameGrid .bp-c93-title{font-size:12px;font-weight:900;letter-spacing:.08em;color:#e4e4e7}
+#preFrameGrid .bp-c93-hint{font-size:10px;font-weight:800;color:#a78bfa;white-space:nowrap}
+#preFrameGrid .bp-c93-row{display:flex!important;flex-wrap:nowrap!important;gap:10px;width:100%!important;min-width:0!important;height:184px!important;padding:4px 4px 10px!important;overflow-x:auto!important;overflow-y:hidden!important;touch-action:pan-x!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior-x:contain!important;scroll-snap-type:x proximity!important;pointer-events:auto!important}
+#preFrameGrid .bp-c93-card{position:relative!important;display:block!important;flex:0 0 112px!important;width:112px!important;min-width:112px!important;height:168px!important;padding:0!important;margin:0!important;border:2px solid #27272a!important;border-radius:14px!important;background:#09090b!important;overflow:hidden!important;scroll-snap-align:start!important;cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important;z-index:25!important}
+#preFrameGrid .bp-c93-card img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important;-webkit-user-drag:none!important}
+#preFrameGrid .bp-c93-card.bp-active{border-color:#818cf8!important;box-shadow:0 0 0 2px rgba(129,140,248,.25)!important}
+#preFrameGrid .bp-c93-name{position:absolute;left:5px;right:5px;bottom:5px;padding:4px 5px;border-radius:7px;background:rgba(0,0,0,.76);font-size:9px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+#preFrameGrid .bp-c93-check{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:999px;background:#4f46e5;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+#preFrameGrid .bp-c93-empty{font-size:11px;color:#a1a1aa;text-align:center;padding:20px}
+</style>
+<script id="c9-3-self-contained-frame-catalog">
+(function(){
+'use strict';
+/* C9.3: the kiosk selector no longer depends on Dashboard gallery, Cloud,
+   legacy renderers, config hydration, or BUILTIN_FRAME_DEFS. These 20
+   self-contained SVG frames are generated locally and are immediately usable. */
+const names=['Aurora','Minimal','Sunset','Lime','Editorial','Peach','Ocean','Rose','Midnight','Candy','Lavender','Coral','Sky','Forest','Blush','Mono','Violet','Warm','Fresh','Studio'];
+const themes=[['#24104f','#e9d5ff','#a78bfa'],['#111827','#f8fafc','#94a3b8'],['#4a1725','#fff7ed','#fb923c'],['#16210f','#ecfccb','#a3e635'],['#10233f','#eff6ff','#60a5fa'],['#4a1d24','#fff1f2','#fb7185'],['#0f2740','#e0f2fe','#38bdf8'],['#42132d','#fdf2f8','#f472b6']];
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[m]))}
+function layoutFor(count,i){const c=Number(count)||4;if(c<=1)return i%3===0?'one':i%3===1?'one-alt':'one-wide';if(c===2)return i%2?'two-side':'two';if(c===3)return i%2?'three-alt':'three';if(c===4)return i%2?'four-alt':'four';return i%2?'six-alt':'six'}
+function makeSvg(i,count){
+ const W=600,H=900,pad=34,gap=18,layout=layoutFor(count,i),th=themes[i%themes.length],bg=th[0],fg=th[1],ac=th[2],cw=(W-pad*2-gap)/2;let h=[];
+ if(layout==='one')h=[{x:pad,y:150,w:W-pad*2,h:580}];
+ if(layout==='one-alt')h=[{x:54,y:128,w:492,h:610}];
+ if(layout==='one-wide')h=[{x:28,y:170,w:544,h:470}];
+ if(layout==='two')h=[{x:pad,y:138,w:W-pad*2,h:330},{x:pad,y:486,w:W-pad*2,h:330}];
+ if(layout==='two-side')h=[{x:pad,y:170,w:cw,h:540},{x:pad+cw+gap,y:170,w:cw,h:540}];
+ if(layout==='three')h=[{x:pad,y:132,w:W-pad*2,h:330},{x:pad,y:480,w:cw,h:250},{x:pad+cw+gap,y:480,w:cw,h:250}];
+ if(layout==='three-alt')h=[{x:pad,y:120,w:cw,h:250},{x:pad+cw+gap,y:120,w:cw,h:250},{x:pad,y:390,w:W-pad*2,h:330}];
+ if(layout==='four')h=[{x:pad,y:132,w:cw,h:320},{x:pad+cw+gap,y:132,w:cw,h:320},{x:pad,y:470,w:cw,h:320},{x:pad+cw+gap,y:470,w:cw,h:320}];
+ if(layout==='four-alt')h=[{x:pad,y:120,w:W-pad*2,h:300},{x:pad,y:438,w:cw,h:280},{x:pad+cw+gap,y:438,w:cw,h:280}];
+ if(layout==='six'){const ch=220;for(let r=0;r<3;r++)for(let col=0;col<2;col++)h.push({x:pad+col*(cw+gap),y:122+r*(ch+gap),w:cw,h:ch})}
+ if(layout==='six-alt'){const ch=200,sw=(W-pad*2-gap*2)/3;for(let r=0;r<2;r++)for(let col=0;col<3;col++)h.push({x:pad+col*(sw+gap),y:150+r*(ch+gap),w:sw,h:ch})}
+ const path=h.map(r=>`M ${r.x} ${r.y} H ${r.x+r.w} V ${r.y+r.h} H ${r.x} Z`).join(' ');
+ const accents=h.map(r=>`<rect x="${r.x-4}" y="${r.y-4}" width="${r.w+8}" height="${r.h+8}" rx="14" fill="none" stroke="${ac}" stroke-width="4"/>`).join('');
+ const title=esc(names[i]+' · 2026');
+ return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><path d="M0 0H${W}V${H}H0Z ${path}" fill="${bg}" fill-rule="evenodd"/><rect x="0" y="0" width="${W}" height="${H}" fill="none" stroke="${ac}" stroke-width="18"/>${accents}<text x="34" y="42" fill="${fg}" font-family="Arial,sans-serif" font-size="19" font-weight="700" letter-spacing="3">BOOTH PRO</text><circle cx="${W-48}" cy="40" r="12" fill="${ac}"/><text x="${W/2}" y="${H-48}" text-anchor="middle" fill="${fg}" font-family="Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="2">${title.toUpperCase()}</text><text x="${W/2}" y="${H-22}" text-anchor="middle" fill="${ac}" font-family="Arial,sans-serif" font-size="11" letter-spacing="3">${count} PHOTO${count>1?'S':''}</text></svg>`;
+}
+function catalog(){const count=Math.max(1,Number(window.requiredPhotosCount)||4);return names.slice(0,20).map((n,i)=>({id:'c93-frame-'+String(i+1).padStart(2,'0'),name:n+' · 2026',photos:count,builtin:true,category:['VINTAGE','MODERN','MINIMAL','PASTEL','BOLD'][Math.floor(i/4)]||'MODERN',src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(makeSvg(i,count))}))}
+function select(f){
+ try{if(typeof window.selectFrame==='function')window.selectFrame(f);else if(typeof selectFrame==='function')selectFrame(f)}catch(e){console.error('C9.3 select frame',e)}
+ render();
+}
+function render(){
+ const host=document.getElementById('preFrameGrid');if(!host)return;
+ host.innerHTML='';host.style.display='block';host.style.visibility='visible';host.style.overflow='visible';
+ const frames=catalog();
+ const box=document.createElement('div');box.className='bp-c93-box';
+ const head=document.createElement('div');head.className='bp-c93-head';
+ const t=document.createElement('div');t.className='bp-c93-title';t.textContent='FRAME 2026 · PILIHAN UTAMA';
+ const hint=document.createElement('div');hint.className='bp-c93-hint';hint.textContent='Geser → · 20 template';head.append(t,hint);
+ const row=document.createElement('div');row.className='bp-c93-row';row.setAttribute('aria-label','20 template Frame 2026');
+ frames.forEach(f=>{
+   const b=document.createElement('button');b.type='button';b.className='bp-c93-card'+(window.selectedFrameId===f.id?' bp-active':'');b.dataset.frameId=f.id;
+   const img=document.createElement('img');img.alt=f.name;img.src=f.src;img.draggable=false;b.appendChild(img);
+   const nm=document.createElement('span');nm.className='bp-c93-name';nm.textContent=f.name;b.appendChild(nm);
+   if(window.selectedFrameId===f.id){const ck=document.createElement('span');ck.className='bp-c93-check';ck.textContent='✓';b.appendChild(ck)}
+   b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();select(f)},{passive:false});
+   row.appendChild(b);
+ });
+ box.append(head,row);host.appendChild(box);
+ let sx=0,sl=0,drag=false,moved=false;
+ row.addEventListener('touchstart',e=>{if(!e.touches.length)return;sx=e.touches[0].clientX;sl=row.scrollLeft;drag=true;moved=false},{passive:true});
+ row.addEventListener('touchmove',e=>{if(!drag||!e.touches.length)return;const dx=e.touches[0].clientX-sx;if(Math.abs(dx)>4)moved=true;row.scrollLeft=sl-dx;if(Math.abs(dx)>8)e.preventDefault()},{passive:false});
+ row.addEventListener('touchend',()=>{drag=false},{passive:true});
+ row.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){row.scrollLeft+=e.deltaY;e.preventDefault()}},{passive:false});
+}
+window.boothProRenderFrameAuthority=render;
+window.boothProC93Catalog=catalog;
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(render,0),{once:true});else render();
+window.addEventListener('boothpro-config-updated',()=>setTimeout(render,20));
+window.addEventListener('boothpro-frames-updated',()=>setTimeout(render,20));
+})();
+</script>

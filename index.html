@@ -4092,3 +4092,43 @@ window.__BOOTHPRO_C8_4_AUTH_READY__=true;
   window.addEventListener('boothpro-frames-updated',()=>setTimeout(restore,20));
 })();
 </script>
+
+<style id="c9-2-frame-swipe-touch-fix">
+#preFrameGrid .pre-frame-direct{display:block!important;visibility:visible!important;opacity:1!important;min-height:210px!important}
+#preFrameGrid .pre-frame-direct-row{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;width:100%!important;min-height:184px!important;padding:4px 4px 10px!important;touch-action:pan-x!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior-x:contain!important}
+#preFrameGrid .pre-frame-direct-card{display:block!important;visibility:visible!important;opacity:1!important;flex:0 0 112px!important;width:112px!important;height:168px!important;min-width:112px!important;max-width:112px!important;pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important;position:relative!important;z-index:3!important}
+#preFrameGrid .pre-frame-direct-card img{display:block!important;visibility:visible!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important}
+#preFrameGrid .pre-frame-direct-card .direct-name,#preFrameGrid .pre-frame-direct-card .direct-check{pointer-events:none!important}
+#preFrameGrid .pre-frame-direct-row::-webkit-scrollbar{display:block!important;height:6px!important}
+#preFrameGrid .pre-frame-direct-row::-webkit-scrollbar-thumb{background:#52525b!important;border-radius:99px!important}
+</style>
+<script id="c9-2-frame-swipe-touch-fix-script">
+(function(){
+  'use strict';
+  function repair(){
+    const host=document.getElementById('preFrameGrid');
+    if(!host)return;
+    const row=host.querySelector('.pre-frame-direct-row');
+    if(row){
+      row.style.touchAction='pan-x';
+      row.style.overflowX='auto';
+      row.style.overflowY='hidden';
+      row.style.pointerEvents='auto';
+    }
+    host.querySelectorAll('.pre-frame-direct-card').forEach(function(card){
+      card.style.pointerEvents='auto';
+      card.style.touchAction='manipulation';
+      card.style.display='block';
+    });
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){
+      setTimeout(repair,30);setTimeout(repair,200);setTimeout(repair,800);
+    },{once:true});
+  }else{
+    repair();setTimeout(repair,30);setTimeout(repair,200);setTimeout(repair,800);
+  }
+  window.addEventListener('boothpro-config-updated',function(){setTimeout(repair,30)});
+  window.addEventListener('boothpro-frames-updated',function(){setTimeout(repair,30)});
+})();
+</script>

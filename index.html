@@ -3849,5 +3849,62 @@ window.addEventListener('boothpro-frames-updated',()=>setTimeout(bp24HydrateAndR
 window.addEventListener('boothpro-config-updated',()=>setTimeout(()=>{bp24BindPackageButtons();bp24RenderFrames()},80));
 })();
 </script>
+<script id="m3-9-25-frame-asset-selection-fix">
+(function(){
+'use strict';
+const state={open:''};
+function choices(){try{return (typeof getFrameChoicesSafe==='function'?getFrameChoicesSafe():[])||[]}catch(e){return[]}}
+function groups(){const g={VINTAGE:[],MODERN:[],MINIMAL:[],PASTEL:[],BOLD:[],CUSTOM:[]};choices().forEach(f=>{if(!f||!f.id)return;const c=String(f.category||'CUSTOM').toUpperCase();(g[c]?g[c]:g.CUSTOM).push(f)});return g}
+async function resolve(f){
+  if(!f)return '';
+  const direct=String(f.src||f._localSrc||f.publicUrl||f.pngUrl||'').trim();
+  if(direct)return direct;
+  try{if(window.BoothProM37?.resolveFrameAsset){const x=await window.BoothProM37.resolveFrameAsset(f);if(x){f.src=x;return x}}}catch(e){}
+  return '';
+}
+function summary(){try{updatePackageSummary()}catch(e){}}
+async function pick(f){
+  if(!f?.id)return;
+  const src=await resolve(f);
+  const local={...f,src:src||f.src||'',_localSrc:src||f._localSrc||''};
+  try{selectFrame(local)}catch(e){
+    selectedFrameId=String(f.id);selectedFrameSrc=local.src||'';frameSelectionConfirmed=!!selectedPackageId;
+  }
+  frameSelectionConfirmed=!!(selectedPackageId&&selectedFrameId);
+  summary();
+  render();
+}
+function card(f){
+  const b=document.createElement('button');b.type='button';b.dataset.frameId=String(f.id);
+  b.className='m3912-frame'+(String(f.id)===String(selectedFrameId||'')?' is-selected':'');
+  b.style.cssText='position:relative;overflow:hidden;min-width:0;touch-action:pan-y!important;pointer-events:auto!important;cursor:pointer!important;';
+  const box=document.createElement('div');box.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#111;';
+  box.innerHTML='<span style="font-size:10px;color:#71717a;font-weight:800">Memuat frame…</span>';b.appendChild(box);
+  const nm=document.createElement('div');nm.className='m3912-name';nm.textContent=f.name||'Frame';b.appendChild(nm);
+  const ck=document.createElement('span');ck.className='m3912-check'+(String(f.id)===String(selectedFrameId||'')?'':' hidden');ck.textContent='✓';b.appendChild(ck);
+  (async()=>{const src=await resolve(f);if(!document.body.contains(b))return;if(src){box.innerHTML='';const im=document.createElement('img');im.src=src;im.alt=f.name||'Frame';im.style.cssText='display:block;width:100%;height:100%;object-fit:contain;background:#111;';box.appendChild(im)}else box.innerHTML='<span style="font-size:9px;color:#a1a1aa;text-align:center;padding:8px">Frame belum tersedia</span>'})();
+  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();pick(f)});
+  return b
+}
+function render(){
+ const host=document.getElementById('preFrameGrid');if(!host)return;const g=groups();host.innerHTML='';host.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;min-height:180px!important;position:relative!important;z-index:100!important;pointer-events:auto!important;touch-action:pan-y!important;';
+ if(!state.open){
+  const h=document.createElement('div');h.className='flex items-center justify-between gap-2 mb-3';h.innerHTML='<div class="text-xs font-black tracking-wide text-zinc-200">FRAME GALLERY</div><div class="text-[10px] font-bold text-indigo-300">Pilih kategori</div>';host.appendChild(h);
+  const grid=document.createElement('div');grid.className='m3912-category-grid';
+  Object.keys(g).forEach(cat=>{const items=g[cat];if(!items.length)return;const b=document.createElement('button');b.type='button';b.className='m3912-category';b.style.cssText='touch-action:pan-y!important;pointer-events:auto!important;cursor:pointer!important;';const th=document.createElement('div');th.className='w-14 h-16 rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900 flex items-center justify-center';const nm=document.createElement('div');nm.className='text-[11px] font-black tracking-wide';nm.textContent=cat;const ct=document.createElement('div');ct.className='text-[9px] text-zinc-500';ct.textContent=items.length+' frame · Ketuk untuk buka';b.append(th,nm,ct);(async()=>{const src=await resolve(items[0]);if(src){th.innerHTML='';const im=document.createElement('img');im.src=src;im.className='w-full h-full object-contain';th.appendChild(im)}else th.innerHTML='<i class="fa-solid fa-image text-indigo-300 text-xl"></i>'})();b.onclick=e=>{e.preventDefault();e.stopPropagation();state.open=cat;render()};grid.appendChild(b)});host.appendChild(grid);
+ }else{
+  const items=g[state.open]||[];const h=document.createElement('div');h.className='flex items-center justify-between gap-2 mb-3';const back=document.createElement('button');back.type='button';back.className='m3912-back';back.textContent='← Kembali';back.onclick=e=>{e.preventDefault();e.stopPropagation();state.open='';render()};const t=document.createElement('div');t.className='text-xs font-black text-indigo-200';t.textContent=state.open+' · '+items.length+' frame';h.append(back,t);host.appendChild(h);const grid=document.createElement('div');grid.className='m3912-frame-grid';items.forEach(f=>grid.appendChild(card(f)));host.appendChild(grid);
+ }
+ const st=document.createElement('div');st.className='mt-3 px-3 py-2 rounded-xl bg-zinc-900 text-center text-[10px] text-zinc-400';const sf=choices().find(f=>String(f.id)===String(selectedFrameId||''));st.innerHTML=sf?'✓ Frame terpilih: <b class="text-indigo-300">'+escapeHtml(sf.name||'Frame')+'</b>':'Belum ada frame dipilih';host.appendChild(st);summary();
+}
+window.renderPreFrames=render;
+window.BoothProM3925={render,pick,resolve};
+function boot(){render()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('pageshow',()=>setTimeout(render,150));
+window.addEventListener('boothpro-frames-updated',()=>setTimeout(render,100));
+window.addEventListener('boothpro-config-updated',()=>setTimeout(render,100));
+})();
+</script>
 </body>
 </html>

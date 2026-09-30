@@ -2307,22 +2307,9 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
     host.appendChild(grid);
     const count=document.createElement('div');count.className='text-[10px] text-zinc-500 mt-2';count.textContent=frames.length+' frame upload tersedia · '+Math.max(0,SLOT_COUNT-frames.length)+' slot kosong';host.appendChild(count);
   }
-  window.renderPreFrames=function(){renderUserGallery()};
-  window.updatePackageSummary=function(){
-    const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
-    /* Built-in Frame 2026 and Dashboard uploads are both valid frame sources. */
-    const f=selectedFrameId ? {id:selectedFrameId,name:'Frame terpilih'} : null;
-    const name=document.getElementById('selectedPackageSummary');
-    const price=document.getElementById('selectedPackagePrice');
-    const desc=document.getElementById('selectedPackageDesc');
-    if(name) name.innerHTML=p ? p.name+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+(f?.name||'Belum dipilih')+'</div>' : 'Belum dipilih';
-    if(price) price.textContent=p?fmt(p.price):'Rp0';
-    if(desc) desc.textContent=p ? (p.photos+' foto · '+(p.prints||1)+' print · '+(f?'Frame siap digunakan':'Pilih frame dari gallery')) : 'Pilih paket terlebih dahulu';
-    const btn=document.getElementById('toPaymentBtn'), label=document.getElementById('toPaymentLabel');
-    const ready=!!p&&!!f&&!!frameSelectionConfirmed;
-    if(btn){btn.disabled=false;btn.style.opacity=ready?'1':'.72';btn.style.cursor='pointer';btn.classList.toggle('ring-2',ready);btn.classList.toggle('ring-indigo-300/50',ready)}
-    if(label) label.textContent=ready?'Lanjut ke Pembayaran · '+fmt(p.price):(!p?'Pilih Paket':!f?'Pilih Frame':'Lanjut ke Pembayaran');
-  };
+  /* C7 dashboard manager must not replace the kiosk Step 1 renderer.
+     M3.9.12 is the single kiosk frame/package UI authority. */
+  window.renderUserGallery=renderUserGallery;
   const oldGo=window.goToPayment;
   window.goToPayment=function(){
     const p=(config.packages||[]).find(x=>x.id===selectedPackageId);

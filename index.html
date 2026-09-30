@@ -4225,5 +4225,61 @@ window.addEventListener('boothpro-frames-updated',function(){setTimeout(function
 window.addEventListener('boothpro-config-updated',function(){setTimeout(function(){install();sync()},80)});
 })();
 </script>
+
+<!-- M3.9.5 WINDOW CAPTURE INTERACTION FIX -->
+<script id="m395-window-capture-fix">
+(function(){
+'use strict';
+function getChoices(){
+  try{const a=typeof getFrameChoicesSafe==='function'?getFrameChoicesSafe():[];if(a?.length)return a}
+  catch(e){}
+  try{const a=typeof getFrameChoices==='function'?getFrameChoices():[];if(a?.length)return a}
+  catch(e){}
+  return [];
+}
+function findFrame(id){return getChoices().find(f=>String(f.id)===String(id))}
+function applyFrame(f){
+  if(!f)return;
+  try{
+    if(typeof window.selectFrame==='function') window.selectFrame(f);
+    else { selectedFrameId=f.id; selectedFrameSrc=f.src||''; }
+  }catch(e){
+    try{selectedFrameId=f.id;selectedFrameSrc=f.src||''}catch(_){}
+  }
+  try{selectedFrameId=f.id;selectedFrameSrc=f.src||''}catch(_){}
+  try{frameSelectionConfirmed=!!selectedPackageId}catch(_){}
+  try{if(typeof window.updatePackageSummary==='function')window.updatePackageSummary()}catch(_){}
+  try{if(typeof window.renderPreFrames==='function'}window.renderPreFrames())catch(_){}
+}
+function frameFromTarget(t){
+  const el=t?.closest?.('[data-frame-id]');
+  if(!el)return null;
+  const id=el.getAttribute('data-frame-id');
+  return id?findFrame(id):null;
+}
+window.addEventListener('click',function(e){
+  const t=e.target;
+  const f=frameFromTarget(t);
+  if(f && document.getElementById('preFrameGrid')?.contains(t)){
+    e.preventDefault();e.stopImmediatePropagation();
+    applyFrame(f);
+    return;
+  }
+  const btn=t?.closest?.('#toPaymentBtn');
+  if(btn){
+    e.preventDefault();e.stopImmediatePropagation();
+    const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
+    const f=findFrame(selectedFrameId);
+    if(!p){alert('Pilih paket terlebih dahulu.');return}
+    if(!f){alert('Pilih frame terlebih dahulu sebelum melanjutkan ke pembayaran.');return}
+    try{frameSelectionConfirmed=true}catch(_){}
+    try{updatePackageSummary()}catch(_){}
+    try{renderPayment()}catch(_){}
+    try{goToStep(3)}catch(_){}
+  }
+},true);
+})();
+</script>
+
 </body>
 </html>

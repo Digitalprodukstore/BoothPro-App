@@ -2286,7 +2286,8 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
   window.renderPreFrames=function(){renderUserGallery()};
   window.updatePackageSummary=function(){
     const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
-    const f=userFrames().find(x=>x.id===selectedFrameId);
+    /* Built-in Frame 2026 and Dashboard uploads are both valid frame sources. */
+    const f=selectedFrameId ? {id:selectedFrameId,name:'Frame terpilih'} : null;
     const name=document.getElementById('selectedPackageSummary');
     const price=document.getElementById('selectedPackagePrice');
     const desc=document.getElementById('selectedPackageDesc');
@@ -2301,11 +2302,11 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
   const oldGo=window.goToPayment;
   window.goToPayment=function(){
     const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
-    const f=userFrames().find(x=>x.id===selectedFrameId);
     if(!p){alert('Pilih paket terlebih dahulu.');return}
-    if(!f){alert('Pilih frame dari Gallery Frame terlebih dahulu. Jika gallery kosong, upload frame melalui Dashboard.');return}
-    frameSelectionConfirmed=true; updatePackageSummary();
-    try{oldGo()}catch(e){goToStep(3)}
+    if(!selectedFrameId){alert('Pilih frame terlebih dahulu sebelum melanjutkan ke pembayaran.');return}
+    frameSelectionConfirmed=true;
+    updatePackageSummary();
+    try{goToStep(3)}catch(e){if(typeof oldGo==='function')oldGo()}
   };
   window.renderDashFrameSlotManager=function(){
     const host=document.getElementById('dashFrameSlotManager');if(!host)return;host.innerHTML='';const fs=userFrames(),ss=slots();

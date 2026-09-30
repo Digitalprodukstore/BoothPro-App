@@ -766,8 +766,9 @@ function renderEditorFrameQuickGrid(){const g=$('editorFrameQuickGrid');if(!g)re
 function startCaptureFromFrame(){if(!selectedFrameId){alert('Pilih frame terlebih dahulu.');return}goToStep(4)}
 let bpFrameRenderTimer=null;
 function selectFrame(f){
-  if(!f)return;
-  selectedFrameId=f.id; selectedFrameSrc=f.src||''; frameSelectionConfirmed=!!selectedPackageId;
+  if(!f||!f.id)return;
+  /* M3.9.18: normalize the selected frame through one state path. */
+  selectedFrameId=String(f.id); selectedFrameSrc=f.src||''; frameSelectionConfirmed=!!selectedPackageId;
   if(!f.src){frameBg=frameColor(f.id);frameFg=f.id==='plain-dark'?'#f4f4f5':f.id==='plain-indigo'?'#e0e7ff':'#27272a'}
   else if(f.theme&&BUILTIN_FRAME_THEMES[f.theme]){frameBg=BUILTIN_FRAME_THEMES[f.theme].bg;frameFg=BUILTIN_FRAME_THEMES[f.theme].fg}
   document.querySelectorAll('[data-frame-id]').forEach(card=>{
@@ -3690,16 +3691,20 @@ function sync(){
 }
 function select(f){
   if(!f)return;
-  try{if(typeof window.selectFrame==='function')window.selectFrame(f);else{
-    selectedFrameId=f.id;selectedFrameSrc=f.src||'';
-    frameSelectionConfirmed=!!selectedPackageId;
-  }}catch(e){
-    selectedFrameId=f.id;selectedFrameSrc=f.src||'';
+  /* M3.9.18: selectFrame() is the single state authority.
+     This renderer only delegates, then refreshes its own visual state. */
+  try{
+    if(typeof window.selectFrame==='function') window.selectFrame(f);
+    else {
+      selectedFrameId=f.id;
+      selectedFrameSrc=f.src||'';
+      frameSelectionConfirmed=!!selectedPackageId;
+    }
+  }catch(e){
+    selectedFrameId=f.id;
+    selectedFrameSrc=f.src||'';
     frameSelectionConfirmed=!!selectedPackageId;
   }
-  selectedFrameId=f.id;
-  selectedFrameSrc=f.src||'';
-  frameSelectionConfirmed=!!selectedPackageId;
   sync();
   render();
 }

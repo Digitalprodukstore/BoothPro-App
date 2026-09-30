@@ -1,0 +1,62 @@
+name: BoothPro Continuous Audit
+
+on:
+  push:
+    branches: [main, boothpro-audit-system]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  static-audit:
+    name: Static / Safety Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/boothpro-audit.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boothpro-static-audit
+          path: audit-report.md
+          if-no-files-found: warn
+
+  browser-smoke:
+    name: Browser / Interaction Smoke Test
+    runs-on: ubuntu-latest
+    needs: static-audit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - run: node tools/boothpro-smoke.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boothpro-browser-audit
+          path: browser-audit-report.md
+          if-no-files-found: warn
+      - if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.existsSync('browser-audit-report.md')
+              ? fs.readFileSync('browser-audit-report.md', 'utf8')
+              : 'Browser audit report was not generated.';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '## BoothPro Automated Audit\\n\\n' + report.slice(0, 12000)
+            });

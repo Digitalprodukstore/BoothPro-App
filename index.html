@@ -1852,112 +1852,6 @@ window.addEventListener('beforeunload',()=>stopWebcam());window.addEventListener
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&wakeLock===null&&currentStep===4)requestWakeLock()});
 </script>
 
-<script id="c6-8-step1-hotfix">
-/* BOOTHPRO C6-8 STEP 1 HOTFIX
-   Scope: Step 1 package/frame selection only.
-   Camera, payment engine, editor, print, GIF and existing dashboard code are untouched.
-*/
-(function(){
-  const BP_STEP1_CATS=['VINTAGE','MODERN','MINIMAL','PASTEL','BOLD','CUSTOM'];
-  let bpStep1OpenCat='';
-
-  function bpStep1Catalog(){
-    const groups={VINTAGE:[],MODERN:[],MINIMAL:[],PASTEL:[],BOLD:[],CUSTOM:[]};
-    const photos=Number(requiredPhotosCount)||4;
-    try{
-      BUILTIN_FRAME_DEFS.forEach((d,i)=>{
-        const cat=typeof builtinCategoryForIndex==='function'?builtinCategoryForIndex(i):BP_STEP1_CATS[Math.floor(i/10)]||'MODERN';
-        const x={...d,photos,category:cat,layout:typeof adaptiveBuiltinLayout==='function'?adaptiveBuiltinLayout(photos,i):d.layout,builtin:true,src:''};
-        try{
-          if(typeof builtinFrameSvg==='function') x.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(builtinFrameSvg(x));
-        }catch(e){ x.src=''; }
-        (groups[cat]||groups.MODERN).push(x);
-      });
-    }catch(e){ console.warn('Step1 builtin catalog fallback',e); }
-    try{
-      (frameGallery||[]).forEach(f=>{
-        if(f && f.src && (!f.photos || Number(f.photos)===photos)) (groups[f.category]||groups.CUSTOM).push(f);
-      });
-    }catch(e){ console.warn('Step1 upload catalog fallback',e); }
-    /* Always guarantee a usable gallery even if another frame subsystem fails. */
-    if(!Object.values(groups).some(a=>a.length)){
-      groups.MINIMAL.push({id:'plain-white',name:'White',src:'',category:'MINIMAL',photos});
-      groups.MINIMAL.push({id:'plain-dark',name:'Dark',src:'',category:'MINIMAL',photos});
-    }
-    return groups;
-  }
-
-  function bpFrameThumb(f){
-    const b=document.createElement('button');
-    b.type='button';
-    b.dataset.frameId=f.id;
-    b.className='bp-step1-frame-card relative overflow-hidden rounded-xl border-2 '+(selectedFrameId===f.id?'border-indigo-500 ring-2 ring-indigo-500/30':'border-zinc-800')+' bg-zinc-900';
-    b.style.cssText+='touch-action:manipulation;pointer-events:auto;cursor:pointer;min-width:0;z-index:20;';
-    if(f.src){
-      const im=document.createElement('img'); im.src=f.src; im.alt=f.name||'Frame'; im.loading='lazy'; im.decoding='async';
-      im.className='w-full h-full object-contain bg-zinc-950'; b.appendChild(im);
-    }else{
-      const box=document.createElement('div'); box.className='w-full h-full flex items-center justify-center'; box.style.background=typeof frameColor==='function'?frameColor(f.id):'#27272a';
-      box.innerHTML='<i class="fa-solid fa-image text-zinc-400 text-xl"></i>'; b.appendChild(box);
-    }
-    const label=document.createElement('span'); label.className='absolute bottom-1 left-1 right-1 text-[9px] font-bold bg-black/70 rounded px-1 py-1 truncate text-white'; label.textContent=f.name||'Frame'; b.appendChild(label);
-    const badge=document.createElement('span'); badge.className='absolute top-1 right-1 text-[9px] font-black bg-indigo-600 text-white rounded-full px-1.5 py-0.5 '+(selectedFrameId===f.id?'':'hidden'); badge.textContent='✓'; b.appendChild(badge);
-    b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();try{selectFrame(f)}catch(err){console.error(err);return;}bpStep1OpenCat='';renderPreFrames();});
-    return b;
-  }
-
-  window.renderPreFrames=function(){
-    const host=document.getElementById('preFrameGrid'); if(!host)return;
-    const groups=bpStep1Catalog(); host.innerHTML='';
-    host.style.cssText='display:block!important;visibility:visible!important;position:relative!important;z-index:10!important;min-height:180px!important;pointer-events:auto!important;';
-    if(bpStep1OpenCat && !(groups[bpStep1OpenCat]||[]).length) bpStep1OpenCat='';
-    if(!bpStep1OpenCat){
-      const title=document.createElement('div'); title.className='text-[10px] font-black uppercase tracking-widest text-indigo-300 mb-3'; title.textContent='Pilih Kategori Frame'; host.appendChild(title);
-      const cats=document.createElement('div'); cats.className='grid grid-cols-2 gap-2'; cats.style.cssText='position:relative;z-index:20;pointer-events:auto;';
-      BP_STEP1_CATS.forEach(cat=>{
-        const items=groups[cat]||[]; if(!items.length)return;
-        const b=document.createElement('button'); b.type='button'; b.className='rounded-2xl border border-zinc-800 bg-zinc-900 p-3 text-left hover:border-indigo-500 active:border-indigo-500'; b.style.cssText='touch-action:manipulation;pointer-events:auto;cursor:pointer;position:relative;z-index:30;';
-        b.innerHTML='<div class="h-16 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center mb-2"><span class="text-2xl text-indigo-300">▦</span></div><div class="text-xs font-black">'+cat+'</div><div class="text-[9px] text-zinc-500 mt-1">'+items.length+' frame · Ketuk untuk buka</div>';
-        b.onclick=function(e){e.preventDefault();e.stopPropagation();bpStep1OpenCat=cat;renderPreFrames();}; cats.appendChild(b);
-      });
-      host.appendChild(cats);
-      const hint=document.createElement('div'); hint.className='text-[9px] text-zinc-500 mt-3 text-center'; hint.textContent='Pilih kategori → pilih salah satu frame → lanjut ke pembayaran'; host.appendChild(hint);
-      return;
-    }
-    const items=groups[bpStep1OpenCat]||[];
-    const head=document.createElement('div'); head.className='flex items-center justify-between gap-2 mb-3';
-    const back=document.createElement('button'); back.type='button'; back.className='px-3 py-2 rounded-xl bg-zinc-800 text-xs font-bold'; back.style.cssText='touch-action:manipulation;pointer-events:auto;'; back.textContent='← Kategori'; back.onclick=function(e){e.preventDefault();e.stopPropagation();bpStep1OpenCat='';renderPreFrames();};
-    const h=document.createElement('div'); h.className='text-xs font-black text-indigo-200'; h.textContent=bpStep1OpenCat+' · '+items.length+' frame'; head.append(back,h); host.appendChild(head);
-    const grid=document.createElement('div'); grid.className='grid grid-cols-2 gap-2 max-h-[440px] overflow-y-auto pr-1'; grid.style.cssText='position:relative;z-index:20;pointer-events:auto;'; items.forEach(f=>grid.appendChild(bpFrameThumb(f))); host.appendChild(grid);
-  };
-
-  /* Make Step 1 package buttons resilient to overlays/touch browsers. */
-  window.renderPackageStep=function(){
-    const g=document.getElementById('packageGrid'); if(!g)return; g.innerHTML='';
-    (config.packages||[]).forEach(p=>{
-      const d=document.createElement('button'); d.type='button'; d.dataset.packageId=p.id;
-      d.className='w-full text-left p-5 rounded-2xl border-2 cursor-pointer select-none '+(selectedPackageId===p.id?'border-indigo-500 bg-indigo-500/10':'border-zinc-800 bg-zinc-950')+' hover:border-indigo-500 transition';
-      d.style.cssText='touch-action:pan-y;pointer-events:auto;position:relative;z-index:30;cursor:pointer;';
-      d.innerHTML='<div class="text-xs text-indigo-400 font-bold uppercase">'+p.prints+' Strip</div><div class="text-lg font-extrabold mt-1">'+p.name+'</div><div class="text-2xl font-black text-white mt-2">'+fmt(p.price)+'</div><div class="text-xs text-zinc-500 mt-2">'+p.photos+' foto · '+(p.desc||'')+'<br>Soft file + loop/GIF + efek + frame</div><div class="text-[10px] text-indigo-300 font-bold mt-3">'+(selectedPackageId===p.id?'✓ PAKET DIPILIH':'KETUK UNTUK MEMILIH')+'</div>';
-      d.onclick=function(e){e.preventDefault();e.stopPropagation();selectPackage(p.id);};
-      g.appendChild(d);
-    });
-    try{applyConfiguredDefaultFrame()}catch(e){console.warn(e)}
-    try{renderPreFrames()}catch(e){console.error('Step1 frame render',e)}
-    updatePackageSummary();
-  };
-
-  /* Delegated safety net: package price/card and frame cards remain clickable even on touch devices. */
-  document.addEventListener('click',function(e){
-    const pc=e.target.closest&&e.target.closest('#packageGrid [data-package-id]');
-    if(pc){e.preventDefault();e.stopPropagation();const id=pc.dataset.packageId;if(id)selectPackage(id);return;}
-  },true);
-
-  window.addEventListener('boothpro-config-updated',function(){setTimeout(function(){if(currentStep===2)renderPackageStep();},0)});
-  window.addEventListener('storage',function(e){if(e.key===CONFIG_KEY||e.key===FRAME_KEY)setTimeout(function(){if(currentStep===2)renderPackageStep();},0)});
-})();
-</script>
-
 <script id="c7-session-photo-engine">
 /* BOOTHPRO C7 — SESSION & PHOTO ENGINE
    Non-destructive layer on top of C6-8.
@@ -2293,88 +2187,6 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
   setTimeout(render,250);
 })();
 </script>
-<script id="c7-1-frame-gallery-hotfix">
-/* C7.1 — User Frame Gallery / Selection UX
-   Uses dashboard-uploaded frames as the kiosk gallery. Built-in decorative frames are not shown here.
-*/
-(function(){
-  const SLOT_COUNT=12;
-  function slots(){
-    config.frameSlots=Array.isArray(config.frameSlots)?config.frameSlots:[];
-    while(config.frameSlots.length<SLOT_COUNT) config.frameSlots.push({id:'slot-'+String(config.frameSlots.length+1).padStart(2,'0'),name:'Frame '+String(config.frameSlots.length+1).padStart(2,'0'),enabled:true});
-    return config.frameSlots.slice(0,SLOT_COUNT);
-  }
-  function userFrames(){
-    try{return (frameGallery||[]).filter(f=>f&&f.src)}catch(e){return []}
-  }
-  function slotFrame(i){return userFrames()[i]||null}
-  function slotTitle(i,f){return (f&&f.name)||slots()[i]?.name||('Frame '+String(i+1).padStart(2,'0'))}
-  function renderUserGallery(){
-    const host=document.getElementById('preFrameGrid'); if(!host)return;
-    const frames=userFrames(), ss=slots(); host.innerHTML='';
-    const note=document.createElement('div'); note.className='bp-frame-empty-note';
-    note.innerHTML='<b>Gallery Frame BoothPro</b><br>Frame di bawah berasal dari <b>Dashboard → Upload Frame Gallery</b>. Slot yang masih kosong adalah wadah yang siap diisi frame buatan Anda.';
-    host.appendChild(note);
-    const grid=document.createElement('div'); grid.className='bp-user-frame-grid';
-    for(let i=0;i<SLOT_COUNT;i++){
-      const f=slotFrame(i), st=ss[i], b=document.createElement('button'); b.type='button';
-      b.className='bp-user-frame-slot '+(f&&selectedFrameId===f.id?'bp-selected':''); b.dataset.frameId=f?.id||'';
-      if(f){const im=document.createElement('img');im.src=f.src;im.alt=slotTitle(i,f);im.loading='lazy';im.decoding='async';b.appendChild(im)}
-      else {const e=document.createElement('div');e.className='bp-slot-empty';e.innerHTML='<i class="fa-solid fa-image text-xl text-zinc-600"></i><span class="text-[9px] text-zinc-600">Belum ada frame</span>';b.appendChild(e)}
-      const lab=document.createElement('div');lab.className='bp-slot-label';lab.textContent=slotTitle(i,f);b.appendChild(lab);
-      const check=document.createElement('span');check.className='bp-check';check.innerHTML='✓';b.appendChild(check);
-      b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();
-        if(!f){alert('Slot ini masih kosong. Upload frame buatan Anda melalui Dashboard terlebih dahulu.');return;}
-        selectFrame(f); frameSelectionConfirmed=true; renderUserGallery(); updatePackageSummary();
-      });
-      grid.appendChild(b);
-    }
-    host.appendChild(grid);
-    const count=document.createElement('div');count.className='text-[10px] text-zinc-500 mt-2';count.textContent=frames.length+' frame upload tersedia · '+Math.max(0,SLOT_COUNT-frames.length)+' slot kosong';host.appendChild(count);
-  }
-  window.renderPreFrames=function(){renderUserGallery()};
-  window.updatePackageSummary=function(){
-    const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
-    /* Built-in Frame 2026 and Dashboard uploads are both valid frame sources. */
-    const f=selectedFrameId ? {id:selectedFrameId,name:'Frame terpilih'} : null;
-    const name=document.getElementById('selectedPackageSummary');
-    const price=document.getElementById('selectedPackagePrice');
-    const desc=document.getElementById('selectedPackageDesc');
-    if(name) name.innerHTML=p ? p.name+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+(f?.name||'Belum dipilih')+'</div>' : 'Belum dipilih';
-    if(price) price.textContent=p?fmt(p.price):'Rp0';
-    if(desc) desc.textContent=p ? (p.photos+' foto · '+(p.prints||1)+' print · '+(f?'Frame siap digunakan':'Pilih frame dari gallery')) : 'Pilih paket terlebih dahulu';
-    const btn=document.getElementById('toPaymentBtn'), label=document.getElementById('toPaymentLabel');
-    const ready=!!p&&!!f&&!!frameSelectionConfirmed;
-    if(btn){btn.disabled=false;btn.style.opacity=ready?'1':'.72';btn.style.cursor='pointer';btn.classList.toggle('ring-2',ready);btn.classList.toggle('ring-indigo-300/50',ready)}
-    if(label) label.textContent=ready?'Lanjut ke Pembayaran · '+fmt(p.price):(!p?'Pilih Paket':!f?'Pilih Frame':'Lanjut ke Pembayaran');
-  };
-  const oldGo=window.goToPayment;
-  window.goToPayment=function(){
-    const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
-    if(!p){alert('Pilih paket terlebih dahulu.');return}
-    if(!selectedFrameId){alert('Pilih frame terlebih dahulu sebelum melanjutkan ke pembayaran.');return}
-    frameSelectionConfirmed=true;
-    updatePackageSummary();
-    try{goToStep(3)}catch(e){if(typeof oldGo==='function')oldGo()}
-  };
-  window.renderDashFrameSlotManager=function(){
-    const host=document.getElementById('dashFrameSlotManager');if(!host)return;host.innerHTML='';const fs=userFrames(),ss=slots();
-    ss.forEach((s,i)=>{const f=fs[i]||null,row=document.createElement('div');row.className='flex items-center gap-2 p-2 rounded-lg bg-zinc-900 border border-zinc-800';
-      const thumb=document.createElement('div');thumb.className='w-10 h-12 rounded bg-zinc-950 overflow-hidden shrink-0';if(f){const im=document.createElement('img');im.src=f.src;im.className='w-full h-full object-contain';thumb.appendChild(im)}else thumb.innerHTML='<div class="w-full h-full flex items-center justify-center text-zinc-700">'+(i+1)+'</div>';
-      const wrap=document.createElement('div');wrap.className='min-w-0 flex-1';const lab=document.createElement('div');lab.className='text-[9px] text-zinc-500';lab.textContent='Slot '+String(i+1).padStart(2,'0');const inp=document.createElement('input');inp.value=s.name||('Frame '+String(i+1).padStart(2,'0'));inp.className='mt-1 w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5 text-[10px]';inp.onchange=()=>{s.name=inp.value.trim()||('Frame '+String(i+1).padStart(2,'0'));saveConfig();renderUserGallery()};wrap.append(lab,inp);row.append(thumb,wrap);host.appendChild(row);
-    });
-  };
-  const oldRenderDash=window.renderDashFrameManager;
-  window.renderDashFrameManager=function(){try{oldRenderDash&&oldRenderDash()}catch(e){} renderDashFrameSlotManager()};
-  const oldHandle=window.handleFrameUpload;
-  window.handleFrameUpload=async function(e){await oldHandle(e);renderDashFrameSlotManager();renderUserGallery();updatePackageSummary()};
-  document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){renderDashFrameSlotManager();if(currentStep===2){renderUserGallery();updatePackageSummary()}},300)});
-  window.addEventListener('boothpro-frames-updated',function(){renderDashFrameSlotManager();renderUserGallery();updatePackageSummary()});
-})();
-
-try{if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',handleSupabaseRecoveryRedirect,{once:true});}else{setTimeout(handleSupabaseRecoveryRedirect,0);}}catch(e){}
-</script>
-
 <script>try{installDashboardCloseTouchFix()}catch(e){}</script>
 <script id="c8-2-3-dashboard-universal-ux">
 (function(){
@@ -3449,152 +3261,7 @@ if(typeof window.openDashboardUnlocked==='function'){
 
 
 <!-- M3.3 FRAME/PACKAGE FLOW FIX -->
-<script id="m33-frame-package-flow-fix">
-(function(){
-'use strict';
-/* Safety authority for the M3.2 flow: selecting a package must never
-   discard the frame chosen from Brand/Event Gallery. */
-const oldSelect=window.selectPackage;
-if(typeof oldSelect==='function'&&!oldSelect.__m33){
- const wrapped=function(id){
-   const before=window.selectedFrameId;
-   const result=oldSelect.apply(this,arguments);
-   try{
-     if(before&&window.selectedFrameId!==before){
-       window.selectedFrameId=before;
-       window.frameSelectionConfirmed=!!before;
-       if(typeof updatePackageSummary==='function')updatePackageSummary();
-       if(typeof renderPreFrames==='function')renderPreFrames();
-     }
-   }catch(e){console.warn('M3.3 frame preserve:',e)}
-   return result;
- };
- wrapped.__m33=true;window.selectPackage=wrapped;
-}
-})();
-</script>
-
-
-<!-- M3.9.2 GUARANTEED STEP 1 FRAME CATEGORY RENDER -->
-<style id="m392-step1-frame-guarantee">
-#preFrameGrid{display:block!important;visibility:visible!important;opacity:1!important}
-.bp392-frame-index{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%}
-.bp392-category{appearance:none;-webkit-appearance:none;width:100%;min-height:118px;border:1px solid #3f3f46;border-radius:16px;background:#18181b;color:#fff;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;touch-action:manipulation;cursor:pointer}
-.bp392-category:active{transform:scale(.98);border-color:#6366f1}
-.bp392-thumb{width:54px;height:54px;border-radius:13px;background:#27272a;border:1px solid #52525b;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.bp392-thumb img{width:100%;height:100%;object-fit:contain}
-.bp392-name{font-size:12px;font-weight:900;letter-spacing:.05em}
-.bp392-count{font-size:9px;color:#a1a1aa}
-@media(min-width:700px){.bp392-frame-index{grid-template-columns:repeat(5,minmax(0,1fr))}}
-</style>
-<script id="m392-step1-frame-guarantee">
-(function(){
-'use strict';
-function bp392Choices(){
-  try{
-    const list=typeof getFrameChoicesSafe==='function'?getFrameChoicesSafe():[];
-    if(Array.isArray(list)&&list.length)return list;
-  }catch(e){}
-  try{return typeof getBuiltinFrames==='function'?getBuiltinFrames():[]}catch(e){return[]}
-}
-function bp392Render(){
-  const host=document.getElementById('preFrameGrid');
-  if(!host)return;
-  const choices=bp392Choices().filter(Boolean);
-  const cats=['VINTAGE','MODERN','MINIMAL','PASTEL','BOLD'];
-  const groups={VINTAGE:[],MODERN:[],MINIMAL:[],PASTEL:[],BOLD:[],CUSTOM:[]};
-  choices.forEach((f,i)=>{
-    const cat=groups[f.category]?f.category:(f.builtin?cats[Math.floor(i/10)]||'CUSTOM':'CUSTOM');
-    groups[cat].push(f);
-  });
-  const wrap=document.createElement('div');
-  wrap.className='bp392-frame-index';
-  cats.concat(groups.CUSTOM.length?['CUSTOM']:[]).forEach(cat=>{
-    const items=groups[cat]||[];
-    if(!items.length)return;
-    const b=document.createElement('button');
-    b.type='button';b.className='bp392-category';
-    const first=items[0];
-    const thumb=document.createElement('div');thumb.className='bp392-thumb';
-    if(first&&first.src){const im=document.createElement('img');im.src=first.src;im.alt='';thumb.appendChild(im)}
-    else thumb.textContent='🖼️';
-    const nm=document.createElement('div');nm.className='bp392-name';nm.textContent=cat;
-    const ct=document.createElement('div');ct.className='bp392-count';ct.textContent=items.length+' frame · Ketuk untuk buka';
-    b.append(thumb,nm,ct);
-    b.onclick=function(e){
-      e.preventDefault();
-      window.preFrameCategoryOpen=cat;
-      if(typeof renderPreFrameDetail==='function')renderPreFrameDetail(cat,items);
-      else if(typeof renderFrameCategoryDetail==='function')renderFrameCategoryDetail(true,cat);
-    };
-    wrap.appendChild(b);
-  });
-  host.innerHTML='';
-  const title=document.createElement('div');
-  title.className='mb-3 text-xs font-black tracking-wide text-zinc-200';
-  title.textContent='FRAME GALLERY · PILIH KATEGORI';
-  host.append(title,wrap);
-  if(!wrap.children.length){
-    const empty=document.createElement('div');
-    empty.className='p-4 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-400';
-    empty.textContent='Frame belum tersedia.';
-    host.appendChild(empty);
-  }
-}
-window.BoothProM392={render:bp392Render};
-const oldRenderPackageStep=window.renderPackageStep;
-if(typeof oldRenderPackageStep==='function'&&!oldRenderPackageStep.__m392){
-  const w=function(){const r=oldRenderPackageStep.apply(this,arguments);setTimeout(bp392Render,0);return r};
-  w.__m392=true;window.renderPackageStep=w;
-}
-const oldGo=window.goToStep;
-if(typeof oldGo==='function'&&!oldGo.__m392){
-  const w=function(n){const r=oldGo.apply(this,arguments);if(Number(n)===2)setTimeout(bp392Render,0);return r};
-  w.__m392=true;window.goToStep=w;
-}
-document.addEventListener('DOMContentLoaded',()=>setTimeout(bp392Render,0));
-setTimeout(bp392Render,350);
-})();
-</script>
-
 <!-- M3.9.1 STEP 1 FRAME FLOW STABILIZER -->
-<script id="m391-step1-frame-flow">
-(function(){
-'use strict';
-const originalRenderPackageStep=window.renderPackageStep;
-if(typeof originalRenderPackageStep==='function'&&!originalRenderPackageStep.__m391){
-  const wrapped=function(){
-    try{originalRenderPackageStep.apply(this,arguments)}catch(e){console.warn('M3.9.1 package render:',e)}
-    try{if(typeof window.renderPreFrames==='function')window.renderPreFrames()}catch(e){console.warn('M3.9.1 frame render:',e)}
-    setTimeout(async function(){
-      try{
-        if(window.BoothProM32?.kioskLoad){
-          const brands=await window.BoothProM32.kioskLoad();
-          if(brands&&brands.length){
-            try{if(typeof window.renderPreFrames==='function')window.renderPreFrames()}catch(e){}
-          }
-        }
-      }catch(e){console.warn('M3.9.1 cloud frame preload:',e)}
-    },80);
-  };
-  wrapped.__m391=true;
-  window.renderPackageStep=wrapped;
-}
-const originalGo=window.__bpM32OriginalGoToStep;
-if(typeof originalGo==='function'&&!window.__bpM391StartFixed){
-  const startBtn=document.querySelector('#step-welcome button[onclick="goToStep(2)"]');
-  if(startBtn){
-    startBtn.onclick=function(ev){
-      ev?.preventDefault?.();
-      try{originalGo(2)}catch(e){window.goToStep(2)}
-    };
-    window.__bpM391StartFixed=true;
-  }
-}
-window.BoothProM391={version:'3.9.1',cameraLocked:true};
-})();
-</script>
-
 <!-- M3.7 CLOUD FRAME VISUAL DELIVERY FIX -->
 <style id="m37-cloud-frame-visual-style">
 .bpM37-frame-loading{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#71717a;font-size:10px}
@@ -3810,7 +3477,7 @@ window.BoothProM36={addDashboardEntry,hydrateGallery};
 
 
 <!-- M3.9.12 CLEAN STEP 1 FRAME + PACKAGE AUTHORITY -->
-<style id="m3912-clean-authority">
+<style id="m3912-clean-authority-style">
 #preFrameGrid{display:block!important;visibility:visible!important;min-height:180px!important;position:relative!important;z-index:50!important;pointer-events:auto!important}
 .m3912-category-grid,.m3912-frame-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;min-width:0}
 .m3912-category,.m3912-frame{position:relative;min-width:0;border:2px solid #27272a;border-radius:16px;background:#18181b;color:#f4f4f5;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}
@@ -3826,88 +3493,150 @@ window.BoothProM36={addDashboardEntry,hydrateGallery};
 <script id="m3912-clean-authority">
 (function(){
 'use strict';
+
 const CATS=['VINTAGE','MODERN','MINIMAL','PASTEL','BOLD','CUSTOM'];
 let openCat='';
 
 function choices(){
   const out=[],seen=new Set();
-  const add=arr=>{if(!Array.isArray(arr))return;arr.forEach(f=>{
-    if(!f||!f.id||seen.has(String(f.id)))return;
-    seen.add(String(f.id));out.push(f);
-  })};
+  const add=arr=>{
+    if(!Array.isArray(arr))return;
+    arr.forEach(f=>{
+      if(!f||!f.id||seen.has(String(f.id)))return;
+      seen.add(String(f.id));out.push(f);
+    });
+  };
   try{add(getFrameChoicesSafe())}catch(e){}
   try{add(window.frameGallery)}catch(e){}
   return out;
 }
+
 function groups(){
   const g={VINTAGE:[],MODERN:[],MINIMAL:[],PASTEL:[],BOLD:[],CUSTOM:[]};
   choices().forEach((f,i)=>{
     let c=String(f.category||'').toUpperCase();
-    if(!g[c])c=f.builtin?(['VINTAGE','MODERN','MINIMAL','PASTEL','BOLD'][i%5]||'MODERN'):'CUSTOM';
+    if(!g[c])c=f.builtin?(['VINTAGE','MODERN','MINIMAL','PASTEL','BOLD'][Math.floor(i/10)]||'CUSTOM'):'CUSTOM';
     g[c].push(f);
   });
   return g;
 }
+
 function selected(){
   const id=String(window.selectedFrameId||'');
   return choices().find(f=>String(f.id)===id)||null;
 }
-function sync(){
+
+function syncSummary(){
   try{if(typeof window.updatePackageSummary==='function')window.updatePackageSummary()}catch(e){}
-  const f=selected();
+}
+
+function renderPackage(){
+  const host=document.getElementById('packageGrid');
+  if(!host)return;
+  host.innerHTML='';
+  (config.packages||[]).forEach(p=>{
+    const card=document.createElement('button');
+    card.type='button';
+    card.dataset.packageId=String(p.id);
+    card.className='w-full text-left p-5 rounded-2xl border-2 cursor-pointer select-none '+(String(window.selectedPackageId||'')===String(p.id)?'border-indigo-500 bg-indigo-500/10':'border-zinc-800 bg-zinc-950')+' hover:border-indigo-500 transition';
+    card.style.cssText='touch-action:pan-y;pointer-events:auto;position:relative;z-index:30;cursor:pointer;';
+    card.innerHTML='<div class="text-xs text-indigo-400 font-bold uppercase">'+p.prints+' Strip</div><div class="text-lg font-extrabold mt-1">'+p.name+'</div><div class="text-2xl font-black text-white mt-2">'+fmt(p.price)+'</div><div class="text-xs text-zinc-500 mt-2">'+p.photos+' foto · '+(p.desc||'')+'<br>Soft file + loop/GIF + efek + frame</div><div class="text-[10px] text-indigo-300 font-bold mt-3">'+(String(window.selectedPackageId||'')===String(p.id)?'✓ PAKET DIPILIH':'KETUK UNTUK MEMILIH')+'</div>';
+
+    let moved=false,startX=0,startY=0;
+    card.addEventListener('pointerdown',e=>{moved=false;startX=e.clientX;startY=e.clientY},{passive:true});
+    card.addEventListener('pointermove',e=>{
+      if(Math.abs(e.clientX-startX)>8||Math.abs(e.clientY-startY)>8)moved=true;
+    },{passive:true});
+    card.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();
+      if(moved)return;
+      try{window.selectPackage(p.id)}catch(err){console.error('Package selection:',err);return}
+    });
+    host.appendChild(card);
+  });
+  syncSummary();
+}
+
+function syncFrameChecks(){
+  const id=String(window.selectedFrameId||'');
   const host=document.getElementById('preFrameGrid');
   if(host)host.querySelectorAll('.m3912-frame').forEach(card=>{
-    const on=String(card.dataset.frameId)===String(window.selectedFrameId||'');
+    const on=String(card.dataset.frameId)===id;
     card.classList.toggle('is-selected',on);
     const ck=card.querySelector('.m3912-check');
     if(ck)ck.classList.toggle('hidden',!on);
   });
 }
+
 function select(f){
   if(!f)return;
-  try{if(typeof window.selectFrame==='function')window.selectFrame(f);else{
-    window.selectedFrameId=f.id;window.selectedFrameSrc=f.src||'';
-    window.frameSelectionConfirmed=!!window.selectedPackageId;
-  }}catch(e){
-    window.selectedFrameId=f.id;window.selectedFrameSrc=f.src||'';
-    window.frameSelectionConfirmed=!!window.selectedPackageId;
+  try{
+    if(typeof window.selectFrame==='function')window.selectFrame(f);
+    else{
+      window.selectedFrameId=f.id;
+      window.selectedFrameSrc=f.src||'';
+    }
+  }catch(e){
+    window.selectedFrameId=f.id;
+    window.selectedFrameSrc=f.src||'';
   }
   window.selectedFrameId=f.id;
   window.selectedFrameSrc=f.src||'';
   window.frameSelectionConfirmed=!!window.selectedPackageId;
-  sync();
+  syncSummary();
   render();
 }
+
 function frameCard(f){
   const b=document.createElement('button');
-  b.type='button';b.className='m3912-frame';
+  b.type='button';
+  b.className='m3912-frame';
   b.dataset.frameId=String(f.id);
   if(f.src){
-    const im=document.createElement('img');im.src=f.src;im.alt=f.name||'Frame';im.loading='lazy';im.decoding='async';b.appendChild(im);
+    const im=document.createElement('img');
+    im.src=f.src;im.alt=f.name||'Frame';im.loading='lazy';im.decoding='async';
+    b.appendChild(im);
   }else{
-    const box=document.createElement('div');box.style.cssText='width:100%;height:100%;background:#27272a';b.appendChild(box);
+    const box=document.createElement('div');
+    box.style.cssText='width:100%;height:100%;background:#27272a';
+    b.appendChild(box);
   }
-  const name=document.createElement('div');name.className='m3912-name';name.textContent=f.name||'Frame';b.appendChild(name);
-  const ck=document.createElement('span');ck.className='m3912-check'+(String(f.id)===String(window.selectedFrameId||'')?'':' hidden');ck.textContent='✓';b.appendChild(ck);
-  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();select(f)},{capture:true});
+  const name=document.createElement('div');
+  name.className='m3912-name';name.textContent=f.name||'Frame';b.appendChild(name);
+  const ck=document.createElement('span');
+  ck.className='m3912-check'+(String(f.id)===String(window.selectedFrameId||'')?'':' hidden');
+  ck.textContent='✓';b.appendChild(ck);
+  b.addEventListener('click',e=>{
+    e.preventDefault();e.stopPropagation();select(f);
+  },{capture:true});
   return b;
 }
+
 function render(){
-  const host=document.getElementById('preFrameGrid');if(!host)return;
+  const host=document.getElementById('preFrameGrid');
+  if(!host)return;
   const g=groups();
   host.innerHTML='';
   host.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;min-height:180px!important;position:relative!important;z-index:50!important;pointer-events:auto!important;';
+
   if(!openCat){
-    const head=document.createElement('div');head.className='flex items-center justify-between gap-2 mb-3';
+    const head=document.createElement('div');
+    head.className='flex items-center justify-between gap-2 mb-3';
     head.innerHTML='<div class="text-xs font-black tracking-wide text-zinc-200">FRAME GALLERY</div><div class="text-[10px] font-bold text-indigo-300">Pilih kategori</div>';
     host.appendChild(head);
-    const grid=document.createElement('div');grid.className='m3912-category-grid';
+
+    const grid=document.createElement('div');
+    grid.className='m3912-category-grid';
     CATS.forEach(cat=>{
-      const items=g[cat]||[];if(!items.length)return;
-      const b=document.createElement('button');b.type='button';b.className='m3912-category';b.dataset.category=cat;
-      const thumb=document.createElement('div');thumb.className='w-14 h-16 rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900 flex items-center justify-center';
-      if(items[0]?.src){const im=document.createElement('img');im.src=items[0].src;im.alt='';im.loading='lazy';im.decoding='async';im.className='w-full h-full object-contain';thumb.appendChild(im)}
-      else thumb.innerHTML='<i class="fa-solid fa-image text-indigo-300 text-xl"></i>';
+      const items=g[cat]||[];
+      if(!items.length)return;
+      const b=document.createElement('button');
+      b.type='button';b.className='m3912-category';b.dataset.category=cat;
+      const thumb=document.createElement('div');
+      thumb.className='w-14 h-16 rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900 flex items-center justify-center';
+      if(items[0]?.src){
+        const im=document.createElement('img');im.src=items[0].src;im.alt='';im.loading='lazy';im.decoding='async';im.className='w-full h-full object-contain';thumb.appendChild(im);
+      }else thumb.innerHTML='<i class="fa-solid fa-image text-indigo-300 text-xl"></i>';
       const nm=document.createElement('div');nm.className='text-[11px] font-black tracking-wide';nm.textContent=cat;
       const ct=document.createElement('div');ct.className='text-[9px] text-zinc-500';ct.textContent=items.length+' frame · Ketuk untuk buka';
       b.append(thumb,nm,ct);
@@ -3917,46 +3646,57 @@ function render(){
     host.appendChild(grid);
   }else{
     const items=g[openCat]||[];
-    const head=document.createElement('div');head.className='flex items-center justify-between gap-2 mb-3';
-    const back=document.createElement('button');back.type='button';back.className='m3912-back';back.innerHTML='<i class="fa-solid fa-arrow-left"></i> Kembali';
+    const head=document.createElement('div');
+    head.className='flex items-center justify-between gap-2 mb-3';
+    const back=document.createElement('button');
+    back.type='button';back.className='m3912-back';back.innerHTML='<i class="fa-solid fa-arrow-left"></i> Kembali';
     back.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openCat='';render()},{capture:true});
-    const title=document.createElement('div');title.className='text-xs font-black text-indigo-200';title.textContent=openCat+' · '+items.length+' frame';
+    const title=document.createElement('div');
+    title.className='text-xs font-black text-indigo-200';title.textContent=openCat+' · '+items.length+' frame';
     head.append(back,title);host.appendChild(head);
     const grid=document.createElement('div');grid.className='m3912-frame-grid';
     items.forEach(f=>grid.appendChild(frameCard(f)));
     host.appendChild(grid);
   }
-  const status=document.createElement('div');status.className='mt-3 px-3 py-2 rounded-xl bg-zinc-900 text-center text-[10px] text-zinc-400';
+
+  const status=document.createElement('div');
+  status.className='mt-3 px-3 py-2 rounded-xl bg-zinc-900 text-center text-[10px] text-zinc-400';
   const f=selected();
   status.innerHTML=f?'✓ Frame terpilih: <b class="text-indigo-300">'+(window.escapeHtml?window.escapeHtml(f.name||'Frame'):String(f.name||'Frame'))+'</b>':'Belum ada frame dipilih';
   host.appendChild(status);
-  sync();
+  syncFrameChecks();
 }
 
-function bind(){
+function bindPayment(){
   const btn=document.getElementById('toPaymentBtn');
   if(!btn||btn.dataset.m3912Bound)return;
   btn.dataset.m3912Bound='1';
   btn.addEventListener('click',e=>{
     if(!window.selectedPackageId){
-      e.preventDefault();e.stopImmediatePropagation();
-      alert('Pilih paket terlebih dahulu.');return;
+      e.preventDefault();e.stopImmediatePropagation();alert('Pilih paket terlebih dahulu.');return;
     }
     if(!window.selectedFrameId||!window.frameSelectionConfirmed){
-      e.preventDefault();e.stopImmediatePropagation();
-      alert('Pilih frame terlebih dahulu.');return;
+      e.preventDefault();e.stopImmediatePropagation();alert('Pilih frame terlebih dahulu.');return;
     }
   },{capture:true});
 }
+
 function boot(){
-  render();bind();sync();
+  renderPackage();
+  render();
+  bindPayment();
+  syncSummary();
 }
+
+window.renderPackageStep=renderPackage;
 window.renderPreFrames=render;
-window.BoothProM3912={render,choices,groups,select};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.addEventListener('pageshow',()=>setTimeout(boot,150));
-window.addEventListener('boothpro-frames-updated',()=>setTimeout(()=>{render();sync()},80));
-window.addEventListener('boothpro-config-updated',()=>setTimeout(()=>{render();sync()},80));
+window.BoothProM3912={render,renderPackage,choices,groups,select};
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
+else boot();
+
+window.addEventListener('pageshow',()=>setTimeout(boot,100));
+window.addEventListener('boothpro-frames-updated',()=>setTimeout(()=>{render();syncSummary()},80));
 })();
 </script>
 

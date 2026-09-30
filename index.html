@@ -4249,7 +4249,7 @@ function applyFrame(f){
   try{selectedFrameId=f.id;selectedFrameSrc=f.src||''}catch(_){}
   try{frameSelectionConfirmed=!!selectedPackageId}catch(_){}
   try{if(typeof window.updatePackageSummary==='function')window.updatePackageSummary()}catch(_){}
-  try{if(typeof window.renderPreFrames==='function'}window.renderPreFrames())catch(_){}
+  try{if(typeof window.renderPreFrames==='function')window.renderPreFrames()catch(_){}
 }
 function frameFromTarget(t){
   const el=t?.closest?.('[data-frame-id]');

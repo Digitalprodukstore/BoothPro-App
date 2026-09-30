@@ -4383,8 +4383,38 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 window.addEventListener('pageshow',()=>setTimeout(boot,100));
 window.addEventListener('boothpro-frames-updated',()=>setTimeout(render,80));
 window.addEventListener('boothpro-config-updated',()=>setTimeout(render,80));
-setInterval(()=>{bindPayment();const host=document.getElementById('preFrameGrid');if(host&&!host.querySelector('.m399-category-grid')&&!host.querySelector('.m399-frame-grid'))render()},800);setTimeout(render,450);setTimeout(render,900);setTimeout(render,1600);
-window.BoothProM399={render,choices,groups};
+
+// M3.9.11 — make M3.9.9 the single Step-1 frame renderer.
+// Older C6/C7/M3.x renderers still exist in this legacy single-file app and can
+// redraw #preFrameGrid after cloud/local sync. Redirect the public renderer hook
+// to this authority so package/config/frame-sync refreshes cannot restore an older gallery.
+try{window.renderPreFrames=render}catch(e){}
+
+// Restore our renderer if a legacy renderer replaces the contents of #preFrameGrid.
+// Do NOT use a timer-only blank check: an older renderer can leave valid-looking
+// content in the host while still removing the M3.9.9 DOM marker.
+let m399RestoreBusy=false;
+function ensureM399Host(){
+  const host=document.getElementById('preFrameGrid');
+  if(!host||m399RestoreBusy)return;
+  const owned=!!host.querySelector('.m399-category-grid,.m399-frame-grid');
+  if(!owned){
+    m399RestoreBusy=true;
+    try{render()}catch(e){console.warn('M3.9.11 Step1 restore:',e)}
+    m399RestoreBusy=false;
+  }
+}
+const m399ObserverTarget=document.getElementById('preFrameGrid');
+if(m399ObserverTarget&&!m399ObserverTarget.__m399Observer){
+  const obs=new MutationObserver(()=>setTimeout(ensureM399Host,0));
+  obs.observe(m399ObserverTarget,{childList:true});
+  m399ObserverTarget.__m399Observer=obs;
+}
+setInterval(()=>{bindPayment();ensureM399Host()},500);
+setTimeout(ensureM399Host,250);
+setTimeout(ensureM399Host,700);
+setTimeout(ensureM399Host,1400);
+window.BoothProM399={render,choices,groups,ensureM399Host};
 })();
 </script>
 </body>

@@ -4161,5 +4161,69 @@ window.addEventListener('boothpro-frames-updated',function(){setTimeout(install,
 window.addEventListener('boothpro-config-updated',function(){setTimeout(install,30)});
 })();
 </script>
+
+<!-- M3.9.3 FRAME CLICK AUTHORITY + PAYMENT SYNC -->
+<style id="m393-frame-click-fix">
+#preFrameGrid button[data-frame-id]{position:relative!important;z-index:100!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-user-select:none!important;user-select:none!important}
+</style>
+<script id="m393-frame-click-fix">
+(function(){
+'use strict';
+function $(id){return document.getElementById(id)}
+function choices(){
+  try{if(typeof getFrameChoicesSafe==='function')return (getFrameChoicesSafe()||[]).filter(Boolean)}catch(e){}
+  try{if(typeof getFrameChoices==='function')return (getFrameChoices()||[]).filter(Boolean)}catch(e){}
+  try{if(window.BoothProM391?.safeChoices)return (window.BoothProM391.safeChoices()||[]).filter(Boolean)}catch(e){}
+  return [];
+}
+function selected(){
+  const id=String(window.selectedFrameId||selectedFrameId||'');
+  return choices().find(f=>String(f.id)===id)||null;
+}
+function sync(){
+  const p=(config&&Array.isArray(config.packages)?config.packages:[]).find(x=>x&&x.id===selectedPackageId);
+  const f=selected();
+  const s=$('selectedPackageSummary'),pr=$('selectedPackagePrice'),d=$('selectedPackageDesc'),b=$('toPaymentBtn'),l=$('toPaymentLabel');
+  if(s)s.innerHTML=p?escapeHtml(p.name)+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+escapeHtml(f?.name||'Belum dipilih')+'</div>':'Belum dipilih';
+  if(pr)pr.textContent=p?fmt(p.price):'Rp0';
+  if(d)d.textContent=p?(p.photos+' foto · '+(p.prints||1)+' print · '+(f?'Frame siap digunakan':'Pilih frame terlebih dahulu')):'Pilih paket terlebih dahulu';
+  const ready=!!(p&&f);
+  if(b){b.disabled=!ready;b.style.opacity=ready?'1':'.72';b.style.pointerEvents='auto';b.style.cursor=ready?'pointer':'not-allowed';b.setAttribute('aria-disabled',String(!ready));}
+  if(l)l.textContent=ready?'Lanjut ke Pembayaran · '+p.name+' · '+fmt(p.price):(p?'Pilih Frame · '+p.name+' · '+fmt(p.price):'Lanjut ke Pembayaran');
+}
+function select(f){
+  if(!f)return false;
+  try{
+    if(typeof selectFrame==='function')selectFrame(f);
+    else if(typeof window.selectFrame==='function')window.selectFrame(f);
+    window.frameSelectionConfirmed=true;
+    setTimeout(function(){
+      sync();
+      document.querySelectorAll('#preFrameGrid [data-frame-id]').forEach(el=>el.classList.toggle('m392-frame-selected',String(el.dataset.frameId)===String(f.id)));
+    },30);
+    return true;
+  }catch(e){console.warn('M3.9.3 frame select:',e);return false}
+}
+function install(){
+  const host=$('preFrameGrid');
+  if(!host||host.__m393)return false;
+  host.__m393=true;
+  host.addEventListener('click',function(e){
+    const card=e.target.closest('#preFrameGrid [data-frame-id]');
+    if(!card)return;
+    const f=choices().find(x=>String(x.id)===String(card.dataset.frameId));
+    if(!f)return;
+    e.preventDefault();e.stopPropagation();
+    select(f);
+  },true);
+  return true;
+}
+let n=0;const t=setInterval(function(){install();sync();if(++n>100)clearInterval(t)},100);
+setTimeout(function(){install();sync()},250);
+setTimeout(function(){install();sync()},1000);
+window.addEventListener('boothpro-frames-updated',function(){setTimeout(function(){install();sync()},80)});
+window.addEventListener('boothpro-config-updated',function(){setTimeout(function(){install();sync()},80)});
+})();
+</script>
 </body>
 </html>

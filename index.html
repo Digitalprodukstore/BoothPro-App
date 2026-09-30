@@ -3552,39 +3552,46 @@ window.__BOOTHPRO_C8_4_AUTH_READY__=true;
     return bySlot||null;
   }
   function render(){
-    const host=document.getElementById('preFrameGrid');if(!host)return;
-    const ss=slots();host.innerHTML='';
-    const note=document.createElement('div');note.className='bp-frame-empty-note';
-    note.innerHTML='<b>Gallery Frame BoothPro</b><br>Frame berasal dari <b>Dashboard → Frame Gallery</b>. Perubahan akan disinkronkan ke Kiosk.';
-    host.appendChild(note);
-    const grid=document.createElement('div');grid.className='bp-user-frame-grid';
-    for(let i=0;i<SLOT_COUNT;i++){
-      const st=ss[i],f=frameForSlot(i),b=document.createElement('button');b.type='button';
-      b.className='bp-user-frame-slot '+(f&&selectedFrameId===f.id?'bp-selected':'');b.dataset.frameId=f?.id||st.frameId||'';
-      const media=document.createElement('div');media.className='bp-slot-empty';
-      if(f?.src){
-        media.className='';const im=document.createElement('img');im.src=f.src;im.alt=f.name||st.name||('Frame '+(i+1));im.loading='lazy';im.decoding='async';media.appendChild(im);
-      }else if(f){media.innerHTML='<i class="fa-solid fa-spinner fa-spin text-xl text-indigo-400"></i><span class="text-[9px] text-zinc-500">Memuat frame…</span>'}
-      else media.innerHTML='<i class="fa-solid fa-image text-xl text-zinc-600"></i><span class="text-[9px] text-zinc-600">Belum ada frame</span>';
-      b.appendChild(media);
-      const lab=document.createElement('div');lab.className='bp-slot-label';lab.textContent=f?.name||st.name||('Frame '+String(i+1).padStart(2,'0'));b.appendChild(lab);
-      const check=document.createElement('span');check.className='bp-check';check.innerHTML='✓';b.appendChild(check);
-      b.addEventListener('click',async function(e){
-        e.preventDefault();e.stopPropagation();
-        const current=frameForSlot(i);
-        if(!current){alert('Slot ini masih kosong. Upload frame buatan Anda melalui Dashboard terlebih dahulu.');return}
-        const src=current.src||await ensureSource(current.id);
-        if(!src){alert('Frame tersimpan tetapi gambar belum dapat dibaca pada perangkat ini. Coba sinkronkan Cloud lalu buka kembali Gallery.');return}
-        current.src=src;selectFrame(current);frameSelectionConfirmed=true;render();if(typeof updatePackageSummary==='function')updatePackageSummary();
-      },{passive:false});
-      grid.appendChild(b);
-      if(f&&!f.src)ensureSource(f.id).then(src=>{if(src)render()}).catch(()=>{});
+    const host=document.getElementById('preFrameGrid');
+    if(!host)return;
+    host.innerHTML='';
+
+    /* M2.1: Kiosk Step 1 must always have usable built-in frames.
+       Do not render empty Dashboard slots as the primary gallery. */
+    try{
+      renderDirectBuiltinGallery(host,true);
+    }catch(e){
+      console.warn('Built-in Frame 2026 gallery render:',e);
     }
-    host.appendChild(grid);
-    const count=Array.from({length:SLOT_COUNT},(_,i)=>frameForSlot(i)).filter(Boolean).length;
-    const footer=document.createElement('div');footer.className='text-[10px] text-zinc-500 mt-2';footer.textContent=count+' frame upload tersedia · '+Math.max(0,SLOT_COUNT-count)+' slot kosong';host.appendChild(footer);
-  }
-  window.renderPreFrames=render;
+
+    /* Keep uploaded Dashboard frames available, but never show empty/loading
+       placeholders as selectable choices. */
+    const uploaded=Array.isArray(frameGallery)
+      ? frameGallery.filter(f=>f&&f.id&&f.src)
+      : [];
+
+    if(uploaded.length){
+      const section=document.createElement('div');
+      section.className='pre-category-section';
+      const title=document.createElement('div');
+      title.className='pre-category-title';
+      title.innerHTML='<span>UPLOAD DASHBOARD</span><span class="pre-category-hint">'+uploaded.length+' frame</span>';
+      section.appendChild(title);
+
+      const grid=document.createElement('div');
+      grid.className='pre-frame-detail-grid';
+      uploaded.forEach(f=>grid.appendChild(makeFrameCard(f,true)));
+      section.appendChild(grid);
+      host.appendChild(section);
+    }
+
+    const hint=document.createElement('div');
+    hint.className='text-[10px] text-zinc-500 text-center mt-2';
+    hint.textContent=uploaded.length
+      ? 'Pilih salah satu frame untuk melanjutkan ke pembayaran.'
+      : 'Pilih salah satu Frame 2026 untuk melanjutkan ke pembayaran.';
+    host.appendChild(hint);
+  }  window.renderPreFrames=render;
   window.boothProEnsureFrameSource=ensureSource;
   window.boothProRenderFrameAuthority=render;
 

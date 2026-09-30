@@ -3664,7 +3664,7 @@ function groups(){
   return g;
 }
 function selected(){
-  const id=String(window.selectedFrameId||'');
+  const id=String(selectedFrameId||'');
   return choices().find(f=>String(f.id)===id)||null;
 }
 function sync(){
@@ -3672,7 +3672,7 @@ function sync(){
   const f=selected();
   const host=document.getElementById('preFrameGrid');
   if(host)host.querySelectorAll('.m3912-frame').forEach(card=>{
-    const on=String(card.dataset.frameId)===String(window.selectedFrameId||'');
+    const on=String(card.dataset.frameId)===String(selectedFrameId||'');
     card.classList.toggle('is-selected',on);
     const ck=card.querySelector('.m3912-check');
     if(ck)ck.classList.toggle('hidden',!on);
@@ -3681,15 +3681,15 @@ function sync(){
 function select(f){
   if(!f)return;
   try{if(typeof window.selectFrame==='function')window.selectFrame(f);else{
-    window.selectedFrameId=f.id;window.selectedFrameSrc=f.src||'';
-    window.frameSelectionConfirmed=!!window.selectedPackageId;
+    selectedFrameId=f.id;selectedFrameSrc=f.src||'';
+    frameSelectionConfirmed=!!selectedPackageId;
   }}catch(e){
-    window.selectedFrameId=f.id;window.selectedFrameSrc=f.src||'';
-    window.frameSelectionConfirmed=!!window.selectedPackageId;
+    selectedFrameId=f.id;selectedFrameSrc=f.src||'';
+    frameSelectionConfirmed=!!selectedPackageId;
   }
-  window.selectedFrameId=f.id;
-  window.selectedFrameSrc=f.src||'';
-  window.frameSelectionConfirmed=!!window.selectedPackageId;
+  selectedFrameId=f.id;
+  selectedFrameSrc=f.src||'';
+  frameSelectionConfirmed=!!selectedPackageId;
   sync();
   render();
 }
@@ -3703,7 +3703,7 @@ function frameCard(f){
     const box=document.createElement('div');box.style.cssText='width:100%;height:100%;background:#27272a';b.appendChild(box);
   }
   const name=document.createElement('div');name.className='m3912-name';name.textContent=f.name||'Frame';b.appendChild(name);
-  const ck=document.createElement('span');ck.className='m3912-check'+(String(f.id)===String(window.selectedFrameId||'')?'':' hidden');ck.textContent='✓';b.appendChild(ck);
+  const ck=document.createElement('span');ck.className='m3912-check'+(String(f.id)===String(selectedFrameId||'')?'':' hidden');ck.textContent='✓';b.appendChild(ck);
   b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();select(f)},{capture:true});
   return b;
 }
@@ -3753,11 +3753,11 @@ function bind(){
   if(!btn||btn.dataset.m3912Bound)return;
   btn.dataset.m3912Bound='1';
   btn.addEventListener('click',e=>{
-    if(!window.selectedPackageId){
+    if(!selectedPackageId){
       e.preventDefault();e.stopImmediatePropagation();
       alert('Pilih paket terlebih dahulu.');return;
     }
-    if(!window.selectedFrameId||!window.frameSelectionConfirmed){
+    if(!selectedFrameId||!frameSelectionConfirmed){
       e.preventDefault();e.stopImmediatePropagation();
       alert('Pilih frame terlebih dahulu.');return;
     }

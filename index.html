@@ -3181,5 +3181,202 @@ if(oldOpen&&!oldOpen.__bpM31){
 window.addEventListener('boothpro:m3-ready',load);
 })();
 </script>
+
+<!-- M3.2 CLOUD BRAND GALLERY + KIOSK FLOW -->
+<style id="m32-brand-kiosk-style">
+#bpM32BrandModal{position:fixed;inset:0;z-index:99995;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(0,0,0,.82);backdrop-filter:blur(8px)}
+#bpM32BrandModal.open{display:flex}
+#bpM32BrandPanel{width:min(980px,100%);max-height:92vh;overflow:auto;background:#09090b;border:1px solid #27272a;border-radius:26px;box-shadow:0 30px 100px rgba(0,0,0,.65)}
+.bpM32Head{padding:18px;border-bottom:1px solid #27272a;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.bpM32Grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.bpM32BrandCard,.bpM32FrameCard{border:1px solid #27272a;background:#111113;border-radius:18px;overflow:hidden;cursor:pointer;touch-action:manipulation;transition:.16s}
+.bpM32BrandCard:hover,.bpM32FrameCard:hover{border-color:#6366f1;transform:translateY(-1px)}
+.bpM32BrandCover{width:100%;aspect-ratio:16/9;background:#18181b;display:flex;align-items:center;justify-content:center}
+.bpM32BrandCover img{width:100%;height:100%;object-fit:cover;display:block}
+.bpM32FrameGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.bpM32FrameThumb{aspect-ratio:2/3;background:#111;display:flex;align-items:center;justify-content:center}
+.bpM32FrameThumb img{width:100%;height:100%;object-fit:contain;display:block}
+.bpM32Name{padding:10px;font-size:11px;font-weight:900;color:#f4f4f5}
+.bpM32Meta{padding:0 10px 10px;font-size:9px;color:#71717a}
+@media(max-width:700px){.bpM32Grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.bpM32FrameGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.bpM32Head{padding:14px}}
+</style>
+<script id="m32-cloud-brand-kiosk">
+(function(){
+'use strict';
+const M=window.BoothProM3;
+const URL='https://jnajtcuxlgkpplyvvsik.supabase.co';
+const KEY='sb_publishable_WGOpLbsmk_3Prr2pabYuMw_juhU0mN-';
+const TABLE='boothpro_public_frames';
+const BUCKET='boothpro-frames';
+const BRAND_CAT='__BRAND__';
+const FRAME_PREFIX='BRAND:';
+const $=id=>document.getElementById(id);
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function publicUrl(path){return URL+'/storage/v1/object/public/'+encodeURIComponent(BUCKET)+'/'+String(path||'').split('/').map(encodeURIComponent).join('/')}
+function session(){try{return window.getBoothProSupabaseSession?window.getBoothProSupabaseSession():null}catch(e){return null}}
+async function getSession(){try{return await session()}catch(e){return null}}
+async function api(path,opts){
+ const o=opts||{},h={'apikey':KEY,'Accept':'application/json'};
+ if(o.token)h.Authorization='Bearer '+o.token;
+ if(o.body!==undefined){h['Content-Type']='application/json';h.Prefer=o.prefer||'return=representation'}
+ const res=await fetch(URL+'/rest/v1/'+path,{method:o.method||'GET',headers:h,body:o.body===undefined?undefined:JSON.stringify(o.body),cache:'no-store'});
+ const data=await res.json().catch(()=>null);if(!res.ok)throw new Error(data?.message||data?.hint||data?.details||data?.msg||('HTTP '+res.status));return data||[];
+}
+async function uploadObject(token,path,src,type){
+ const blob=await (async()=>{const r=await fetch(String(src));if(!r.ok)throw new Error('Asset tidak dapat dibaca.');return await r.blob()})();
+ const endpoint=URL+'/storage/v1/object/'+encodeURIComponent(BUCKET)+'/'+String(path).split('/').map(encodeURIComponent).join('/');
+ const res=await fetch(endpoint,{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+token,'Content-Type':type||blob.type||'image/png','x-upsert':'true'},body:blob,cache:'no-store'});
+ if(!res.ok){const d=await res.json().catch(()=>null);throw new Error(d?.message||d?.error||('Storage HTTP '+res.status))}
+ return publicUrl(path);
+}
+async function cloudSaveBrands(){
+ const s=await getSession();if(!s?.user?.id||!s?.access_token)throw new Error('Login Dashboard Cloud diperlukan.');
+ const uid=s.user.id;
+ const brands=(M.getBrands?M.getBrands():M.brandGroups||[]).map(x=>M.normalizeBrand?M.normalizeBrand(x):x);
+ for(const b of brands){
+   b.enabled=b.enabled!==false;
+   if(b.coverUrl&&String(b.coverUrl).startsWith('data:')){
+     const type=(String(b.coverUrl).match(/^data:([^;]+);/)||[])[1]||'image/jpeg';
+     const ext=type.includes('png')?'png':type.includes('webp')?'webp':'jpg';
+     b.coverPath=uid+'/brands/'+b.id+'.'+ext;
+     b.coverUrl=await uploadObject(s.access_token,b.coverPath,b.coverUrl,type);
+   }
+   const brandRow={id:'brand-'+b.id,name:String(b.name||'Brand'),category:BRAND_CAT,original_type:'image/jpeg',storage_path:b.coverPath||'',slot_index:Number(b.sortOrder)||0,enabled:b.enabled,workspace_id:uid,updated_at:new Date().toISOString()};
+   await api(TABLE+'?on_conflict=id',{method:'POST',body:brandRow,prefer:'resolution=merge-duplicates,return=representation',token:s.access_token});
+   for(const f of (b.frames||[])){
+     let src=f.pngUrl||f._localSrc||'';
+     let path=f.storagePath||'';
+     if(src&&String(src).startsWith('data:')){
+       const type=(String(src).match(/^data:([^;]+);/)||[])[1]||'image/png';
+       const ext=type.includes('webp')?'webp':'png';
+       path=uid+'/brands/'+b.id+'/'+f.id+'.'+ext;
+       f.publicUrl=await uploadObject(s.access_token,path,src,type);
+       f.storagePath=path;
+       delete f.pngUrl; delete f._localSrc;
+     }
+     if(path){
+       const row={id:String(f.id),name:String(f.name||'Frame'),category:FRAME_PREFIX+b.id,original_type:'image/png',storage_path:path,slot_index:Number(f.sortOrder)||0,enabled:f.enabled!==false,workspace_id:uid,updated_at:new Date().toISOString()};
+       await api(TABLE+'?on_conflict=id',{method:'POST',body:row,prefer:'resolution=merge-duplicates,return=representation',token:s.access_token});
+     }
+   }
+ }
+ M.brandGroups=brands;
+ config.brandGroups=brands.map(b=>({...b,frames:(b.frames||[]).map(f=>({...f,pngUrl:'',_localSrc:''}))}));
+ try{saveConfig({skipCloud:true,silent:true})}catch(e){}
+ try{if(typeof pushBoothProCloud==='function'){config.cloudSync=config.cloudSync||{};config.cloudSync.enabled=true;config.cloudSync.workspaceId=uid;await pushBoothProCloud(true)}}catch(e){console.warn('M3.2 config cloud push:',e)}
+ return true;
+}
+async function cloudLoadBrands(workspaceId){
+ const ws=String(workspaceId||'').trim();if(!ws)return [];
+ const rows=await api(TABLE+'?workspace_id=eq.'+encodeURIComponent(ws)+'&enabled=eq.true&select=id,name,category,original_type,storage_path,slot_index,enabled,updated_at&order=slot_index.asc,updated_at.asc');
+ const brands=[],byId=new Map();
+ for(const r of rows||[]){
+   if(r.category!==BRAND_CAT&&!String(r.category||'').startsWith(FRAME_PREFIX))continue;
+   if(r.category===BRAND_CAT){
+     const id=String(r.id).replace(/^brand-/,'');
+     const b={id,name:r.name||'Brand',coverUrl:r.storage_path?publicUrl(r.storage_path):'',coverPath:r.storage_path||'',enabled:r.enabled!==false,sortOrder:Number(r.slot_index)||0,frames:[]};
+     byId.set(id,b);brands.push(b);
+   }
+ }
+ for(const r of rows||[]){
+   const cat=String(r.category||'');if(!cat.startsWith(FRAME_PREFIX))continue;
+   const bid=cat.slice(FRAME_PREFIX.length);
+   const b=byId.get(bid);if(!b)continue;
+   b.frames.push({id:String(r.id),name:r.name||'Frame',pngUrl:'',publicUrl:r.storage_path?publicUrl(r.storage_path):'',storagePath:r.storage_path||'',enabled:r.enabled!==false,sortOrder:Number(r.slot_index)||0,category:'CUSTOM'});
+ }
+ brands.sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0));
+ brands.forEach(b=>b.frames.sort((a,c)=>(a.sortOrder||0)-(c.sortOrder||0)));
+ return brands;
+}
+function workspace(){
+ try{const q=new URLSearchParams(location.search);const h=new URLSearchParams(String(location.hash||'').replace(/^#/,'').replace(/^\?/,'')||'');return String(q.get('workspace')||q.get('workspace_id')||h.get('workspace')||config?.cloudSync?.workspaceId||'').trim()}catch(e){return ''}
+}
+async function kioskLoad(){
+ const ws=workspace();if(!ws)return [];
+ try{
+   const brands=await cloudLoadBrands(ws);
+   if(brands.length){
+     M.brandGroups=brands;
+     M.selectedBrandId='';
+     M.selectedFrameId='';
+     for(const b of brands)for(const f of b.frames){
+       if(!Array.isArray(window.frameGallery))continue;
+       const existing=window.frameGallery.find(x=>x&&x.id===f.id);
+       const item=existing||{id:f.id,name:f.name,category:f.category,originalType:'image/png',autoTransparent:true};
+       item.name=f.name;item.category='CUSTOM';item.brandId=b.id;item.storagePath=f.storagePath;item.publicUrl=f.publicUrl;item.src=f.publicUrl||item.src||'';
+       if(!existing)window.frameGallery.push(item);
+     }
+     try{saveFrameMetadata()}catch(e){}
+     try{if(typeof renderPreFrames==='function')renderPreFrames()}catch(e){}
+     return brands;
+   }
+ }catch(e){console.warn('M3.2 kiosk cloud:',e)}
+ return [];
+}
+function ensureModal(){
+ if($('bpM32BrandModal'))return;
+ const m=document.createElement('div');m.id='bpM32BrandModal';
+ m.innerHTML='<div id="bpM32BrandPanel"><div class="bpM32Head"><div><div style="font-size:18px;font-weight:900">Pilih Brand / Event</div><div id="bpM32Sub" style="font-size:10px;color:#71717a;margin-top:3px">Pilih brand untuk melihat koleksi frame</div></div><button id="bpM32Close" type="button" style="padding:8px 12px;border-radius:11px;background:#27272a;color:#fff;font-size:12px">Tutup</button></div><div id="bpM32Body" style="padding:16px"></div></div>';
+ document.body.appendChild(m);
+ $('bpM32Close').onclick=()=>m.classList.remove('open');
+}
+function openBrandPicker(brands){
+ ensureModal();const body=$('bpM32Body');$('bpM32Sub').textContent='Pilih brand untuk melihat koleksi frame';
+ body.innerHTML='<div class="bpM32Grid"></div>';
+ const grid=body.firstElementChild;
+ brands.forEach(b=>{
+   const card=document.createElement('button');card.type='button';card.className='bpM32BrandCard';
+   card.innerHTML='<div class="bpM32BrandCover">'+(b.coverUrl?'<img src="'+esc(b.coverUrl)+'" alt="">':'<span style="color:#52525b;font-size:11px">BRAND</span>')+'</div><div class="bpM32Name">'+esc(b.name)+'</div><div class="bpM32Meta">'+b.frames.length+' frame</div>';
+   card.onclick=()=>openFrames(b);grid.appendChild(card);
+ });
+ $('bpM32BrandModal').classList.add('open');
+}
+function openFrames(b){
+ const body=$('bpM32Body');$('bpM32Sub').textContent=b.name+' · Pilih frame';
+ body.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px"><button id="bpM32Back" type="button" style="padding:8px 11px;border-radius:10px;background:#27272a;color:#fff;font-size:11px">← Brand</button><span style="font-size:10px;color:#71717a">'+b.frames.length+' frame</span></div><div class="bpM32FrameGrid"></div>';
+ $('bpM32Back').onclick=()=>openBrandPicker(M.getBrands().filter(x=>x.enabled!==false));
+ const grid=body.querySelector('.bpM32FrameGrid');
+ b.frames.filter(f=>f.enabled!==false).forEach(f=>{
+   const card=document.createElement('button');card.type='button';card.className='bpM32FrameCard';
+   const src=f.publicUrl||f.pngUrl||f.src||'';
+   card.innerHTML='<div class="bpM32FrameThumb">'+(src?'<img src="'+esc(src)+'" alt="">':'<span style="color:#52525b;font-size:10px">FRAME</span>')+'</div><div class="bpM32Name">'+esc(f.name)+'</div>';
+   card.onclick=()=>chooseFrame(b,f);grid.appendChild(card);
+ });
+}
+function chooseFrame(b,f){
+ M.selectedBrandId=b.id;M.selectedFrameId=f.id;
+ const local={id:f.id,name:f.name,src:f.publicUrl||f.pngUrl||f.src||'',category:'CUSTOM',brandId:b.id,storagePath:f.storagePath||''};
+ try{if(typeof window.selectFrame==='function')window.selectFrame(local);else if(typeof selectFrame==='function')selectFrame(local)}catch(e){console.warn('M3.2 select frame:',e)}
+ const m=$('bpM32BrandModal');if(m)m.classList.remove('open');
+ const originalGo=window.__bpM32OriginalGoToStep;
+ if(originalGo)originalGo(2);else if(typeof goToStep==='function')goToStep(2);
+}
+async function startFlow(){
+ const brands=await kioskLoad();
+ if(brands.length){openBrandPicker(brands);return true}
+ return false;
+}
+window.BoothProM32={cloudSaveBrands,cloudLoadBrands,kioskLoad,startFlow,openBrandPicker,openFrames};
+window.addEventListener('boothpro:m3-ready',()=>{try{M.brandGroups=M.brandGroups||[]}catch(e){}});
+const startBtn=document.querySelector('#step-welcome button[onclick="goToStep(2)"]');
+const originalGo=window.goToStep;
+window.__bpM32OriginalGoToStep=originalGo;
+if(startBtn)startBtn.onclick=async function(ev){ev?.preventDefault?.();const used=await startFlow();if(!used&&originalGo)originalGo(2)};
+if(typeof window.openDashboardUnlocked==='function'){
+ const old=window.openDashboardUnlocked;
+ if(!old.__bpM32CloudSave){
+   const wrapped=function(){const r=old.apply(this,arguments);setTimeout(()=>{
+     const host=$('bpM31Panel');if(host&&!$('bpM32CloudSaveBtn')){
+       const b=document.createElement('button');b.id='bpM32CloudSaveBtn';b.type='button';b.textContent='☁ Simpan Brand & Frame ke Cloud';b.style.cssText='margin:0 16px 14px;padding:10px 13px;border-radius:12px;background:#0891b2;color:#fff;font-size:11px;font-weight:900;cursor:pointer';
+       b.onclick=async()=>{b.disabled=true;b.textContent='Menyimpan ke Cloud...';try{await cloudSaveBrands();b.textContent='✓ Tersimpan ke Cloud';setTimeout(()=>b.textContent='☁ Simpan Brand & Frame ke Cloud',1800)}catch(e){b.textContent='Gagal: '+(e?.message||e);setTimeout(()=>b.textContent='☁ Simpan Brand & Frame ke Cloud',2200)}finally{b.disabled=false}};
+       host.prepend(b);
+     }
+   },120);return r};
+   wrapped.__bpM32CloudSave=true;window.openDashboardUnlocked=wrapped;
+ }
+}
+})();
+</script>
+
 </body>
 </html>

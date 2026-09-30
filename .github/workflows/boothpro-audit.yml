@@ -37,14 +37,7 @@ jobs:
         run: |
           echo "## BoothPro Audit & Guard" >> "$GITHUB_STEP_SUMMARY"
           if [ -f audit-report.json ]; then
-            python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
-import json
-d=json.load(open("audit-report.json"))
-s=d["summary"]
-print(f"- FAIL: {s['fail']}")
-print(f"- WARN: {s['warn']}")
-print(f"- PASS: {s['pass']}")
-PY
+            python3 -c 'import json; d=json.load(open("audit-report.json")); s=d["summary"]; print(f"- FAIL: {s["fail"]}") ; print(f"- WARN: {s["warn"]}") ; print(f"- PASS: {s["pass"]}")' >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Fail on critical findings
         if: steps.audit.outcome == 'failure'

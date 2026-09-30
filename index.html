@@ -3132,7 +3132,12 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(M.brandGroups));retu
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function el(id){return document.getElementById(id)}
 function framesFor(b){return M.getBrandFrames(b.id)}
-function frameSrc(f){try{const x=(window.frameGallery||[]).find(v=>v&&v.id===f.id);return x?.src||f.pngUrl||''}catch(e){return f.pngUrl||''}}
+function frameSrc(f){
+  try{
+    const x=(window.frameGallery||[]).find(v=>v&&v.id===f.id);
+    return x?.src||x?._localSrc||x?.publicUrl||x?.pngUrl||f?._localSrc||f?.src||f?.pngUrl||f?.publicUrl||'';
+  }catch(e){return f?._localSrc||f?.src||f?.pngUrl||f?.publicUrl||''}
+}
 function ensureModal(){
  if(el('bpM31Modal'))return;
  const m=document.createElement('div');m.id='bpM31Modal';
@@ -3498,11 +3503,3 @@ window.makeFrameCard=function(f,compact){
   }
   const name=document.createElement('span');name.className='absolute bottom-1 left-1 right-1 text-[9px] bg-black/65 rounded px-1 py-0.5';name.textContent=f?.name||'Frame';b.appendChild(name);
   const badge=document.createElement('span');badge.className='frame-selected-badge ${selectedFrameId===f?.id?'':'hidden'} absolute top-1 right-1 text-[8px] font-black bg-indigo-600 text-white rounded-full px-1.5 py-0.5';badge.textContent='✓';b.appendChild(badge);
-  return b;
-};
-if(!window.__bpM34HydrateBound){
-  window.__bpM34HydrateBound=true;
-  setTimeout(()=>{try{BoothProM34.hydrate()}catch(e){}},300);
-}
-})();
-</script>

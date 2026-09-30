@@ -4708,3 +4708,75 @@ function boot(){setInterval(watch,250)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
+
+<!-- C12: clean Frame 2026 selector — one source of truth, native horizontal gallery -->
+<style id="c12-frame-gallery-css">
+#preFrameGrid{width:100%!important;min-width:0!important;overflow:visible!important;pointer-events:auto!important;touch-action:auto!important}
+#bpC12FrameBox{display:block!important;width:100%!important;overflow:visible!important;position:relative!important;z-index:50000!important}
+#bpC12FrameRow{display:flex!important;flex-wrap:nowrap!important;gap:12px!important;width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;padding:6px 4px 14px!important;scroll-snap-type:x mandatory!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-x!important;overscroll-behavior-x:contain!important;pointer-events:auto!important}
+#bpC12FrameRow::-webkit-scrollbar{height:6px!important}
+#bpC12FrameCard{display:block!important}
+.bpC12Card{flex:0 0 122px!important;width:122px!important;height:174px!important;min-width:122px!important;position:relative!important;border:2px solid #27272a!important;border-radius:16px!important;background:#18181b!important;overflow:hidden!important;padding:0!important;pointer-events:auto!important;touch-action:manipulation!important;scroll-snap-align:start!important}
+.bpC12Card.bpActive{border-color:#818cf8!important;box-shadow:0 0 0 2px rgba(129,140,248,.22)!important}
+.bpC12Card img{display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important}
+.bpC12Name{position:absolute!important;left:5px!important;right:5px!important;bottom:5px!important;padding:4px!important;border-radius:7px!important;background:rgba(0,0,0,.72)!important;color:#fff!important;font-size:9px!important;font-weight:800!important;text-align:center!important;pointer-events:none!important}
+.bpC12Check{position:absolute!important;right:6px!important;top:6px!important;width:22px!important;height:22px!important;border-radius:50%!important;background:#4f46e5!important;color:#fff!important;font-weight:900!important;text-align:center!important;line-height:22px!important;pointer-events:none!important}
+#bpC12Status{margin-top:8px!important;padding:9px 12px!important;border-radius:10px!important;background:#18181b!important;color:#a1a1aa!important;font-size:11px!important;text-align:center!important}
+</style>
+<script id="c12-clean-frame-gallery">
+(function(){
+'use strict';
+var active=false;
+function frames(){
+  try{
+    var count=Math.max(1,Number(requiredPhotosCount)||4);
+    var all=typeof window.boothProC93Catalog==='function'?window.boothProC93Catalog():[];
+    return all.filter(function(f){return f&&f.src}).slice(0,20);
+  }catch(e){return []}
+}
+function select(f){
+  try{
+    if(typeof window.selectFrame==='function')window.selectFrame(f);
+    else if(typeof selectFrame==='function')selectFrame(f);
+  }catch(e){console.warn('C12 select frame',e)}
+}
+function render(){
+  var host=document.getElementById('preFrameGrid'); if(!host)return;
+  var fs=frames(); if(!fs.length)return;
+  active=true;
+  host.innerHTML='';
+  var box=document.createElement('div');box.id='bpC12FrameBox';
+  var head=document.createElement('div');head.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;';
+  var title=document.createElement('div');title.textContent='FRAME 2026 · PILIH FRAME';title.style.cssText='font-size:11px;font-weight:900;letter-spacing:.08em;color:#c7d2fe;';
+  var hint=document.createElement('div');hint.textContent='Geser →';hint.style.cssText='font-size:10px;color:#71717a;';
+  head.append(title,hint);box.appendChild(head);
+  var row=document.createElement('div');row.id='bpC12FrameRow';
+  fs.forEach(function(f){
+    var b=document.createElement('button');b.type='button';b.className='bpC12Card'+(selectedFrameId===f.id?' bpActive':'');b.dataset.frameId=f.id;
+    var im=document.createElement('img');im.src=f.src;im.alt=f.name;im.draggable=false;b.appendChild(im);
+    var nm=document.createElement('span');nm.className='bpC12Name';nm.textContent=f.name;b.appendChild(nm);
+    if(selectedFrameId===f.id){var ck=document.createElement('span');ck.className='bpC12Check';ck.textContent='✓';b.appendChild(ck)}
+    b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();select(f);setTimeout(render,30)},false);
+    row.appendChild(b);
+  });
+  box.appendChild(row);
+  var status=document.createElement('div');status.id='bpC12Status';status.textContent=selectedFrameId?'Frame siap dipakai':'Pilih salah satu frame';box.appendChild(status);
+  host.appendChild(box);
+}
+function hideLegacy(){
+  var ids=['bpC96Open','bpC96Overlay','bpC98','bpC99'];
+  ids.forEach(function(id){var x=document.getElementById(id);if(x)x.style.setProperty('display','none','important')});
+}
+function boot(){
+  hideLegacy();
+  var host=document.getElementById('preFrameGrid');if(!host)return;
+  render();
+  var mo=new MutationObserver(function(){
+    if(active){hideLegacy();if(!document.getElementById('bpC12FrameBox'))render()}
+  });
+  mo.observe(host,{childList:true});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('boothpro-config-updated',function(){setTimeout(render,30)});
+})();
+</script>

@@ -538,11 +538,32 @@ function renderPackageStep(){
 function selectPackage(id){
   const p=(config.packages||[]).find(x=>x.id===id);
   if(!p)return;
-  selectedPackageId=id; selectedLayoutType=p.layout; frameSelectionConfirmed=false; preFrameCategoryOpen='';
+  selectedPackageId=id; selectedLayoutType=p.layout; preFrameCategoryOpen='';
   requiredPhotosCount=Math.max(1,Number(p.photos)||4);
-  try{applyConfiguredDefaultFrame()}catch(e){console.warn('Frame default:',e)}
+
+  /* M3.2: preserve a frame selected from Brand Gallery.
+     The previous implementation always reset to the configured default
+     after package selection, which made the "Lanjut ke Pembayaran" button
+     appear stuck even though a frame had already been chosen. */
+  let keepFrame=!!selectedFrameId;
+  try{
+    const choices=getFrameChoicesSafe();
+    if(keepFrame && !choices.some(f=>f&&f.id===selectedFrameId)){
+      keepFrame=false;
+      selectedFrameId='';
+      selectedFrameSrc='';
+    }
+  }catch(e){keepFrame=!!selectedFrameId}
+  if(!keepFrame){
+    try{applyConfiguredDefaultFrame()}catch(e){console.warn('Frame default:',e)}
+  }
+  frameSelectionConfirmed=!!selectedFrameId;
+  try{
+    const cf=(getFrameChoicesSafe()||[]).find(f=>f&&f.id===selectedFrameId);
+    if(cf&&cf.src)selectedFrameSrc=cf.src;
+  }catch(e){}
   renderPreFrames(); updatePackageSummary();
-  const btn=$('toPaymentBtn'); if(btn){btn.disabled=true;btn.classList.remove('bpC16Ready');}
+  const btn=$('toPaymentBtn'); if(btn){btn.disabled=!frameSelectionConfirmed;btn.classList.toggle('bpC16Ready',frameSelectionConfirmed);}
 }
 function updatePackageSummary(){
   const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
@@ -3374,6 +3395,33 @@ if(typeof window.openDashboardUnlocked==='function'){
    },120);return r};
    wrapped.__bpM32CloudSave=true;window.openDashboardUnlocked=wrapped;
  }
+}
+})();
+</script>
+
+
+<!-- M3.3 FRAME/PACKAGE FLOW FIX -->
+<script id="m33-frame-package-flow-fix">
+(function(){
+'use strict';
+/* Safety authority for the M3.2 flow: selecting a package must never
+   discard the frame chosen from Brand/Event Gallery. */
+const oldSelect=window.selectPackage;
+if(typeof oldSelect==='function'&&!oldSelect.__m33){
+ const wrapped=function(id){
+   const before=window.selectedFrameId;
+   const result=oldSelect.apply(this,arguments);
+   try{
+     if(before&&window.selectedFrameId!==before){
+       window.selectedFrameId=before;
+       window.frameSelectionConfirmed=!!before;
+       if(typeof updatePackageSummary==='function')updatePackageSummary();
+       if(typeof renderPreFrames==='function')renderPreFrames();
+     }
+   }catch(e){console.warn('M3.3 frame preserve:',e)}
+   return result;
+ };
+ wrapped.__m33=true;window.selectPackage=wrapped;
 }
 })();
 </script>

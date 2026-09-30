@@ -4048,3 +4048,47 @@ window.__BOOTHPRO_C8_4_AUTH_READY__=true;
   },400);
 })();
 </script>
+
+<script id="c9-1-frame-render-override">
+(function(){
+  'use strict';
+  /*
+   * C9.1 — override lexical renderPreFrames calls.
+   * Older code calls its lexical function directly, so assigning
+   * window.renderPreFrames is not sufficient. Observe the actual kiosk host
+   * and restore the deterministic Frame 2026 catalog after legacy renders.
+   */
+  let restoring=false;
+  function restore(){
+    if(restoring)return;
+    const host=document.getElementById('preFrameGrid');
+    if(!host)return;
+    restoring=true;
+    try{
+      if(typeof window.boothProRenderFrameAuthority==='function'){
+        window.boothProRenderFrameAuthority();
+      }
+    }catch(e){console.warn('C9.1 restore:',e)}
+    finally{setTimeout(()=>{restoring=false},0)}
+  }
+  function boot(){
+    const host=document.getElementById('preFrameGrid');
+    if(!host)return;
+    if(host.__bpC91Observer)return;
+    const obs=new MutationObserver(function(){
+      if(restoring)return;
+      clearTimeout(host.__bpC91Timer);
+      host.__bpC91Timer=setTimeout(restore,0);
+    });
+    obs.observe(host,{childList:true,subtree:false});
+    host.__bpC91Observer=obs;
+    setTimeout(restore,0);
+    setTimeout(restore,150);
+    setTimeout(restore,700);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else boot();
+  window.addEventListener('boothpro-config-updated',()=>setTimeout(restore,20));
+  window.addEventListener('boothpro-frames-updated',()=>setTimeout(restore,20));
+})();
+</script>

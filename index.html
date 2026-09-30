@@ -4008,5 +4008,95 @@ setTimeout(render,1000);
 window.BoothProM391={render,safeChoices};
 })();
 </script>
+<!-- M3.9.3 PUBLIC FRAME AUTO-DISCOVERY -->
+<script id="m393-public-frame-auto-discovery">
+(function(){
+'use strict';
+const URL='https://jnajtcuxlgkpplyvvsik.supabase.co';
+const KEY='sb_publishable_WGOpLbsmk_3Prr2pabYuMw_juhU0mN-';
+const TABLE='boothpro_public_frames';
+const BUCKET='boothpro-frames';
+function publicUrl(path){return URL+'/storage/v1/object/public/'+encodeURIComponent(BUCKET)+'/'+String(path||'').split('/').map(encodeURIComponent).join('/')}
+async function api(path){
+  const res=await fetch(URL+'/rest/v1/'+path,{headers:{apikey:KEY,Accept:'application/json'},cache:'no-store'});
+  const data=await res.json().catch(()=>null);
+  if(!res.ok)throw new Error(data?.message||data?.hint||data?.details||data?.msg||('HTTP '+res.status));
+  return Array.isArray(data)?data:[];
+}
+async function hydrate(rows){
+  if(!Array.isArray(rows)||!rows.length)return false;
+  let changed=false;
+  for(const m of rows){
+    if(!m?.id||!m?.storage_path)continue;
+    try{
+      let existing=Array.isArray(window.frameGallery)?window.frameGallery.find(f=>f&&f.id===m.id):null;
+      let src=existing?.src||'';
+      if(!src){
+        const res=await fetch(publicUrl(m.storage_path),{cache:'no-store',headers:{Accept:'image/*'}});
+        if(!res.ok)continue;
+        const blob=await res.blob();
+        if(!blob.size)continue;
+        src=await new Promise((resolve,reject)=>{
+          const fr=new FileReader();fr.onload=()=>resolve(String(fr.result||''));fr.onerror=reject;fr.readAsDataURL(blob);
+        });
+        if(!src)continue;
+        try{if(typeof frameDBPut==='function')await frameDBPut(m.id,src)}catch(e){}
+      }
+      const next={
+        id:String(m.id),
+        name:String(m.name||'Frame'),
+        category:String(m.category||'CUSTOM'),
+        originalType:String(m.original_type||'image/png'),
+        autoTransparent:true,
+        slotIndex:m.slot_index==null?undefined:Number(m.slot_index),
+        src,
+        storagePath:String(m.storage_path),
+        publicUrl:publicUrl(m.storage_path),
+        publicManifest:true,
+        publicWorkspaceId:String(m.workspace_id||'')
+      };
+      if(existing)Object.assign(existing,next);else{
+        if(!Array.isArray(window.frameGallery))window.frameGallery=[];
+        window.frameGallery.push(next);
+      }
+      changed=true;
+    }catch(e){console.warn('M3.9.3 frame hydrate:',m?.id,e)}
+  }
+  if(changed){
+    try{if(typeof saveFrameMetadata==='function')saveFrameMetadata()}catch(e){}
+    ['renderPreFrames','renderFrameGallery','renderCaptureReview','renderEditorFrameQuickGrid','renderDashFrameManager'].forEach(n=>{try{if(typeof window[n]==='function')window[n]()}catch(e){}});
+  }
+  return changed;
+}
+window.BoothProM393={
+  async sync(){
+    try{
+      const q=new URLSearchParams(location.search);
+      const h=new URLSearchParams(String(location.hash||'').replace(/^#/,'').replace(/^\?/,'')||'');
+      const ws=String(q.get('workspace')||q.get('workspace_id')||h.get('workspace')||'').trim();
+      let rows=[];
+      if(ws){
+        rows=await api(TABLE+'?workspace_id=eq.'+encodeURIComponent(ws)+'&enabled=eq.true&select=id,name,category,original_type,storage_path,slot_index,enabled,workspace_id,updated_at&order=updated_at.desc');
+      }else{
+        // No workspace in the kiosk URL: use the public manifest directly.
+        // This keeps the kiosk working without requiring a Dashboard login.
+        rows=await api(TABLE+'?enabled=eq.true&select=id,name,category,original_type,storage_path,slot_index,enabled,workspace_id,updated_at&order=updated_at.desc&limit=200');
+      }
+      // Ignore Brand cover records; Step 1 only needs actual frame records.
+      rows=rows.filter(r=>r&&r.category!=='__BRAND__'&&r.storage_path);
+      return await hydrate(rows);
+    }catch(e){console.warn('M3.9.3 public frame sync:',e);return false}
+  }
+};
+async function boot(){
+  await window.BoothProM393.sync();
+  try{if(typeof window.BoothProM392?.render==='function')window.BoothProM392.render()}catch(e){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,350),{once:true});
+else setTimeout(boot,350);
+window.addEventListener('pageshow',()=>setTimeout(boot,250));
+})();
+</script>
+
 </body>
 </html>

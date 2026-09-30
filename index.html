@@ -4383,7 +4383,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 window.addEventListener('pageshow',()=>setTimeout(boot,100));
 window.addEventListener('boothpro-frames-updated',()=>setTimeout(render,80));
 window.addEventListener('boothpro-config-updated',()=>setTimeout(render,80));
-setInterval(()=>{bindPayment();if(document.getElementById('preFrameGrid')&&!document.getElementById('preFrameGrid').__m399User){document.getElementById('preFrameGrid').__m399User='1';render()}},800);
+setInterval(()=>{bindPayment();const host=document.getElementById('preFrameGrid');if(host&&!host.querySelector('.m399-category-grid')&&!host.querySelector('.m399-frame-grid'))render()},800);setTimeout(render,450);setTimeout(render,900);setTimeout(render,1600);
 window.BoothProM399={render,choices,groups};
 })();
 </script>

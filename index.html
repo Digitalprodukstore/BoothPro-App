@@ -531,7 +531,23 @@ function renderPackageStep(){
     d.innerHTML=`<div class="text-xs text-indigo-400 font-bold uppercase">${p.prints} Strip</div><div class="text-lg font-extrabold mt-1">${p.name}</div><div class="text-2xl font-black text-white mt-2">${fmt(p.price)}</div><div class="text-xs text-zinc-500 mt-2">${p.photos} foto · ${p.desc||''}<br>Soft file + loop/GIF + efek + frame</div><div class="text-[10px] text-indigo-300 font-bold mt-3">${selectedPackageId===p.id?'✓ PAKET DIPILIH':'KETUK UNTUK MEMILIH'}</div>`;
     g.appendChild(d);
   });
-  try{applyConfiguredDefaultFrame()}catch(e){console.warn('Frame default tidak dapat diterapkan:',e)}
+  /* M3.9.23: do not reset a customer-selected frame on every package-step render.
+     Step 1 can be re-rendered by cloud/storage sync while the customer is still
+     choosing a package/frame. Only apply the configured default when the current
+     selection is missing or no longer valid for the active photo count. */
+  let keepFrame=false;
+  try{
+    const choices=getFrameChoicesSafe()||[];
+    keepFrame=!!selectedFrameId && choices.some(f=>f&&String(f.id)===String(selectedFrameId));
+    if(keepFrame){
+      const sf=choices.find(f=>f&&String(f.id)===String(selectedFrameId));
+      if(sf&&sf.src)selectedFrameSrc=sf.src;
+    }
+  }catch(e){keepFrame=!!selectedFrameId}
+  if(!keepFrame){
+    try{applyConfiguredDefaultFrame()}catch(e){console.warn('Frame default tidak dapat diterapkan:',e)}
+  }
+  frameSelectionConfirmed=!!selectedFrameId;
   try{renderPreFrames()}catch(e){console.warn('Galeri frame Step 1 gagal dirender:',e)}
   updatePackageSummary();
 }

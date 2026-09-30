@@ -3431,47 +3431,62 @@ if(typeof oldSelect==='function'&&!oldSelect.__m33){
 })();
 </script>
 
-</body>
-</html>
-\n
-<!-- M3.4 FRAME VISUAL HYDRATION FIX -->
-<script id="m34-frame-visual-hydration">
+
+<!-- M3.6 DASHBOARD FRAME MANAGER + CLEAN HYDRATION -->
+<style id="m36-frame-manager-style">
+#bpM36DashboardEntry{display:flex;align-items:center;gap:10px;margin:12px 0;padding:12px 14px;border:1px solid #312e81;background:linear-gradient(135deg,rgba(79,70,229,.16),rgba(124,58,237,.08));border-radius:16px}
+#bpM36DashboardEntry button{padding:10px 13px;border-radius:11px;background:#4f46e5;color:#fff;font-size:11px;font-weight:900;cursor:pointer;touch-action:manipulation}
+#bpM36DashboardEntry .m36hint{font-size:10px;color:#a1a1aa;line-height:1.45}
+</style>
+<script id="m36-frame-manager">
 (function(){
 'use strict';
-function frameVisualSrc(f){
-  if(!f)return '';
-  return String(f.src||f._localSrc||f.publicUrl||f.pngUrl||'').trim();
+function $(id){return document.getElementById(id)}
+function addDashboardEntry(){
+  const modal=$('dashboardModal');
+  if(!modal||$('bpM36DashboardEntry'))return;
+  const candidates=[
+    modal.querySelector('.overflow-y-auto'),
+    modal.querySelector('.p-6'),
+    modal.querySelector('.max-w-6xl'),
+    modal.firstElementChild
+  ].filter(Boolean);
+  const host=candidates[0];
+  if(!host)return;
+  const box=document.createElement('div');
+  box.id='bpM36DashboardEntry';
+  box.innerHTML='<div style="font-size:22px">🖼️</div><div style="flex:1"><div style="font-size:12px;font-weight:900;color:#f4f4f5">Brand & Frame Gallery</div><div class="m36hint">Upload Cover Brand dan frame PNG/WebP di sini. Setelah disimpan ke Cloud, kiosk dapat menampilkan koleksi frame.</div></div><button type="button">Kelola Frame</button>';
+  box.querySelector('button').onclick=function(){
+    try{
+      if(typeof window.openBoothProBrandGallery==='function'){window.openBoothProBrandGallery();return}
+      if(window.boothProM31?.open){window.boothProM31.open();return}
+      alert('Modul Brand & Frame belum siap. Muat ulang halaman lalu buka Dashboard kembali.');
+    }catch(e){alert('Frame Gallery gagal dibuka: '+(e?.message||e))}
+  };
+  host.prepend(box);
 }
-window.BoothProM34=window.BoothProM34||{};
-BoothProM34.getSrc=frameVisualSrc;
-BoothProM34.toDataUrl=async function(url){
-  const u=String(url||'').trim();
-  if(!u)return '';
-  if(u.startsWith('data:'))return u;
-  const res=await fetch(u,{cache:'no-store',headers:{'Accept':'image/*'}});
-  if(!res.ok)throw new Error('Frame HTTP '+res.status);
-  const blob=await res.blob();
-  if(!blob.size)throw new Error('Frame kosong');
-  return await new Promise((resolve,reject)=>{
-    const rd=new FileReader();
-    rd.onload=()=>resolve(String(rd.result||''));
-    rd.onerror=()=>reject(rd.error||new Error('FileReader gagal'));
-    rd.readAsDataURL(blob);
-  });
-};
-BoothProM34.hydrate=async function(){
-  const gallery=Array.isArray(window.frameGallery)?window.frameGallery:[];
+function frameSrc(f){
+  if(!f)return '';
+  const g=Array.isArray(window.frameGallery)?window.frameGallery:[];
+  const x=g.find(v=>v&&v.id===f.id);
+  return String(x?.src||x?._localSrc||x?.publicUrl||x?.pngUrl||f._localSrc||f.src||f.pngUrl||f.publicUrl||'').trim();
+}
+async function hydrateGallery(){
+  const g=Array.isArray(window.frameGallery)?window.frameGallery:[];
   let changed=false;
-  for(const f of gallery){
-    const src=frameVisualSrc(f);
+  for(const f of g){
+    const src=frameSrc(f);
     if(!src||src.startsWith('data:'))continue;
     try{
-      const data=await BoothProM34.toDataUrl(src);
-      if(data){
-        f.src=data; changed=true;
-        try{if(typeof frameDBPut==='function')await frameDBPut(f.id,data)}catch(e){}
-      }
-    }catch(e){console.warn('M3.4 frame hydrate gagal:',f.id,e)}
+      const res=await fetch(src,{cache:'no-store'});
+      if(!res.ok)continue;
+      const blob=await res.blob();
+      if(!blob.size)continue;
+      const data=await new Promise((resolve,reject)=>{
+        const rd=new FileReader();rd.onload=()=>resolve(String(rd.result||''));rd.onerror=reject;rd.readAsDataURL(blob);
+      });
+      if(data){f.src=data;f._localSrc=data;changed=true;try{if(typeof frameDBPut==='function')await frameDBPut(f.id,data)}catch(e){}}
+    }catch(e){console.warn('M3.6 frame hydrate:',f.id,e)}
   }
   if(changed){
     try{if(typeof saveFrameMetadata==='function')saveFrameMetadata()}catch(e){}
@@ -3480,26 +3495,30 @@ BoothProM34.hydrate=async function(){
     try{if(typeof renderCaptureReview==='function')renderCaptureReview()}catch(e){}
     try{if(typeof renderEditorFrameQuickGrid==='function')renderEditorFrameQuickGrid()}catch(e){}
   }
-  return changed;
-};
-window.makeFrameCard=function(f,compact){
-  const b=document.createElement('button');
-  b.type='button';
-  b.dataset.frameId=f?.id||'';
-  b.className=(compact?'pre-frame-card ':'frame-gallery-card ')+`relative aspect-[2/3] rounded-xl overflow-hidden border-2 ${selectedFrameId===f?.id?'border-indigo-500 ring-2 ring-indigo-500/30':'border-zinc-800'} bg-zinc-900`;
-  b.onclick=(e)=>{e.preventDefault();if(f)selectFrame(f)};
-  const src=frameVisualSrc(f);
-  if(src){
-    const img=document.createElement('img');
-    img.src=src; img.loading='lazy'; img.decoding='async'; img.alt='Frame';
-    img.style.cssText='width:100%;height:100%;object-fit:contain;display:block';
-    img.onerror=function(){this.style.display='none';};
-    b.appendChild(img);
-  }else{
-    const empty=document.createElement('div');
-    empty.className='w-full h-full flex items-center justify-center text-[10px] text-zinc-500';
-    empty.textContent='FRAME';
-    b.appendChild(empty);
-  }
-  const name=document.createElement('span');name.className='absolute bottom-1 left-1 right-1 text-[9px] bg-black/65 rounded px-1 py-0.5';name.textContent=f?.name||'Frame';b.appendChild(name);
-  const badge=document.createElement('span');badge.className='frame-selected-badge ${selectedFrameId===f?.id?'':'hidden'} absolute top-1 right-1 text-[8px] font-black bg-indigo-600 text-white rounded-full px-1.5 py-0.5';badge.textContent='✓';b.appendChild(badge);
+}
+function installDashboardHook(){
+  const fn=window.openDashboardUnlocked;
+  if(typeof fn!=='function'||fn.__m36)return false;
+  const wrapped=function(){
+    const result=fn.apply(this,arguments);
+    setTimeout(addDashboardEntry,80);
+    setTimeout(hydrateGallery,120);
+    return result;
+  };
+  wrapped.__m36=true;
+  window.openDashboardUnlocked=wrapped;
+  return true;
+}
+if(!installDashboardHook()){
+  let tries=0;
+  const timer=setInterval(function(){if(installDashboardHook()||++tries>40)clearInterval(timer)},100);
+}
+window.addEventListener('boothpro:m3-ready',function(){setTimeout(addDashboardEntry,120)});
+setTimeout(addDashboardEntry,300);
+setTimeout(hydrateGallery,500);
+window.BoothProM36={addDashboardEntry,hydrateGallery};
+})();
+</script>
+
+</body>
+</html>

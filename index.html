@@ -3892,3 +3892,159 @@ window.__BOOTHPRO_C8_4_AUTH_READY__=true;
   else setTimeout(()=>hydrateRemoteManifest().catch(()=>{}),350);
 })();
 </script>
+
+<script id="c9-0-kiosk-frame-catalog-final">
+(function(){
+  'use strict';
+  /*
+   * C9.0 — deterministic Kiosk Step 1 frame catalog.
+   * Built-in Frame 2026 is rendered immediately and independently of
+   * Dashboard/Cloud loading. Empty slots and loading placeholders are never
+   * rendered in the Kiosk selector. Uploaded frames are appended only when
+   * they already have a usable image source.
+   * Camera/capture/payment functions are intentionally untouched.
+   */
+  function bpC9Escape(v){
+    try{return typeof escapeHtml==='function'?escapeHtml(String(v||'')):String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+    catch(e){return String(v||'')}
+  }
+  function bpC9BuiltinFrames(){
+    try{
+      if(typeof getBuiltinFrames==='function'){
+        const a=getBuiltinFrames();
+        if(Array.isArray(a)&&a.length)return a.slice(0,20);
+      }
+    }catch(e){console.warn('C9 builtin catalog:',e)}
+    return [];
+  }
+  function bpC9Card(f){
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='pre-frame-direct-card'+(window.selectedFrameId===f.id?' active':'');
+    b.dataset.frameId=f.id;
+    b.setAttribute('aria-label','Pilih '+String(f.name||'Frame 2026'));
+    b.onclick=function(ev){
+      ev.preventDefault();ev.stopPropagation();
+      try{if(typeof selectFrame==='function')selectFrame(f)}catch(e){console.error('C9 select frame:',e)}
+      setTimeout(bpC9Render,0);
+    };
+    const src=String(f.src||'');
+    if(src){
+      const img=document.createElement('img');
+      img.alt=String(f.name||'Frame 2026');
+      img.loading='eager';
+      img.decoding='sync';
+      img.src=src;
+      img.onerror=function(){this.style.display='none'};
+      b.appendChild(img);
+    }else{
+      const d=document.createElement('div');
+      d.className='w-full h-full';
+      d.style.background=(typeof frameColor==='function'?frameColor(f.id):'#18181b');
+      b.appendChild(d);
+    }
+    const name=document.createElement('span');
+    name.className='direct-name';
+    name.textContent=String(f.name||'Frame 2026');
+    b.appendChild(name);
+    if(window.selectedFrameId===f.id){
+      const check=document.createElement('span');
+      check.className='direct-check';
+      check.textContent='✓';
+      b.appendChild(check);
+    }
+    return b;
+  }
+  function bpC9Render(){
+    const host=document.getElementById('preFrameGrid');
+    if(!host)return;
+    host.innerHTML='';
+    host.style.display='block';
+    host.removeAttribute('aria-busy');
+
+    const box=document.createElement('div');
+    box.className='pre-frame-direct';
+    const head=document.createElement('div');
+    head.className='pre-frame-direct-head';
+    const title=document.createElement('div');
+    title.className='pre-frame-direct-title';
+    title.textContent='FRAME 2026 · Pilihan Utama';
+    const hint=document.createElement('div');
+    hint.className='pre-frame-direct-hint';
+    hint.textContent='Geser → · 20 template';
+    head.append(title,hint);
+
+    const row=document.createElement('div');
+    row.className='pre-frame-direct-row';
+    row.setAttribute('aria-label','20 template Frame 2026');
+    const builtins=bpC9BuiltinFrames();
+    builtins.forEach(f=>row.appendChild(bpC9Card(f)));
+    box.append(head,row);
+    host.appendChild(box);
+
+    const uploads=Array.isArray(window.frameGallery)
+      ? window.frameGallery.filter(f=>f&&f.id&&f.src&&!f.builtin).slice(0,12)
+      : [];
+    if(uploads.length){
+      const section=document.createElement('div');
+      section.className='pre-category-section';
+      const title2=document.createElement('div');
+      title2.className='pre-category-title';
+      title2.innerHTML='<span>UPLOAD DASHBOARD</span><span class="pre-category-hint">'+uploads.length+' frame siap digunakan</span>';
+      const grid=document.createElement('div');
+      grid.className='pre-frame-detail-grid';
+      uploads.forEach(f=>{
+        try{grid.appendChild(bpC9Card(f))}catch(e){}
+      });
+      section.append(title2,grid);
+      host.appendChild(section);
+    }
+
+    const hint2=document.createElement('div');
+    hint2.className='text-[10px] text-zinc-500 text-center mt-2';
+    hint2.textContent='Pilih frame untuk melanjutkan. Harga paket akan tetap mengikuti paket yang dipilih.';
+    host.appendChild(hint2);
+  }
+
+  window.renderPreFrames=bpC9Render;
+  window.boothProRenderFrameAuthority=bpC9Render;
+
+  /* Render built-ins immediately. Cloud sync may update uploaded frames later,
+     but it is never allowed to block the Kiosk frame selector. */
+  try{bpC9Render()}catch(e){console.error('C9 initial frame render:',e)}
+
+  window.addEventListener('boothpro-frames-updated',function(){
+    setTimeout(bpC9Render,30);
+    setTimeout(bpC9Render,500);
+  });
+  window.addEventListener('boothpro-config-updated',function(){
+    setTimeout(bpC9Render,30);
+  });
+
+  const oldGoC9=window.goToStep;
+  if(typeof oldGoC9==='function'&&!oldGoC9.__bpC9FrameWrap){
+    const wrappedC9=function(n){
+      const out=oldGoC9.apply(this,arguments);
+      if(Number(n)===2)setTimeout(bpC9Render,20);
+      return out;
+    };
+    wrappedC9.__bpC9FrameWrap=true;
+    window.goToStep=wrappedC9;
+  }
+
+  /* Non-blocking background hydration for uploaded Dashboard frames. */
+  setTimeout(async function(){
+    try{
+      if(typeof hydrateFrameStorage==='function')await hydrateFrameStorage();
+      if(typeof syncCloudFrames==='function')await Promise.race([
+        Promise.resolve(syncCloudFrames()),
+        new Promise(resolve=>setTimeout(resolve,3500))
+      ]);
+    }catch(e){console.warn('C9 background frame sync:',e)}
+    try{
+      frameGallery=loadFrames();
+      bpC9Render();
+    }catch(e){}
+  },400);
+})();
+</script>

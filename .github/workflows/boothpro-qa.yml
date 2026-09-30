@@ -1,0 +1,96 @@
+name: BoothPro QA Gate
+
+on:
+  push:
+    branches: [main, "qa/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  static-audit:
+    name: Static integrity audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run static audit
+        run: node qa-engine/audit/static-audit.mjs
+      - name: Upload static report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boothpro-static-audit
+          path: qa-engine/reports/
+
+  browser-audit:
+    name: Browser regression audit
+    runs-on: ubuntu-latest
+    needs: static-audit
+    if: ${{ always() }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser auditor
+        working-directory: qa-engine
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        working-directory: qa-engine
+        run: npx playwright install --with-deps chromium
+      - name: Start kiosk server
+        run: |
+          python3 -m http.server 4173 --directory . >/tmp/boothpro-http.log 2>&1 &
+          echo $! > /tmp/boothpro-http.pid
+      - name: Wait for kiosk
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/index.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/boothpro-http.log
+          exit 1
+      - name: Run browser regression audit
+        run: node qa-engine/audit/browser-audit.mjs
+        env:
+          BOOTHPRO_URL: http://127.0.0.1:4173/index.html
+      - name: Upload browser report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boothpro-browser-audit
+          path: qa-engine/reports/
+
+  production-health:
+    name: Production health audit
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser auditor
+        working-directory: qa-engine
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        working-directory: qa-engine
+        run: npx playwright install --with-deps chromium
+      - name: Audit production
+        run: node qa-engine/audit/browser-audit.mjs
+        env:
+          BOOTHPRO_URL: https://booth-pro-app.vercel.app
+      - name: Upload production report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boothpro-production-audit
+          path: qa-engine/reports/

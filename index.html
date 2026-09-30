@@ -1836,8 +1836,18 @@ function applyTheme(){const t=config.theme||{};document.documentElement.style.se
 function renderDashPackages(){const d=$('dashPackages');d.innerHTML='';config.packages.forEach((p,i)=>{const x=document.createElement('div');x.className='grid grid-cols-2 gap-2 p-3 rounded-xl bg-zinc-950 border border-zinc-800';x.innerHTML=`<input data-p="${i}" data-k="name" value="${p.name}" class="bg-zinc-900 rounded-lg px-2 py-2 text-xs col-span-2"><input data-p="${i}" data-k="price" type="number" value="${p.price}" class="bg-zinc-900 rounded-lg px-2 py-2 text-xs"><input data-p="${i}" data-k="photos" type="number" min="1" value="${p.photos}" class="bg-zinc-900 rounded-lg px-2 py-2 text-xs"><input data-p="${i}" data-k="prints" type="number" min="1" value="${p.prints}" class="bg-zinc-900 rounded-lg px-2 py-2 text-xs"><select data-p="${i}" data-k="layout" class="bg-zinc-900 rounded-lg px-2 py-2 text-xs"><option value="strip" ${p.layout==='strip'?'selected':''}>Strip</option><option value="4-grid" ${p.layout==='4-grid'?'selected':''}>4 Grid</option><option value="6-grid" ${p.layout==='6-grid'?'selected':''}>6 Grid</option></select>`;d.appendChild(x)})}
 function savePackages(){document.querySelectorAll('#dashPackages [data-p]').forEach(el=>{const i=Number(el.dataset.p),k=el.dataset.k;let v=el.value;if(['price','photos','prints'].includes(k))v=Number(v);config.packages[i][k]=v});saveConfig();alert('Paket disimpan.');renderPackageStep()}
 function syncKioskFromLatestConfig(){try{config=loadConfig();frameGallery=loadFrames();applyBrand();applyTheme();applyDashboardTheme();applyPrintSize();refreshPlanBadge();if(currentStep===2){renderPackageStep()}else if(currentStep===5){renderFrameGallery();renderCaptureReview()}else if(currentStep===6){renderEditor();renderEditorFrameQuickGrid()}else if(currentStep===7){renderFinalPreview()}const st=$('dashLiveStatus');if(st)st.innerHTML='<span class=\"h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse\"></span>LIVE · Kiosk tersinkron '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});}catch(e){console.warn('BoothPro sync gagal',e)}}
-window.addEventListener('boothpro-config-updated',syncKioskFromLatestConfig);
-window.addEventListener('storage',e=>{if(e.key===CONFIG_KEY||e.key===FRAME_KEY){syncKioskFromLatestConfig();hydrateFrameStorage().then(()=>{renderFrameGallery();renderPreFrames();renderCaptureReview();renderEditorFrameQuickGrid()})}});window.addEventListener('boothpro-frames-updated',()=>{renderFrameGallery();renderPreFrames();renderDashFrameManager()});
+/* M3.9.17: one kiosk sync authority owns config/frame refresh.
+   Keep storage as the cross-tab bridge, but route it through the final safe sync. */
+window.addEventListener('storage',e=>{
+  if(e.key!==CONFIG_KEY&&e.key!==FRAME_KEY)return;
+  setTimeout(()=>{
+    try{
+      if(typeof window.syncKioskFromLatestConfig==='function') window.syncKioskFromLatestConfig();
+      else syncKioskFromLatestConfig();
+    }catch(err){console.warn('BoothPro storage sync:',err)}
+  },0);
+  setTimeout(()=>{try{hydrateFrameStorage()}catch(err){}},80);
+});
 /* ============ PWA / INSTALL ============ */
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});

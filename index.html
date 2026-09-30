@@ -592,7 +592,16 @@ function getFrameChoicesSafe(){
     builtins=BUILTIN_FRAME_DEFS.map((d,i)=>({...d,photos:Number(requiredPhotosCount)||4,category:builtinCategoryForIndex(i),src:'',builtin:true}));
   }
   let uploads=[];
-  try{uploads=frameGallery.filter(f=>!requiredPhotosCount||!f.photos||f.photos===requiredPhotosCount)}catch(e){uploads=[]}
+  try{
+    const slots=Array.isArray(config?.frameSlots)?config.frameSlots:[];
+    uploads=frameGallery
+      .filter(f=>f&&(!requiredPhotosCount||!f.photos||f.photos===requiredPhotosCount))
+      .map(f=>{
+        const st=slots.find(x=>x&&x.frameId===f.id);
+        return st ? {...f,category:String(st.category||f.category||'CUSTOM').toUpperCase(),enabled:st.enabled!==false,slotIndex:slots.indexOf(st)} : f;
+      })
+      .filter(f=>f.slotIndex==null||f.enabled!==false);
+  }catch(e){uploads=[]}
   return [...base,...builtins,...uploads];
 }
 function frameCategoryItems(){const all=getFrameChoicesSafe();const groups={VINTAGE:[],MODERN:[],MINIMAL:[],PASTEL:[],BOLD:[],CUSTOM:[]};all.forEach(f=>(groups[f.category||'CUSTOM']||groups.CUSTOM).push(f));return groups}
@@ -2241,10 +2250,11 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
       if(!src)throw new Error('Data gambar kosong.');
       try{src=await makeUploadedFrameTransparent(file,{tolerance:30,interiorTolerance:22})}catch(transparencyErr){console.warn('Frame transparency fallback:',transparencyErr);}
       const id='slot-upload-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
-      const item={id,name:file.name.replace(/\.[^.]+$/,'').slice(0,30),src,category:'CUSTOM',originalType:file.type||'image/png',autoTransparent:src!=='' ,slotIndex:i};
+      const st=ensureSlots()[i];
+      const item={id,name:file.name.replace(/\.[^.]+$/,'').slice(0,30),src,category:String(st.category||'CUSTOM').toUpperCase(),originalType:file.type||'image/png',autoTransparent:src!=='',slotIndex:i};
       frameGallery=Array.isArray(frameGallery)?frameGallery.filter(f=>f&&f.slotIndex!==i):[];
       frameGallery.push(item);
-      const st=ensureSlots()[i];st.frameId=item.id;st.name=item.name;st.enabled=true;st.category='CUSTOM';
+      st.frameId=item.id;st.name=item.name;st.enabled=true;
       try{await frameDBPut(item.id,src);delete item.src;saveFrameMetadata();item.src=src}catch(dbErr){console.warn('Frame IndexedDB fallback:',dbErr);saveFrameMetadata()}
       // Cloud upload is optional; a Cloud error must never invalidate the local upload.
       try{await uploadFrameToCloud(item,src)}catch(cloudErr){console.warn('Frame Cloud upload:',cloudErr);item.cloudSyncError=cloudErr?.message||String(cloudErr);saveFrameMetadata()}

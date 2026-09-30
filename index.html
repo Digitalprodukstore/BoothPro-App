@@ -52,6 +52,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
 @media print{@page{size:4in 6in;margin:0}html,body{width:4in!important;height:6in!important;margin:0!important;padding:0!important;background:#fff!important}body>*:not(#printRoot){display:none!important}#printRoot{display:flex!important;position:fixed!important;left:0!important;top:0!important;width:4in!important;height:6in!important;align-items:center!important;justify-content:center!important;background:#fff!important;overflow:hidden!important}#printRoot img{display:block!important;width:4in!important;height:6in!important;max-width:none!important;max-height:none!important;object-fit:contain!important}.no-print{display:none!important}}
 #printRoot{display:none;width:4in;height:6in;background:#fff;align-items:center;justify-content:center;overflow:hidden}#printRoot img{width:100%;height:100%;object-fit:contain}
 
+/* M2 FRAME 2026 — direct swipe gallery */
+.pre-frame-direct{margin-top:10px;padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(24,24,27,.62);overflow:hidden}
+.pre-frame-direct-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.pre-frame-direct-title{font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#e4e4e7}
+.pre-frame-direct-hint{font-size:10px;font-weight:800;color:#a78bfa;white-space:nowrap}
+.pre-frame-direct-row{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.pre-frame-direct-row::-webkit-scrollbar{height:5px}.pre-frame-direct-row::-webkit-scrollbar-thumb{background:#3f3f46;border-radius:99px}
+.pre-frame-direct-card{position:relative;flex:0 0 112px;height:168px;scroll-snap-align:start;border:2px solid #27272a;border-radius:14px;overflow:hidden;background:#09090b;cursor:pointer;touch-action:manipulation;transition:transform .15s,border-color .15s,box-shadow .15s}
+.pre-frame-direct-card:hover{transform:translateY(-2px);border-color:#6366f1}.pre-frame-direct-card.active{border-color:#818cf8;box-shadow:0 0 0 2px rgba(129,140,248,.22)}
+.pre-frame-direct-card img{width:100%;height:100%;display:block;object-fit:cover}.pre-frame-direct-card .direct-name{position:absolute;left:5px;right:5px;bottom:5px;padding:4px 5px;border-radius:7px;background:rgba(0,0,0,.72);font-size:9px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pre-frame-direct-card .direct-check{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:999px;background:#4f46e5;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
+.frame-direct-gallery{margin-bottom:16px;padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(24,24,27,.45);overflow:hidden}.frame-direct-gallery-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}.frame-direct-gallery-title{font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#e4e4e7}.frame-direct-gallery-hint{font-size:10px;font-weight:800;color:#a78bfa;white-space:nowrap}.frame-direct-row{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}.frame-direct-row::-webkit-scrollbar{height:5px}.frame-direct-row::-webkit-scrollbar-thumb{background:#3f3f46;border-radius:99px}.frame-direct-card{position:relative;flex:0 0 118px;height:177px;scroll-snap-align:start;border:2px solid #27272a;border-radius:14px;overflow:hidden;background:#09090b}.frame-direct-card.active{border-color:#818cf8;box-shadow:0 0 0 2px rgba(129,140,248,.2)}.frame-direct-card img{width:100%;height:100%;object-fit:cover;display:block}.frame-direct-card .direct-name{position:absolute;left:5px;right:5px;bottom:5px;padding:4px 5px;border-radius:7px;background:rgba(0,0,0,.72);font-size:9px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.frame-direct-card .direct-check{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:999px;background:#4f46e5;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
+
 /* C6-5 PREMIUM DASHBOARD + FRAME SWIPE */
 #dashboardModal>.max-w-6xl{max-width:88rem!important;background:var(--bp-dash-panel,#0b0b10)!important;border-color:color-mix(in srgb,var(--bp-dash-accent,#818cf8) 22%,#27272a)!important;box-shadow:0 30px 80px rgba(0,0,0,.48)}
 #dashboardModal .p-4.rounded-2xl{background:rgba(24,24,27,.72)!important;border-color:rgba(255,255,255,.07)!important;box-shadow:0 8px 30px rgba(0,0,0,.12)}
@@ -571,6 +583,38 @@ function frameCategoryItems(){const all=getFrameChoicesSafe();const groups={VINT
 function makeFrameCategoryCard(cat,items,compact){const b=document.createElement('button');b.type='button';b.className='frame-category-card';b.onclick=()=>renderFrameCategoryDetail(compact,cat);const first=items[0];const thumb=document.createElement('div');thumb.className='frame-category-thumb';if(first?.src){const im=document.createElement('img');im.src=first.src;im.loading='lazy';im.decoding='async';thumb.appendChild(im)}else{thumb.style.background=first?frameColor(first.id):'#18181b'}const name=document.createElement('div');name.className='frame-category-name';name.textContent=cat;const count=document.createElement('div');count.className='frame-category-count';count.textContent=`${items.length} frame · buka galeri`;b.append(thumb,name,count);return b}
 function renderFrameCategoryIndex(host,compact=false){if(!host)return;host.innerHTML='';const groups=frameCategoryItems();Object.entries(groups).forEach(([cat,items])=>{if(!items.length)return;const section=document.createElement('div');section.className=compact?'pre-category-section':'frame-category-section';const title=document.createElement('div');title.className=compact?'pre-category-title':'frame-category-title';title.innerHTML=`<span>${cat}</span><span class="${compact?'pre-category-hint':'frame-category-sub'}">${items.length} frame</span>`;section.appendChild(title);const row=document.createElement('div');row.className=compact?'pre-category-row':'frame-category-row';row.appendChild(makeFrameCategoryCard(cat,items,compact));section.appendChild(row);host.appendChild(section)})}
 function renderFrameCategoryDetail(compact,cat){const host=$(compact?'preFrameGrid':'frameGallery');if(!host)return;const groups=frameCategoryItems();const items=groups[cat]||[];host.innerHTML='';const head=document.createElement('div');head.className='frame-nested-head';const back=document.createElement('button');back.type='button';back.className='frame-back-btn';back.innerHTML='<i class="fa-solid fa-arrow-left"></i> Kembali';back.onclick=()=>compact?renderPreFrames():renderFrameGallery();const title=document.createElement('div');title.className='frame-nested-title';title.textContent=`${cat} · ${items.length} frame`;head.append(back,title);host.appendChild(head);const grid=document.createElement('div');grid.className=compact?'pre-category-row':'frame-category-row';items.forEach(f=>grid.appendChild(makeFrameCard(f,compact)));host.appendChild(grid)}
+function renderDirectBuiltinGallery(host,compact=false){
+  if(!host)return;
+  let frames=[];
+  try{frames=getBuiltinFrames().slice(0,20)}catch(e){console.warn('M2 built-in gallery error:',e);frames=[]}
+  if(!frames.length)return;
+  const box=document.createElement('div');
+  box.className=compact?'pre-frame-direct':'frame-direct-gallery';
+  const head=document.createElement('div');
+  head.className=compact?'pre-frame-direct-head':'frame-direct-gallery-head';
+  const title=document.createElement('div');
+  title.className=compact?'pre-frame-direct-title':'frame-direct-gallery-title';
+  title.textContent='FRAME 2026 · Pilihan Utama';
+  const hint=document.createElement('div');
+  hint.className=compact?'pre-frame-direct-hint':'frame-direct-gallery-hint';
+  hint.textContent='Geser → · 20 template';
+  head.append(title,hint);
+  const row=document.createElement('div');
+  row.className=compact?'pre-frame-direct-row':'frame-direct-row';
+  frames.forEach(f=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className=(compact?'pre-frame-direct-card':'frame-direct-card')+(selectedFrameId===f.id?' active':'');
+    b.dataset.frameId=f.id;
+    b.onclick=e=>{e.preventDefault();selectFrame(f);renderDirectBuiltinGallery(host,compact)};
+    b.innerHTML=f.src?'<img src="'+f.src+'" loading="lazy" decoding="async">':'<div class="w-full h-full" style="background:'+frameColor(f.id)+'"></div>';
+    b.innerHTML+='<span class="direct-name">'+escapeHtml(f.name)+'</span>'+(selectedFrameId===f.id?'<span class="direct-check">✓</span>':'');
+    row.appendChild(b);
+  });
+  box.append(head,row);
+  host.appendChild(box);
+}
+
 function renderCategorizedFrameGallery(host,compact=false){renderFrameCategoryIndex(host,compact)}
 let preFrameCategoryOpen='';
 let frameSelectionConfirmed=false;
@@ -609,6 +653,7 @@ function renderPreFrames(){
     renderPreFrameDetail(preFrameCategoryOpen,groups[preFrameCategoryOpen]);
     return;
   }
+  renderDirectBuiltinGallery(host,true);
   const wrap=document.createElement('div');
   wrap.className='pre-category-index';
   categories.forEach(cat=>{
@@ -616,7 +661,7 @@ function renderPreFrames(){
     const card=document.createElement('button');
     card.type='button';
     card.className='pre-frame-category-card';
-    card.innerHTML=`<div class="pre-frame-category-thumb"><span>${cat==='CUSTOM'?'✦':'▦'}</span></div><div class="pre-frame-category-name">${cat}</div><div class="pre-frame-category-count">${items.length} frame · Ketuk untuk buka</div>`;
+    card.innerHTML=`<div class="pre-frame-category-thumb"><span>${cat==='CUSTOM'?'✦':'▦'}</span></div><div class="pre-frame-category-name">${cat}</div><div class="pre-frame-category-count">${items.length} frame · buka galeri</div>`;
     card.onclick=()=>{preFrameCategoryOpen=cat;renderPreFrames()};
     wrap.appendChild(card);
   });
@@ -679,7 +724,7 @@ function getBuiltinFrames(){const photos=requiredPhotosCount||4;const disabled=(
 function invalidateBuiltinFrameCache(){BP_BUILTIN_CACHE.clear()}
 function getFrameChoices(){const base=[{id:'plain-white',name:'White',src:'',category:'MINIMAL'},{id:'plain-dark',name:'Dark',src:'',category:'MINIMAL'},{id:'plain-pink',name:'Pink',src:'',category:'PASTEL'},{id:'plain-indigo',name:'Indigo',src:'',category:'MODERN'}];const builtins=getBuiltinFrames().filter(f=>!requiredPhotosCount||f.photos===requiredPhotosCount);const uploads=frameGallery.filter(f=>!requiredPhotosCount||!f.photos||f.photos===requiredPhotosCount);return [...base,...builtins,...uploads]}
 function setFrameCategoryFilter(v){frameCategoryFilter=v||'all';renderFrameGallery()}
-function renderFrameGallery(){if($('dashFrameCount'))$('dashFrameCount').innerText=frameGallery.length+' frame upload tersimpan · '+getBuiltinFrames().length+' frame bawaan aktif';const g=$('frameGallery');if(!g)return;renderFrameCategoryIndex(g,false);renderFrameMiniPreview()}
+function renderFrameGallery(){if($('dashFrameCount'))$('dashFrameCount').innerText=frameGallery.length+' frame upload tersimpan · '+getBuiltinFrames().length+' frame bawaan aktif';const g=$('frameGallery');if(!g)return;g.innerHTML='';renderDirectBuiltinGallery(g,false);renderFrameCategoryIndex(g,false);renderFrameMiniPreview()}
 function renderFrameMiniPreview(){const host=$('frameMiniPreview');if(!host)return;host.innerHTML='';const wrap=buildPreviewHTML('mini');host.appendChild(wrap);if(capturedPhotos.length){renderFrameAwarePreview(wrap,'mini')}else{host.innerHTML='<div class="text-xs text-zinc-500 text-center p-8">Belum ada hasil foto.</div>'}}
 function renderCaptureReview(){const host=$('captureReviewPreview');if(!host)return;host.innerHTML='';const wrap=buildPreviewHTML('capture');host.appendChild(wrap);if(capturedPhotos.length){renderFrameAwarePreview(wrap,'capture')}else{host.innerHTML='<div class="text-xs text-zinc-500 text-center p-8">Belum ada foto untuk ditampilkan.</div>'}}
 function renderEditor(){const host=$('editorPreview');if(!host)return;host.innerHTML='';const wrap=buildPreviewHTML('editor');host.appendChild(wrap);renderFrameAwarePreview(wrap,'editor');renderStickerOverlay()}

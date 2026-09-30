@@ -3088,5 +3088,98 @@ M3.getState=M3.getState||function(){return {version:M3.version,cameraLocked:M3.c
 window.dispatchEvent(new CustomEvent('boothpro:m3-ready',{detail:M3}));
 })();
 </script>
+
+<!-- M3.1 BRAND GALLERY: dashboard-managed brand/event collections -->
+<style id="m31-brand-gallery-style">
+#bpM31Modal{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:14px}
+#bpM31Modal.open{display:flex}
+#bpM31Panel{width:min(980px,100%);max-height:92vh;overflow:auto;background:#09090b;border:1px solid #27272a;border-radius:24px;box-shadow:0 25px 80px rgba(0,0,0,.55)}
+.bpM31Brand{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid #27272a;border-radius:16px;background:#111113}
+.bpM31Cover{width:72px;height:72px;flex:0 0 72px;border-radius:12px;overflow:hidden;background:#18181b;display:flex;align-items:center;justify-content:center}
+.bpM31Cover img{width:100%;height:100%;object-fit:cover}
+.bpM31Frame{position:relative;border:1px solid #27272a;border-radius:14px;overflow:hidden;background:#111113}
+.bpM31Frame img{width:100%;aspect-ratio:2/3;object-fit:contain;background:#050505;display:block}
+.bpM31Frame button{touch-action:manipulation}
+</style>
+<script id="m31-brand-gallery">
+(function(){
+'use strict';
+const KEY='boothpro_m31_brand_groups_v1';
+const M=window.BoothProM3;
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'[]');M.brandGroups=Array.isArray(x)?x.map(M.normalizeBrand):[]}catch(e){M.brandGroups=[]}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(M.brandGroups));return true}catch(e){console.warn('M3.1 local save',e);return false}}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function el(id){return document.getElementById(id)}
+function framesFor(b){return M.getBrandFrames(b.id)}
+function frameSrc(f){try{const x=(window.frameGallery||[]).find(v=>v&&v.id===f.id);return x?.src||f.pngUrl||''}catch(e){return f.pngUrl||''}}
+function ensureModal(){
+ if(el('bpM31Modal'))return;
+ const m=document.createElement('div');m.id='bpM31Modal';
+ m.innerHTML='<div id="bpM31Panel"><div style="padding:16px;border-bottom:1px solid #27272a;display:flex;align-items:center;justify-content:space-between;gap:10px"><div><div style="font-size:17px;font-weight:900">Brand & Frame Gallery</div><div style="font-size:10px;color:#71717a;margin-top:3px">M3.1 · Dashboard → Kiosk</div></div><button id="bpM31Close" type="button" style="padding:8px 12px;border-radius:10px;background:#27272a;color:#fff">Tutup</button></div><div id="bpM31Body" style="padding:16px"></div></div>';
+ document.body.appendChild(m);el('bpM31Close').onclick=()=>m.classList.remove('open');
+}
+function render(){
+ ensureModal();const body=el('bpM31Body');
+ const brands=M.getBrands();
+ body.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:14px"><div style="font-size:12px;color:#a1a1aa">'+brands.length+' Brand/Event</div><button id="bpM31Add" type="button" style="padding:9px 12px;border-radius:12px;background:#4f46e5;color:#fff;font-weight:800;font-size:12px">+ Brand/Event</button></div>'+
+ '<div id="bpM31List" style="display:grid;gap:10px"></div>';
+ el('bpM31Add').onclick=()=>editBrand(null);
+ const list=el('bpM31List');
+ if(!brands.length){list.innerHTML='<div style="padding:28px;text-align:center;border:1px dashed #3f3f46;border-radius:18px;color:#71717a">Belum ada Brand/Event. Buat brand pertama untuk mulai mengelola frame.</div>';return}
+ brands.forEach(b=>{
+  const row=document.createElement('div');row.className='bpM31Brand';
+  row.innerHTML='<div class="bpM31Cover">'+(b.coverUrl?'<img src="'+esc(b.coverUrl)+'" alt="">':'<span style="color:#52525b;font-size:11px">COVER</span>')+'</div><div style="min-width:0;flex:1"><div style="font-weight:800;font-size:13px">'+esc(b.name)+'</div><div style="font-size:10px;color:#71717a;margin-top:3px">'+framesFor(b).length+' frame · '+(b.enabled?'Aktif':'Nonaktif')+'</div></div><button type="button" data-edit style="padding:8px 10px;border-radius:10px;background:#27272a;color:#fff;font-size:11px">Kelola</button>';
+  row.querySelector('[data-edit]').onclick=()=>editBrand(b.id);list.appendChild(row);
+ });
+}
+function editBrand(id){
+ const b=id?M.brandGroups.find(x=>x.id===id):M.normalizeBrand({name:'Brand Baru',sortOrder:M.brandGroups.length});
+ if(!id)M.upsertBrand(b);
+ const body=el('bpM31Body');
+ body.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><button id="bpM31Back" type="button" style="padding:8px 10px;border-radius:10px;background:#27272a;color:#fff">← Brand</button><b style="font-size:15px">'+esc(b.name)+'</b></div>'+
+ '<div style="display:grid;gap:12px">'+
+ '<label style="font-size:11px;color:#a1a1aa">Nama Brand/Event<input id="bpM31Name" value="'+esc(b.name)+'" style="display:block;width:100%;margin-top:5px;padding:10px;border-radius:10px;background:#18181b;border:1px solid #3f3f46;color:#fff"></label>'+
+ '<div><div style="font-size:11px;color:#a1a1aa;margin-bottom:6px">Foto Cover Brand</div><div style="display:flex;gap:10px;align-items:center"><div id="bpM31CoverPreview" class="bpM31Cover">'+(b.coverUrl?'<img src="'+esc(b.coverUrl)+'" alt="">':'<span style="color:#52525b;font-size:10px">Belum ada</span>')+'</div><label style="padding:9px 12px;border-radius:10px;background:#27272a;color:#fff;font-size:11px;cursor:pointer">Upload Cover<input id="bpM31CoverInput" type="file" accept="image/*" hidden></label></div></div>'+
+ '<div><div style="font-size:11px;color:#a1a1aa;margin-bottom:6px">Frame dalam Brand</div><div id="bpM31Frames" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"></div><label style="display:inline-block;margin-top:10px;padding:9px 12px;border-radius:10px;background:#4f46e5;color:#fff;font-size:11px;font-weight:800;cursor:pointer">+ Upload Frame PNG<input id="bpM31FrameInput" type="file" accept="image/png,image/webp" multiple hidden></label></div>'+
+ '<div style="display:flex;gap:8px;justify-content:flex-end"><button id="bpM31Save" type="button" style="padding:10px 14px;border-radius:12px;background:#16a34a;color:#fff;font-weight:800">Simpan Brand</button></div></div>';
+ el('bpM31Back').onclick=render;
+ el('bpM31Name').oninput=e=>b.name=e.target.value||'Brand';
+ el('bpM31CoverInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{b.coverUrl=String(rd.result||'');const p=el('bpM31CoverPreview');p.innerHTML='<img src="'+esc(b.coverUrl)+'" alt="">'};rd.readAsDataURL(f);e.target.value=''};
+ el('bpM31FrameInput').onchange=async e=>{for(const f of [...(e.target.files||[])]){
+   const src=await new Promise((res,rej)=>{const rd=new FileReader();rd.onload=()=>res(String(rd.result||''));rd.onerror=rej;rd.readAsDataURL(f)});
+   const frame=M.upsertFrame(b.id,{name:f.name.replace(/\.[^.]+$/,'').slice(0,40),pngUrl:src,photos:4,layout:'auto',sortOrder:b.frames.length});
+   frame._localSrc=src;
+   try{if(typeof frameDBPut==='function')await frameDBPut(frame.id,src)}catch(err){}
+   try{if(Array.isArray(window.frameGallery)){window.frameGallery.push({id:frame.id,name:frame.name,src,category:'CUSTOM',originalType:f.type||'image/png',autoTransparent:true})}}catch(err){}
+ } renderFrameCards(b);e.target.value=''};
+ el('bpM31Save').onclick=()=>{b.enabled=true;save();render();try{if(typeof renderPreFrames==='function')renderPreFrames()}catch(e){}};
+ renderFrameCards(b);
+}
+function renderFrameCards(b){
+ const host=el('bpM31Frames');if(!host)return;host.innerHTML='';
+ framesFor(b).forEach(f=>{
+  const card=document.createElement('div');card.className='bpM31Frame';
+  const src=frameSrc(f);
+  card.innerHTML=(src?'<img src="'+esc(src)+'" alt="">':'<div style="aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;color:#52525b;font-size:10px">FRAME</div>')+'<div style="padding:6px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(f.name)+'</div>';
+  const del=document.createElement('button');del.textContent='×';del.style.cssText='position:absolute;right:5px;top:5px;width:24px;height:24px;border-radius:50%;background:#dc2626;color:#fff;font-weight:900';del.onclick=()=>{b.frames=b.frames.filter(x=>x.id!==f.id);try{window.frameGallery=window.frameGallery.filter(x=>x.id!==f.id)}catch(e){};save();renderFrameCards(b)};card.appendChild(del);host.appendChild(card);
+ });
+}
+function open(){load();ensureModal();render();el('bpM31Modal').classList.add('open')}
+window.boothProM31={open,load,save,render,editBrand};
+window.openBoothProBrandGallery=open;
+load();
+const oldOpen=window.openDashboardUnlocked;
+if(oldOpen&&!oldOpen.__bpM31){
+ const w=function(){const r=oldOpen.apply(this,arguments);setTimeout(()=>{
+  if(!el('bpM31DashboardBtn')){
+   const d=document.createElement('button');d.id='bpM31DashboardBtn';d.type='button';d.textContent='Brand Gallery';d.style.cssText='position:fixed;right:18px;bottom:18px;z-index:99990;padding:12px 15px;border-radius:14px;background:#4f46e5;color:#fff;font-weight:900;box-shadow:0 8px 30px #0008;touch-action:manipulation';
+   d.onclick=()=>open();document.body.appendChild(d);
+  }
+ },80);return r};
+ w.__bpM31=true;window.openDashboardUnlocked=w;
+}
+window.addEventListener('boothpro:m3-ready',load);
+})();
+</script>
 </body>
 </html>

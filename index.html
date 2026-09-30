@@ -520,66 +520,34 @@ function applyConfiguredDefaultFrame(){
   if(!f.src){frameBg=frameColor(f.id);frameFg=f.id==='plain-dark'?'#f4f4f5':f.id==='plain-indigo'?'#e0e7ff':'#27272a'}
 }
 function renderPackageStep(){
-  const g=$('packageGrid');
-  if(!g)return;
+  const g=$('packageGrid'); if(!g)return;
   g.innerHTML='';
   (config.packages||[]).forEach(p=>{
     const d=document.createElement('button');
     d.type='button';
-    d.className='w-full text-left p-5 rounded-2xl border-2 cursor-pointer select-none '+(selectedPackageId===p.id?'border-indigo-500 bg-indigo-500/10':'border-zinc-800 bg-zinc-950')+' hover:border-indigo-500 transition';
-    d.onclick=()=>selectPackage(p.id);
-    d.innerHTML=`<div class="text-xs text-indigo-400 font-bold uppercase">${p.prints} Strip</div><div class="text-lg font-extrabold mt-1">${p.name}</div><div class="text-2xl font-black text-white mt-2">${fmt(p.price)}</div><div class="text-xs text-zinc-500 mt-2">${p.photos} foto · ${p.desc||''}<br>Soft file + loop/GIF + efek + frame</div><div class="text-[10px] text-indigo-300 font-bold mt-3">${selectedPackageId===p.id?'✓ PAKET DIPILIH':'KETUK UNTUK MEMILIH'}</div>`;
+    d.className='w-full text-left p-5 rounded-2xl border-2 cursor-pointer select-none '+(String(selectedPackageId)===String(p.id)?'border-indigo-500 bg-indigo-500/10':'border-zinc-800 bg-zinc-950')+' hover:border-indigo-500 transition';
+    d.dataset.packageId=p.id;
+    d.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();selectPackage(p.id);});
+    d.innerHTML='<div class="text-xs text-indigo-400 font-bold uppercase">'+p.prints+' Strip</div><div class="text-lg font-extrabold mt-1">'+escapeHtml(p.name)+'</div><div class="text-2xl font-black text-white mt-2">'+fmt(p.price)+'</div><div class="text-xs text-zinc-500 mt-2">'+p.photos+' foto · '+escapeHtml(p.desc||'')+'<br>Soft file + loop/GIF + efek + frame</div><div class="text-[10px] text-indigo-300 font-bold mt-3">'+(String(selectedPackageId)===String(p.id)?'✓ PAKET DIPILIH':'KETUK UNTUK MEMILIH')+'</div>';
     g.appendChild(d);
   });
-  /* M3.9.23: do not reset a customer-selected frame on every package-step render.
-     Step 1 can be re-rendered by cloud/storage sync while the customer is still
-     choosing a package/frame. Only apply the configured default when the current
-     selection is missing or no longer valid for the active photo count. */
-  let keepFrame=false;
-  try{
-    const choices=getFrameChoicesSafe()||[];
-    keepFrame=!!selectedFrameId && choices.some(f=>f&&String(f.id)===String(selectedFrameId));
-    if(keepFrame){
-      const sf=choices.find(f=>f&&String(f.id)===String(selectedFrameId));
-      if(sf&&sf.src)selectedFrameSrc=sf.src;
-    }
-  }catch(e){keepFrame=!!selectedFrameId}
-  if(!keepFrame){
-    try{applyConfiguredDefaultFrame()}catch(e){console.warn('Frame default tidak dapat diterapkan:',e)}
-  }
-  frameSelectionConfirmed=!!selectedFrameId;
-  try{renderPreFrames()}catch(e){console.warn('Galeri frame Step 1 gagal dirender:',e)}
+  try{renderPreFrames()}catch(e){console.warn('Step 1 frame render:',e)}
   updatePackageSummary();
 }
 function selectPackage(id){
-  const p=(config.packages||[]).find(x=>x.id===id);
-  if(!p)return;
-  selectedPackageId=id; selectedLayoutType=p.layout; preFrameCategoryOpen='';
+  const p=(config.packages||[]).find(x=>String(x.id)===String(id)); if(!p)return false;
+  selectedPackageId=p.id;
+  selectedLayoutType=p.layout;
   requiredPhotosCount=Math.max(1,Number(p.photos)||4);
-
-  /* M3.2: preserve a frame selected from Brand Gallery.
-     The previous implementation always reset to the configured default
-     after package selection, which made the "Lanjut ke Pembayaran" button
-     appear stuck even though a frame had already been chosen. */
-  let keepFrame=!!selectedFrameId;
-  try{
-    const choices=getFrameChoicesSafe();
-    if(keepFrame && !choices.some(f=>f&&f.id===selectedFrameId)){
-      keepFrame=false;
-      selectedFrameId='';
-      selectedFrameSrc='';
-    }
-  }catch(e){keepFrame=!!selectedFrameId}
-  if(!keepFrame){
-    try{applyConfiguredDefaultFrame()}catch(e){console.warn('Frame default:',e)}
-  }
-  frameSelectionConfirmed=!!selectedFrameId;
-  try{
-    const cf=(getFrameChoicesSafe()||[]).find(f=>f&&f.id===selectedFrameId);
-    if(cf&&cf.src)selectedFrameSrc=cf.src;
-  }catch(e){}
-  renderPreFrames(); updatePackageSummary();
-  const btn=$('toPaymentBtn'); if(btn){btn.disabled=!frameSelectionConfirmed;btn.classList.toggle('bpC16Ready',frameSelectionConfirmed);}
+  preFrameCategoryOpen='';
+  /* A package choice starts a fresh frame choice. No default frame is treated as customer-selected. */
+  selectedFrameId='';
+  selectedFrameSrc='';
+  frameSelectionConfirmed=false;
+  try{renderPackageStep()}catch(e){}
+  try{renderPreFrames()}catch(e){}
+  updatePackageSummary();
+  return true;
 }
 function updatePackageSummary(){
   const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
@@ -681,46 +649,27 @@ function getPreFrameGroupsSafe(){
   return groups;
 }
 function renderPreFrames(){
-  const host=$('preFrameGrid');if(!host)return;
+  const host=$('preFrameGrid'); if(!host)return;
   host.innerHTML='';
-  let choices=[];
-  try{choices=getFrameChoicesSafe().filter(Boolean)}catch(e){console.warn('Step 1 frame choices:',e)}
-  if(!choices.length){
-    host.innerHTML='<div class="text-xs text-zinc-400 p-4 rounded-xl bg-zinc-900 border border-zinc-800">Frame belum tersedia. Muat ulang atau upload dari Dashboard.</div>';
-    return;
-  }
-  /* M3.9: Step 1 is always a visible category index.
-     Do not depend on cloud Brand Gallery or a remote image to make the
-     customer-facing frame selector appear. Built-in SVG frames are local. */
+  const choices=(typeof getFrameChoicesSafe==='function'?getFrameChoicesSafe():[]).filter(Boolean);
+  if(!choices.length){host.innerHTML='<div class="text-xs text-zinc-400 p-4 rounded-xl bg-zinc-900 border border-zinc-800">Frame belum tersedia.</div>';return;}
+  const groups=frameCategoryItems();
   const wrap=document.createElement('div');
   wrap.className='rounded-2xl border border-zinc-800 bg-zinc-950/70 p-3 overflow-hidden';
-  const head=document.createElement('div');
-  head.className='flex items-center justify-between gap-2 mb-3';
+  const head=document.createElement('div'); head.className='flex items-center justify-between gap-2 mb-3';
   head.innerHTML='<div class="text-xs font-black tracking-wide text-zinc-200">FRAME GALLERY</div><div class="text-[10px] font-bold text-indigo-300">Pilih kategori</div>';
   wrap.appendChild(head);
-  const index=document.createElement('div');
-  index.className='pre-category-index';
-  const groups=frameCategoryItems();
-  let visible=0;
-  Object.entries(groups).forEach(([cat,items])=>{
-    if(!items.length)return;
-    visible++;
-    index.appendChild(makeFrameCategoryCard(cat,items,true));
-  });
+  const index=document.createElement('div'); index.className='pre-category-index';
+  Object.entries(groups).forEach(([cat,items])=>{if(items.length)index.appendChild(makeFrameCategoryCard(cat,items,true));});
   wrap.appendChild(index);
-  const status=document.createElement('div');
-  status.className='mt-3 px-3 py-2 rounded-xl bg-zinc-900 text-center text-[11px]';
-  const chosen=choices.find(x=>x.id===selectedFrameId);
-  status.innerHTML=selectedFrameId
-    ? '✓ Frame: '+escapeHtml((chosen&&chosen.name)||'Frame')+' · '+(frameSelectionConfirmed?'siap digunakan':'pilih paket')
-    : 'Pilih kategori lalu pilih frame.';
-  wrap.appendChild(status);
-  host.appendChild(wrap);
   if(preFrameCategoryOpen){
-    const cat=preFrameCategoryOpen;
-    const items=groups[cat]||[];
-    if(items.length)renderPreFrameDetail(cat,items);
+    const items=groups[preFrameCategoryOpen]||[];
+    if(items.length){host.appendChild(wrap);renderPreFrameDetail(preFrameCategoryOpen,items);return;}
   }
+  const status=document.createElement('div'); status.className='mt-3 px-3 py-2 rounded-xl bg-zinc-900 text-center text-[11px]';
+  const chosen=choices.find(x=>String(x.id)===String(selectedFrameId));
+  status.innerHTML=selectedFrameId?'✓ Frame: '+escapeHtml((chosen&&chosen.name)||'Frame')+(frameSelectionConfirmed?' · siap digunakan':''):'Pilih kategori lalu pilih frame.';
+  wrap.appendChild(status); host.appendChild(wrap);
 }
 function renderPreFrameDetail(cat,items){
   const host=$('preFrameGrid');
@@ -792,19 +741,21 @@ function renderEditorFrameQuickGrid(){const g=$('editorFrameQuickGrid');if(!g)re
 function startCaptureFromFrame(){if(!selectedFrameId){alert('Pilih frame terlebih dahulu.');return}goToStep(4)}
 let bpFrameRenderTimer=null;
 function selectFrame(f){
-  if(!f||!f.id)return;
-  /* M3.9.18: normalize the selected frame through one state path. */
-  selectedFrameId=String(f.id); selectedFrameSrc=f.src||''; frameSelectionConfirmed=!!selectedPackageId;
+  if(!f||!f.id)return false;
+  selectedFrameId=String(f.id);
+  selectedFrameSrc=f.src||'';
+  frameSelectionConfirmed=!!selectedPackageId;
   if(!f.src){frameBg=frameColor(f.id);frameFg=f.id==='plain-dark'?'#f4f4f5':f.id==='plain-indigo'?'#e0e7ff':'#27272a'}
   else if(f.theme&&BUILTIN_FRAME_THEMES[f.theme]){frameBg=BUILTIN_FRAME_THEMES[f.theme].bg;frameFg=BUILTIN_FRAME_THEMES[f.theme].fg}
   document.querySelectorAll('[data-frame-id]').forEach(card=>{
-    const on=card.dataset.frameId===f.id;
+    const on=String(card.dataset.frameId)===String(selectedFrameId);
     card.classList.toggle('border-indigo-500',on);card.classList.toggle('ring-2',on);card.classList.toggle('ring-indigo-500/30',on);card.classList.toggle('border-zinc-800',!on);
     const badge=card.querySelector('.frame-selected-badge');if(badge)badge.classList.toggle('hidden',!on);
   });
-  updatePackageSummary();
-  if(typeof renderCaptureReview==='function'&&capturedPhotos.length)renderCaptureReview();
-  if(typeof renderFrameMiniPreview==='function'&&capturedPhotos.length)renderFrameMiniPreview();
+  try{updatePackageSummary()}catch(e){}
+  try{if(typeof renderCaptureReview==='function'&&capturedPhotos.length)renderCaptureReview()}catch(e){}
+  try{if(typeof renderFrameMiniPreview==='function'&&capturedPhotos.length)renderFrameMiniPreview()}catch(e){}
+  return true;
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function loadImage(src){return new Promise((resolve,reject)=>{if(!src){reject(new Error('empty image'));return}const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('image load failed'));im.src=src})}

@@ -3240,6 +3240,62 @@ window.addEventListener('boothpro-config-updated',function(){render();sync()});
 window.addEventListener('boothpro-frames-updated',function(){render();sync()});
 })();
 </script>
+
+<!-- C9.7: fix !important display conflict in C9.6 modal -->
+<style id="c9-7-frame-picker-display-fix">
+#bpC96Open.bpC96Visible{display:inline-flex!important}
+#bpC96Overlay.bpC96Visible{display:flex!important}
+#bpC96Grid{pointer-events:auto!important;touch-action:pan-y!important;-webkit-overflow-scrolling:touch!important}
+#bpC96Grid button{pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:rgba(129,140,248,.3)!important}
+</style>
+<script id="c9-7-frame-picker-display-fix-script">
+(function(){
+'use strict';
+function fix(){
+  var open=document.getElementById('bpC96Open');
+  var overlay=document.getElementById('bpC96Overlay');
+  var step=document.getElementById('step-package');
+  if(!open||!overlay)return;
+  var visible=step&&!step.classList.contains('hidden');
+  open.classList.toggle('bpC96Visible',visible);
+  overlay.classList.remove('bpC96Visible');
+  /* The original C9.6 rule used #id display:none!important, so the class
+     selector above is the authoritative visible state. */
+  if(overlay.getAttribute('aria-hidden')==='false')overlay.classList.add('bpC96Visible');
+}
+function forceOpen(){
+  var o=document.getElementById('bpC96Overlay');
+  if(!o)return;
+  o.classList.add('bpC96Visible');
+  o.setAttribute('aria-hidden','false');
+}
+function forceClose(){
+  var o=document.getElementById('bpC96Overlay');
+  if(!o)return;
+  o.classList.remove('bpC96Visible');
+  o.setAttribute('aria-hidden','true');
+}
+function bind(){
+  var open=document.getElementById('bpC96Open');
+  if(!open||open.__c97)return;
+  open.__c97=true;
+  open.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();forceOpen()},{capture:true,passive:false});
+  var o=document.getElementById('bpC96Overlay');
+  if(o)o.addEventListener('click',function(e){
+    var close=e.target.closest&&e.target.closest('#bpC96Close');
+    if(close){e.preventDefault();e.stopImmediatePropagation();forceClose()}
+  },true);
+}
+function boot(){
+  bind();fix();
+  setTimeout(function(){bind();fix()},30);
+  setTimeout(function(){bind();fix()},200);
+  setTimeout(function(){bind();fix()},800);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+setInterval(function(){bind();fix()},250);
+})();
+</script>
 </body>
 </html>
 

@@ -1,9 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const ROOT = path.resolve(process.cwd(), "..");
+const candidateRoot = process.env.GITHUB_WORKSPACE || process.cwd();
+const ROOT = fs.existsSync(path.join(candidateRoot, "index.html"))
+  ? candidateRoot
+  : path.resolve(candidateRoot, "..");
 const INDEX = path.join(ROOT, "index.html");
-const REPORT_DIR = path.resolve(process.cwd(), "reports");
+const REPORT_DIR = path.join(ROOT, "qa-engine", "reports");
 fs.mkdirSync(REPORT_DIR, { recursive: true });
 
 const html = fs.readFileSync(INDEX, "utf8");
@@ -62,13 +65,7 @@ for (const [name, re] of step1Patterns) {
 const externalScripts = [...html.matchAll(/<script[^>]+src=["']([^"']+)/gi)].map(m => m[1]);
 check("External script inventory captured", true, externalScripts);
 
-const criticalText = [
-  "Paket",
-  "frame",
-  "QRIS",
-  "voucher"
-];
-for (const term of criticalText) {
+for (const term of ["Paket", "frame", "QRIS", "voucher"]) {
   check(`UI text contains ${term}`, html.toLowerCase().includes(term.toLowerCase()), term, "warning");
 }
 
@@ -101,7 +98,9 @@ fs.writeFileSync(
     `**Critical:** ${result.summary.critical}  `,
     `**Warnings:** ${result.summary.warnings}`,
     "",
-    findings.length ? "## Findings\n" + findings.map(f => `- **[${f.severity}] ${f.name}** — \`\${JSON.stringify(f.detail)}\`\`).join("\n") : "## Findings\nNo findings."
+    findings.length
+      ? "## Findings\n" + findings.map(f => `- **[${f.severity}] ${f.name}** — ${JSON.stringify(f.detail)}`).join("\n")
+      : "## Findings\nNo findings."
   ].join("\n")
 );
 

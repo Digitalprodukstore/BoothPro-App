@@ -1937,12 +1937,9 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
     (config.packages||[]).forEach(p=>{
       const d=document.createElement('button'); d.type='button'; d.dataset.packageId=p.id;
       d.className='w-full text-left p-5 rounded-2xl border-2 cursor-pointer select-none '+(selectedPackageId===p.id?'border-indigo-500 bg-indigo-500/10':'border-zinc-800 bg-zinc-950')+' hover:border-indigo-500 transition';
-      d.style.cssText='touch-action:manipulation;pointer-events:auto;position:relative;z-index:30;cursor:pointer;';
+      d.style.cssText='touch-action:pan-y;pointer-events:auto;position:relative;z-index:30;cursor:pointer;';
       d.innerHTML='<div class="text-xs text-indigo-400 font-bold uppercase">'+p.prints+' Strip</div><div class="text-lg font-extrabold mt-1">'+p.name+'</div><div class="text-2xl font-black text-white mt-2">'+fmt(p.price)+'</div><div class="text-xs text-zinc-500 mt-2">'+p.photos+' foto · '+(p.desc||'')+'<br>Soft file + loop/GIF + efek + frame</div><div class="text-[10px] text-indigo-300 font-bold mt-3">'+(selectedPackageId===p.id?'✓ PAKET DIPILIH':'KETUK UNTUK MEMILIH')+'</div>';
       d.onclick=function(e){e.preventDefault();e.stopPropagation();selectPackage(p.id);};
-      const choosePackage=function(e){if(e){e.preventDefault();e.stopPropagation()}selectPackage(p.id)};
-      d.addEventListener('pointerup',choosePackage,{passive:false});
-      d.addEventListener('touchend',choosePackage,{passive:false});
       g.appendChild(d);
     });
     try{applyConfiguredDefaultFrame()}catch(e){console.warn(e)}

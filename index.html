@@ -3296,6 +3296,66 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 setInterval(function(){bind();fix()},250);
 })();
 </script>
+
+<!-- C9.8: native HTML form frame selector, no delegated touch / no legacy picker dependency -->
+<style id="c9-8-native-frame-select">
+#bpC98{display:block!important;position:relative!important;z-index:2147483000!important;margin-top:12px!important}
+#bpC98 .bp98-label{font-size:12px!important;font-weight:900!important;color:#a1a1aa!important;margin-bottom:8px!important}
+#bpC98 select{display:block!important;width:100%!important;height:48px!important;padding:0 42px 0 14px!important;border:1px solid #52525b!important;border-radius:12px!important;background:#18181b!important;color:#fff!important;font-size:14px!important;font-weight:800!important;appearance:auto!important;-webkit-appearance:menulist!important;pointer-events:auto!important;touch-action:manipulation!important}
+#bpC98Status{margin-top:8px!important;font-size:11px!important;color:#a1a1aa!important}
+#bpC98Status.ok{color:#a5b4fc!important;font-weight:800!important}
+</style>
+<script id="c9-8-native-frame-select">
+(function(){
+'use strict';
+var box,sel,status;
+function getFrames(){return typeof window.boothProC93Catalog==='function'?window.boothProC93Catalog():[]}
+function choose(f){
+  if(!f)return;
+  try{
+    if(typeof window.selectFrame==='function')window.selectFrame(f);
+    else if(typeof selectFrame==='function')selectFrame(f);
+  }catch(e){console.error('C9.8 frame select',e)}
+  update();
+}
+function update(){
+  if(!box)return;
+  var step=document.getElementById('step-package');
+  var visible=step&&!step.classList.contains('hidden');
+  box.style.display=visible?'block':'none';
+  if(!sel)return;
+  var fs=getFrames();
+  sel.innerHTML='<option value="">— Pilih Frame 2026 —</option>';
+  fs.forEach(function(f){
+    var o=document.createElement('option');o.value=f.id;o.textContent=f.name||f.id;
+    if(window.selectedFrameId===f.id)o.selected=true;
+    sel.appendChild(o);
+  });
+  if(status){
+    status.textContent=window.selectedFrameId?'Frame terpilih: '+(fs.find(function(f){return f.id===window.selectedFrameId})||{}).name:'Belum ada frame dipilih';
+    status.className=window.selectedFrameId?'ok':'';
+  }
+}
+function build(){
+  if(document.getElementById('bpC98'))return;
+  var host=document.getElementById('preFrameGrid');if(!host)return;
+  box=document.createElement('div');box.id='bpC98';
+  var label=document.createElement('div');label.className='bp98-label';label.textContent='Frame 2026';
+  sel=document.createElement('select');sel.id='bpC98Select';sel.setAttribute('aria-label','Pilih Frame 2026');
+  status=document.createElement('div');status.id='bpC98Status';
+  box.append(label,sel,status);
+  host.parentNode.insertBefore(box,host);
+  sel.addEventListener('change',function(e){
+    var fs=getFrames();var f=fs.find(function(x){return x.id===e.target.value});
+    choose(f);
+  },false);
+  update();
+}
+function boot(){build();update()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+setInterval(function(){if(!box)build();update()},500);
+})();
+</script>
 </body>
 </html>
 

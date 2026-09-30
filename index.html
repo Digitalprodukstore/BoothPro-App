@@ -4863,3 +4863,84 @@ window.addEventListener('boothpro-config-updated',function(){setTimeout(render,3
   else boot();
 })();
 </script>
+
+<!-- C16: final deterministic package-frame-payment bridge -->
+<style id="c16-package-frame-payment-css">
+#toPaymentBtn.bpC16Ready{background:#4f46e5!important;color:#fff!important;opacity:1!important;cursor:pointer!important;pointer-events:auto!important}
+#toPaymentBtn.bpC16Ready .fa-arrow-right{color:#fff!important}
+</style>
+<script id="c16-package-frame-payment-bridge">
+(function(){
+'use strict';
+function currentFrame(){
+  try{
+    var choices=typeof getFrameChoicesSafe==='function'?getFrameChoicesSafe():[];
+    return choices.find(function(f){return f&&f.id===selectedFrameId})||null;
+  }catch(e){return null}
+}
+function sync(){
+  try{
+    var p=(config.packages||[]).find(function(x){return x.id===selectedPackageId});
+    var f=currentFrame();
+    var ready=!!(p&&selectedFrameId&&frameSelectionConfirmed);
+    var name=document.getElementById('selectedPackageSummary');
+    var price=document.getElementById('selectedPackagePrice');
+    var desc=document.getElementById('selectedPackageDesc');
+    var btn=document.getElementById('toPaymentBtn');
+    var label=document.getElementById('toPaymentLabel');
+    if(name)name.innerHTML=p
+      ? p.name+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+((f&&f.name)||'Frame terpilih')+'</div>'
+      :'Belum dipilih';
+    if(price)price.textContent=p?fmt(p.price):'Rp0';
+    if(desc)desc.textContent=p
+      ? p.photos+' foto · '+(p.prints||1)+' print · '+(ready?'Frame siap digunakan':'Pilih frame terlebih dahulu')
+      :'Pilih paket terlebih dahulu';
+    if(btn){
+      btn.disabled=!ready;
+      btn.classList.toggle('bpC16Ready',ready);
+      btn.setAttribute('aria-disabled',ready?'false':'true');
+    }
+    if(label)label.textContent=ready
+      ? 'Lanjut ke Pembayaran · '+p.name+' · '+fmt(p.price)
+      : (!p?'Lanjut ke Pembayaran':!selectedFrameId?'Pilih Frame · '+p.name+' · '+fmt(p.price):'Pilih Frame · '+p.name+' · '+fmt(p.price));
+  }catch(e){console.warn('C16 sync',e)}
+}
+function chooseFrame(f){
+  if(!f)return;
+  try{
+    if(typeof selectFrame==='function')selectFrame(f);
+    selectedFrameId=f.id;
+    selectedFrameSrc=f.src||'';
+    if(selectedPackageId)frameSelectionConfirmed=true;
+  }catch(e){console.warn('C16 select',e)}
+  sync();
+}
+function install(){
+  var host=document.getElementById('preFrameGrid');
+  var btn=document.getElementById('toPaymentBtn');
+  if(!host||!btn)return;
+  host.addEventListener('click',function(e){
+    var card=e.target.closest('[data-frame-id]');
+    if(!card)return;
+    var id=card.dataset.frameId;
+    try{
+      var choices=typeof getFrameChoicesSafe==='function'?getFrameChoicesSafe():[];
+      var f=choices.find(function(x){return x&&x.id===id});
+      if(f){e.preventDefault();e.stopPropagation();chooseFrame(f)}
+    }catch(err){console.warn('C16 card click',err)}
+  },true);
+  btn.onclick=function(e){
+    e.preventDefault();e.stopPropagation();
+    if(!selectedPackageId){alert('Pilih paket terlebih dahulu.');return}
+    if(!selectedFrameId||!frameSelectionConfirmed){alert('Pilih frame terlebih dahulu sebelum melanjutkan ke pembayaran.');sync();return}
+    sync();
+    goToStep(3);
+  };
+  sync();
+}
+function boot(){install();setTimeout(sync,100);setTimeout(sync,500)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('boothpro-config-updated',function(){setTimeout(sync,30)});
+window.addEventListener('boothpro-frames-updated',function(){setTimeout(sync,30)});
+})();
+</script>

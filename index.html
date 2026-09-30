@@ -4671,3 +4671,40 @@ function boot(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
+
+<!-- C11: functional flow bypass — auto-confirm a built-in frame after package selection -->
+<style id="c11-frame-flow">
+#preFrameGrid{min-height:0!important}
+#bpC96Open,#bpC96Overlay,#bpC98,#bpC99{display:none!important}
+#c11FrameState{display:none!important}
+</style>
+<script id="c11-frame-flow">
+(function(){
+'use strict';
+var lastPkg=null;
+function catalog(){return typeof window.boothProC93Catalog==='function'?window.boothProC93Catalog():[]}
+function forceFrame(){
+  if(!window.selectedPackageId||window.selectedFrameId&&window.frameSelectionConfirmed)return;
+  var fs=catalog(),f=fs[0];
+  if(!f)return;
+  try{
+    if(typeof window.selectFrame==='function')window.selectFrame(f);
+    else if(typeof selectFrame==='function')selectFrame(f);
+  }catch(e){console.warn('C11 frame confirmation',e);return}
+  if(!window.frameSelectionConfirmed){
+    /* The app variables are lexical, so selectFrame() is the authoritative path.
+       Retry after the package renderer has completed. */
+    setTimeout(forceFrame,80);
+  }
+}
+function watch(){
+  var step=document.getElementById('step-package');
+  if(!step||step.classList.contains('hidden'))return;
+  var pkg=window.selectedPackageId;
+  if(pkg&&pkg!==lastPkg){lastPkg=pkg;setTimeout(forceFrame,40);setTimeout(forceFrame,180);setTimeout(forceFrame,500)}
+  else if(pkg&&!window.frameSelectionConfirmed){forceFrame()}
+}
+function boot(){setInterval(watch,250)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>

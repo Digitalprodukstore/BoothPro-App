@@ -3048,6 +3048,110 @@ try{if(document.readyState==='loading'){document.addEventListener('DOMContentLoa
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootFrames,{once:true});else bootFrames();
 })();
 </script>
+
+
+<!-- C9.5 HARD-NATIVE FRAME PICKER -->
+<style id="c9-5-hard-native-frame-picker">
+#preFrameGrid{position:relative!important;z-index:9999!important;pointer-events:auto!important;touch-action:auto!important}
+#preFrameGrid .bp-c93-box{position:relative!important;z-index:10000!important;pointer-events:auto!important;overflow:visible!important}
+#preFrameGrid .bp-c93-row{position:relative!important;z-index:10001!important;display:flex!important;flex-wrap:nowrap!important;width:100%!important;min-height:220px!important;height:220px!important;overflow-x:auto!important;overflow-y:hidden!important;touch-action:pan-x!important;pointer-events:auto!important;-webkit-overflow-scrolling:touch!important;scrollbar-width:thin!important}
+#preFrameGrid .bp-c93-card{position:relative!important;z-index:10002!important;display:block!important;flex:0 0 132px!important;width:132px!important;min-width:132px!important;height:198px!important;min-height:198px!important;margin:0!important;pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important}
+#preFrameGrid .bp-c93-card img{pointer-events:none!important}
+#preFrameGrid .bp-c93-nav{position:relative!important;z-index:10003!important;pointer-events:auto!important}
+#preFrameGrid .bp-c93-nav button{position:relative!important;z-index:10004!important;pointer-events:auto!important;touch-action:manipulation!important}
+</style>
+<script id="c9-5-hard-native-frame-picker">
+(function(){
+'use strict';
+var state={row:null,sx:0,sl:0,drag:false,moved:false};
+
+function getRow(){
+  var h=document.getElementById('preFrameGrid');
+  return h&&h.querySelector('.bp-c93-row');
+}
+function chooseFromPoint(x,y){
+  var h=document.getElementById('preFrameGrid');
+  if(!h)return false;
+  var el=document.elementFromPoint(x,y);
+  var card=el&&el.closest?el.closest('.bp-c93-card'):null;
+  if(!card||!h.contains(card))return false;
+  var id=card.getAttribute('data-frame-id');
+  var frames=typeof window.boothProC93Catalog==='function'?window.boothProC93Catalog():[];
+  var f=frames.find(function(x){return x.id===id});
+  if(!f)return false;
+  try{
+    if(typeof window.selectFrame==='function')window.selectFrame(f);
+    else if(typeof selectFrame==='function')selectFrame(f);
+  }catch(e){console.error('C9.5 select',e);return false}
+  setTimeout(function(){
+    if(typeof window.boothProRenderFrameAuthority==='function')window.boothProRenderFrameAuthority();
+  },20);
+  return true;
+}
+
+/* Capture at document level so legacy overlays/listeners cannot swallow the tap. */
+document.addEventListener('click',function(e){
+  var t=e.target;
+  var card=t&&t.closest?t.closest('#preFrameGrid .bp-c93-card'):null;
+  if(!card)return;
+  e.preventDefault();
+  e.stopPropagation();
+  chooseFromPoint(e.clientX,e.clientY);
+},true);
+
+document.addEventListener('touchstart',function(e){
+  var row=getRow();
+  if(!row||!e.touches.length)return;
+  var p=e.touches[0];
+  var card=p.target&&p.target.closest?p.target.closest('#preFrameGrid .bp-c93-card'):null;
+  state.row=row;state.sx=p.clientX;state.sl=row.scrollLeft;state.drag=true;state.moved=false;
+  state.card=card;
+},{capture:true,passive:true});
+
+document.addEventListener('touchmove',function(e){
+  if(!state.drag||!state.row||!e.touches.length)return;
+  var dx=e.touches[0].clientX-state.sx;
+  if(Math.abs(dx)>6)state.moved=true;
+  if(Math.abs(dx)>3){
+    state.row.scrollLeft=state.sl-dx;
+    if(Math.abs(dx)>8)e.preventDefault();
+  }
+},{capture:true,passive:false});
+
+document.addEventListener('touchend',function(e){
+  if(!state.drag)return;
+  var row=state.row,card=state.card,moved=state.moved;
+  state.drag=false;
+  if(card&&!moved){
+    var r=card.getBoundingClientRect();
+    chooseFromPoint(r.left+r.width/2,r.top+r.height/2);
+  }
+},{capture:true,passive:true});
+
+function repair(){
+  var h=document.getElementById('preFrameGrid');var row=getRow();
+  if(!h||!row)return;
+  h.style.setProperty('pointer-events','auto','important');
+  h.style.setProperty('touch-action','auto','important');
+  row.style.setProperty('overflow-x','auto','important');
+  row.style.setProperty('overflow-y','hidden','important');
+  row.style.setProperty('touch-action','pan-x','important');
+  row.style.setProperty('pointer-events','auto','important');
+  h.querySelectorAll('.bp-c93-card').forEach(function(c){
+    c.style.setProperty('pointer-events','auto','important');
+    c.style.setProperty('touch-action','manipulation','important');
+    c.style.setProperty('z-index','10002','important');
+  });
+}
+function boot(){
+  repair();
+  setTimeout(repair,50);setTimeout(repair,200);setTimeout(repair,800);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.addEventListener('boothpro-config-updated',function(){setTimeout(repair,30)});
+window.addEventListener('boothpro-frames-updated',function(){setTimeout(repair,30)});
+})();
+</script>
 </body>
 </html>
 

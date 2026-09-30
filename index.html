@@ -3478,6 +3478,44 @@ if(typeof oldSelect==='function'&&!oldSelect.__m33){
 </script>
 
 
+<!-- M3.9.1 STEP 1 FRAME FLOW STABILIZER -->
+<script id="m391-step1-frame-flow">
+(function(){
+'use strict';
+const originalRenderPackageStep=window.renderPackageStep;
+if(typeof originalRenderPackageStep==='function'&&!originalRenderPackageStep.__m391){
+  const wrapped=function(){
+    try{originalRenderPackageStep.apply(this,arguments)}catch(e){console.warn('M3.9.1 package render:',e)}
+    try{if(typeof window.renderPreFrames==='function')window.renderPreFrames()}catch(e){console.warn('M3.9.1 frame render:',e)}
+    setTimeout(async function(){
+      try{
+        if(window.BoothProM32?.kioskLoad){
+          const brands=await window.BoothProM32.kioskLoad();
+          if(brands&&brands.length){
+            try{if(typeof window.renderPreFrames==='function')window.renderPreFrames()}catch(e){}
+          }
+        }
+      }catch(e){console.warn('M3.9.1 cloud frame preload:',e)}
+    },80);
+  };
+  wrapped.__m391=true;
+  window.renderPackageStep=wrapped;
+}
+const originalGo=window.__bpM32OriginalGoToStep;
+if(typeof originalGo==='function'&&!window.__bpM391StartFixed){
+  const startBtn=document.querySelector('#step-welcome button[onclick="goToStep(2)"]');
+  if(startBtn){
+    startBtn.onclick=function(ev){
+      ev?.preventDefault?.();
+      try{originalGo(2)}catch(e){window.goToStep(2)}
+    };
+    window.__bpM391StartFixed=true;
+  }
+}
+window.BoothProM391={version:'3.9.1',cameraLocked:true};
+})();
+</script>
+
 <!-- M3.7 CLOUD FRAME VISUAL DELIVERY FIX -->
 <style id="m37-cloud-frame-visual-style">
 .bpM37-frame-loading{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#71717a;font-size:10px}

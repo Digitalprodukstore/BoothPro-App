@@ -4099,322 +4099,147 @@ window.addEventListener('pageshow',()=>setTimeout(boot,250));
 </script>
 
 
-<!-- M3.9.2 FINAL FRAME/STEP-1 STABILIZER -->
-<style id="m392-frame-selection-stabilizer">
-#preFrameGrid{position:relative!important;z-index:60!important;pointer-events:auto!important;overflow:visible!important}
-.m392-frame-selected{outline:2px solid #818cf8!important;outline-offset:1px;box-shadow:0 0 0 3px rgba(129,140,248,.22)!important}
-#toPaymentBtn{position:relative;z-index:80!important;touch-action:manipulation!important;pointer-events:auto!important;-webkit-tap-highlight-color:transparent}
+<!-- M3.9.8 SINGLE FRAME/PAYMENT INTERACTION AUTHORITY -->
+<style id="m398-frame-payment-authority">
+#preFrameGrid [data-frame-id]{
+  position:relative!important;
+  z-index:999!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  cursor:pointer!important;
+}
+#preFrameGrid [data-frame-id].bp-m398-selected{
+  border-color:#6366f1!important;
+  box-shadow:0 0 0 3px rgba(99,102,241,.28)!important;
+}
+#toPaymentBtn{
+  position:relative!important;
+  z-index:1000!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+}
 </style>
-<script id="m392-frame-selection-stabilizer">
+<script id="m398-frame-payment-authority">
 (function(){
 'use strict';
-function el(id){return document.getElementById(id)}
-function choices(){
-  try{if(typeof getFrameChoicesSafe==='function')return (getFrameChoicesSafe()||[]).filter(Boolean)}catch(e){}
-  try{if(typeof getFrameChoices==='function')return (getFrameChoices()||[]).filter(Boolean)}catch(e){}
-  return [];
-}
-function selected(){return choices().find(f=>String(f.id)===String(window.selectedFrameId||selectedFrameId))||null}
-function refreshSummary(){
-  const p=(config&&Array.isArray(config.packages)?config.packages:[]).find(x=>x&&x.id===selectedPackageId);
-  const f=selected();
-  const name=el('selectedPackageSummary'),price=el('selectedPackagePrice'),desc=el('selectedPackageDesc'),btn=el('toPaymentBtn'),label=el('toPaymentLabel');
-  if(name)name.innerHTML=p?escapeHtml(p.name)+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+escapeHtml((f&&f.name)||'Belum dipilih')+'</div>':'Belum dipilih';
-  if(price)price.textContent=p?fmt(p.price):'Rp0';
-  if(desc)desc.textContent=p?p.photos+' foto · '+(p.prints||1)+' print · '+(window.frameSelectionConfirmed?'Frame siap digunakan':'Pilih frame terlebih dahulu'):'Pilih paket terlebih dahulu';
-  const ready=!!(p&&f&&window.frameSelectionConfirmed);
-  if(btn){btn.disabled=!ready;btn.style.opacity=ready?'1':'.72';btn.style.pointerEvents='auto';btn.style.cursor=ready?'pointer':'not-allowed';btn.setAttribute('aria-disabled',String(!ready));}
-  if(label)label.textContent=ready?'Lanjut ke Pembayaran · '+p.name+' · '+fmt(p.price):(p?'Pilih Frame · '+p.name+' · '+fmt(p.price):'Lanjut ke Pembayaran');
-}
-function patchSelect(){
-  const fn=window.selectFrame;
-  if(typeof fn!=='function'||fn.__m392)return false;
-  const wrapped=function(f){
-    const r=fn.apply(this,arguments);
-    try{window.frameSelectionConfirmed=true}catch(e){}
-    setTimeout(function(){
-      try{refreshSummary()}catch(e){}
-      document.querySelectorAll('[data-frame-id]').forEach(c=>c.classList.toggle('m392-frame-selected',String(c.dataset.frameId)===String(window.selectedFrameId||selectedFrameId)));
-    },0);
-    return r;
-  };
-  wrapped.__m392=true;window.selectFrame=wrapped;return true;
-}
-function patchPayment(){
-  const btn=el('toPaymentBtn');if(!btn||btn.__m392)return false;
-  btn.__m392=true;
-  btn.addEventListener('click',function(e){
-    e.preventDefault();e.stopPropagation();
-    const p=(config&&Array.isArray(config.packages)?config.packages:[]).find(x=>x&&x.id===selectedPackageId);
-    const f=selected();
-    if(!p){alert('Pilih paket terlebih dahulu.');return}
-    if(!f){alert('Pilih frame terlebih dahulu sebelum melanjutkan ke pembayaran.');return}
-    window.frameSelectionConfirmed=true;refreshSummary();
-    try{if(typeof goToStep==='function')goToStep(3)}catch(err){console.warn('M3.9.2 payment navigation:',err)}
-  },true);
-  return true;
-}
-function install(){patchSelect();patchPayment();refreshSummary()}
-let tries=0;const timer=setInterval(function(){install();if((el('toPaymentBtn')?.__m392&&window.selectFrame?.__m392)||++tries>80)clearInterval(timer)},100);
-setTimeout(install,250);setTimeout(install,1000);
-window.addEventListener('boothpro-frames-updated',function(){setTimeout(install,30)});
-window.addEventListener('boothpro-config-updated',function(){setTimeout(install,30)});
-})();
-</script>
-
-<!-- M3.9.3 FRAME CLICK AUTHORITY + PAYMENT SYNC -->
-<style id="m393-frame-click-fix">
-#preFrameGrid button[data-frame-id]{position:relative!important;z-index:100!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-user-select:none!important;user-select:none!important}
-</style>
-<script id="m393-frame-click-fix">
-(function(){
-'use strict';
-function $(id){return document.getElementById(id)}
-function choices(){
-  try{if(typeof getFrameChoicesSafe==='function')return (getFrameChoicesSafe()||[]).filter(Boolean)}catch(e){}
-  try{if(typeof getFrameChoices==='function')return (getFrameChoices()||[]).filter(Boolean)}catch(e){}
-  try{if(window.BoothProM391?.safeChoices)return (window.BoothProM391.safeChoices()||[]).filter(Boolean)}catch(e){}
-  return [];
-}
-function selected(){
-  const id=String(window.selectedFrameId||selectedFrameId||'');
-  return choices().find(f=>String(f.id)===id)||null;
-}
-function sync(){
-  const p=(config&&Array.isArray(config.packages)?config.packages:[]).find(x=>x&&x.id===selectedPackageId);
-  const f=selected();
-  const s=$('selectedPackageSummary'),pr=$('selectedPackagePrice'),d=$('selectedPackageDesc'),b=$('toPaymentBtn'),l=$('toPaymentLabel');
-  if(s)s.innerHTML=p?escapeHtml(p.name)+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+escapeHtml(f?.name||'Belum dipilih')+'</div>':'Belum dipilih';
-  if(pr)pr.textContent=p?fmt(p.price):'Rp0';
-  if(d)d.textContent=p?(p.photos+' foto · '+(p.prints||1)+' print · '+(f?'Frame siap digunakan':'Pilih frame terlebih dahulu')):'Pilih paket terlebih dahulu';
-  const ready=!!(p&&f);
-  if(b){b.disabled=!ready;b.style.opacity=ready?'1':'.72';b.style.pointerEvents='auto';b.style.cursor=ready?'pointer':'not-allowed';b.setAttribute('aria-disabled',String(!ready));}
-  if(l)l.textContent=ready?'Lanjut ke Pembayaran · '+p.name+' · '+fmt(p.price):(p?'Pilih Frame · '+p.name+' · '+fmt(p.price):'Lanjut ke Pembayaran');
-}
-function select(f){
-  if(!f)return false;
-  try{
-    if(typeof selectFrame==='function')selectFrame(f);
-    else if(typeof window.selectFrame==='function')window.selectFrame(f);
-    window.frameSelectionConfirmed=true;
-    setTimeout(function(){
-      sync();
-      document.querySelectorAll('#preFrameGrid [data-frame-id]').forEach(el=>el.classList.toggle('m392-frame-selected',String(el.dataset.frameId)===String(f.id)));
-    },30);
-    return true;
-  }catch(e){console.warn('M3.9.3 frame select:',e);return false}
-}
-function install(){
-  const host=$('preFrameGrid');
-  if(!host||host.__m393)return false;
-  host.__m393=true;
-  host.addEventListener('click',function(e){
-    const card=e.target.closest('#preFrameGrid [data-frame-id]');
-    if(!card)return;
-    const f=choices().find(x=>String(x.id)===String(card.dataset.frameId));
-    if(!f)return;
-    e.preventDefault();e.stopPropagation();
-    select(f);
-  },true);
-  return true;
-}
-let n=0;const t=setInterval(function(){install();sync();if(++n>100)clearInterval(t)},100);
-setTimeout(function(){install();sync()},250);
-setTimeout(function(){install();sync()},1000);
-window.addEventListener('boothpro-frames-updated',function(){setTimeout(function(){install();sync()},80)});
-window.addEventListener('boothpro-config-updated',function(){setTimeout(function(){install();sync()},80)});
-})();
-</script>
-
-<!-- M3.9.5 WINDOW CAPTURE INTERACTION FIX -->
-<script id="m395-window-capture-fix">
-(function(){
-'use strict';
+function byId(id){return document.getElementById(id)}
 function getChoices(){
-  try{const a=typeof getFrameChoicesSafe==='function'?getFrameChoicesSafe():[];if(a?.length)return a}
-  catch(e){}
-  try{const a=typeof getFrameChoices==='function'?getFrameChoices():[];if(a?.length)return a}
-  catch(e){}
-  return [];
-}
-function findFrame(id){return getChoices().find(f=>String(f.id)===String(id))}
-function applyFrame(f){
-  if(!f)return;
-  try{
-    if(typeof window.selectFrame==='function') window.selectFrame(f);
-    else { selectedFrameId=f.id; selectedFrameSrc=f.src||''; }
-  }catch(e){
-    try{selectedFrameId=f.id;selectedFrameSrc=f.src||''}catch(_){}
-  }
-  try{selectedFrameId=f.id;selectedFrameSrc=f.src||''}catch(_){}
-  try{frameSelectionConfirmed=!!selectedPackageId}catch(_){}
-  try{if(typeof window.updatePackageSummary==='function')window.updatePackageSummary()}catch(_){}
-  try{if(typeof window.renderPreFrames==='function')window.renderPreFrames()catch(_){}
-}
-function frameFromTarget(t){
-  const el=t?.closest?.('[data-frame-id]');
-  if(!el)return null;
-  const id=el.getAttribute('data-frame-id');
-  return id?findFrame(id):null;
-}
-window.addEventListener('click',function(e){
-  const t=e.target;
-  const f=frameFromTarget(t);
-  if(f && document.getElementById('preFrameGrid')?.contains(t)){
-    e.preventDefault();e.stopImmediatePropagation();
-    applyFrame(f);
-    return;
-  }
-  const btn=t?.closest?.('#toPaymentBtn');
-  if(btn){
-    e.preventDefault();e.stopImmediatePropagation();
-    const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
-    const f=findFrame(selectedFrameId);
-    if(!p){alert('Pilih paket terlebih dahulu.');return}
-    if(!f){alert('Pilih frame terlebih dahulu sebelum melanjutkan ke pembayaran.');return}
-    try{frameSelectionConfirmed=true}catch(_){}
-    try{updatePackageSummary()}catch(_){}
-    try{renderPayment()}catch(_){}
-    try{goToStep(3)}catch(_){}
-  }
-},true);
-})();
-</script>
-
-
-<!-- M3.9.6 FINAL FRAME SELECTION AUTHORITY -->
-<style id="m396-final-frame-selection">
-#preFrameGrid [data-frame-id]{position:relative!important;z-index:999!important;pointer-events:auto!important;touch-action:manipulation!important}
-#preFrameGrid .bp-step1-frame-card.bp-m396-selected{border-color:#6366f1!important;box-shadow:0 0 0 3px rgba(99,102,241,.28)!important}
-</style>
-<script id="m396-final-frame-selection">
-(function(){
-'use strict';
-function choices(){
   const out=[];
-  const add=a=>(Array.isArray(a)?a:[]).forEach(f=>{if(f&&f.id&&!out.some(x=>String(x.id)===String(f.id)))out.push(f)});
+  const add=(arr)=>{if(!Array.isArray(arr))return;arr.forEach(f=>{
+    if(f&&f.id&&!out.some(x=>String(x.id)===String(f.id)))out.push(f);
+  })};
   try{if(typeof getFrameChoicesSafe==='function')add(getFrameChoicesSafe())}catch(e){}
   try{if(typeof getFrameChoices==='function')add(getFrameChoices())}catch(e){}
   try{add(window.frameGallery)}catch(e){}
   try{
     (Array.isArray(window.BUILTIN_FRAME_DEFS)?window.BUILTIN_FRAME_DEFS:[]).forEach((d,i)=>{
       if(!d||!d.id)return;
-      const f={...d,builtin:true,category:typeof builtinCategoryForIndex==='function'?builtinCategoryForIndex(i):d.category||'MODERN'};
+      const f={...d,builtin:true,category:typeof builtinCategoryForIndex==='function'?builtinCategoryForIndex(i):(d.category||'MODERN')};
       try{if(!f.src&&typeof builtinFrameSvg==='function')f.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(builtinFrameSvg(f))}catch(e){}
       add([f]);
     });
   }catch(e){}
   return out;
 }
-function resolve(id){
-  const s=String(id||'');
-  return choices().find(f=>String(f.id)===s)||null;
+function findFrame(id){return getChoices().find(f=>String(f.id)===String(id||''))||null}
+function currentPackage(){
+  try{return (Array.isArray(window.config?.packages)?window.config.packages:[]).find(p=>p&&p.id===window.selectedPackageId)||null}catch(e){return null}
 }
-function summary(){
-  try{
-    if(typeof updatePackageSummary==='function')updatePackageSummary();
-  }catch(e){}
-  const p=(window.config&&Array.isArray(config.packages)?config.packages:[]).find(x=>x&&x.id===window.selectedPackageId);
-  const f=resolve(window.selectedFrameId);
-  const el=document.getElementById('selectedPackageSummary');
-  if(el&&p){
-    const safe=typeof escapeHtml==='function'?escapeHtml:String;
-    el.innerHTML=safe(p.name)+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+safe(f?.name||'Belum dipilih')+'</div>';
+function syncSummary(){
+  const p=currentPackage();
+  const f=findFrame(window.selectedFrameId);
+  const summary=byId('selectedPackageSummary');
+  const price=byId('selectedPackagePrice');
+  const desc=byId('selectedPackageDesc');
+  const btn=byId('toPaymentBtn');
+  const label=byId('toPaymentLabel');
+  const esc=typeof window.escapeHtml==='function'?window.escapeHtml:(s)=>String(s??'');
+  const fmtFn=typeof window.fmt==='function'?window.fmt:(v)=>String(v??'');
+  if(summary)summary.innerHTML=p?esc(p.name)+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+esc(f?.name||'Belum dipilih')+'</div>':'Belum dipilih';
+  if(price)price.textContent=p?fmtFn(p.price):'Rp0';
+  if(desc)desc.textContent=p?(String(p.photos||0)+' foto · '+String(p.prints||1)+' print · '+(f?'Frame siap digunakan':'Pilih frame terlebih dahulu')):'Pilih paket terlebih dahulu';
+  const ready=!!(p&&f);
+  if(btn){
+    btn.disabled=!ready;
+    btn.style.opacity=ready?'1':'.72';
+    btn.style.pointerEvents='auto';
+    btn.style.cursor=ready?'pointer':'not-allowed';
+    btn.setAttribute('aria-disabled',String(!ready));
   }
+  if(label)label.textContent=ready?'Lanjut ke Pembayaran · '+p.name+' · '+fmtFn(p.price):(p?'Pilih Frame · '+p.name+' · '+fmtFn(p.price):'Lanjut ke Pembayaran');
   document.querySelectorAll('#preFrameGrid [data-frame-id]').forEach(card=>{
     const on=String(card.dataset.frameId)===String(window.selectedFrameId||'');
-    card.classList.toggle('bp-m396-selected',on);
-    const badge=card.querySelector('.bp-m396-check');
+    card.classList.toggle('bp-m398-selected',on);
+    const badge=card.querySelector('.frame-selected-badge,.bp-m396-check');
     if(badge)badge.classList.toggle('hidden',!on);
   });
 }
-function choose(id){
-  const f=resolve(id);
+function chooseFrame(card){
+  const id=card?.getAttribute('data-frame-id');
+  if(!id)return false;
+  const f=findFrame(id);
   if(!f)return false;
   try{
     if(typeof window.selectFrame==='function')window.selectFrame(f);
     else{window.selectedFrameId=f.id;window.selectedFrameSrc=f.src||''}
   }catch(e){
-    try{window.selectedFrameId=f.id;window.selectedFrameSrc=f.src||''}catch(_){}
+    window.selectedFrameId=f.id;
+    window.selectedFrameSrc=f.src||'';
   }
-  try{window.selectedFrameId=f.id;window.selectedFrameSrc=f.src||''}catch(_){}
-  try{window.frameSelectionConfirmed=!!window.selectedPackageId}catch(_){}
-  summary();
-  setTimeout(summary,30);
-  setTimeout(summary,150);
+  window.selectedFrameId=f.id;
+  window.selectedFrameSrc=f.src||'';
+  window.frameSelectionConfirmed=!!window.selectedPackageId;
+  try{if(typeof window.updatePackageSummary==='function')window.updatePackageSummary()}catch(e){}
+  syncSummary();
+  setTimeout(syncSummary,30);
   return true;
 }
-function cardFromTarget(t){
-  try{return t&&t.closest?t.closest('#preFrameGrid [data-frame-id]'):null}catch(e){return null}
+function install(){
+  const host=byId('preFrameGrid');
+  if(host&&!host.__m398){
+    host.__m398=true;
+    host.addEventListener('click',function(e){
+      const card=e.target?.closest?.('[data-frame-id]');
+      if(!card||!host.contains(card))return;
+      if(!chooseFrame(card))return;
+      e.preventDefault();
+      e.stopPropagation();
+    },true);
+  }
+  const btn=byId('toPaymentBtn');
+  if(btn&&!btn.__m398){
+    btn.__m398=true;
+    btn.addEventListener('click',function(e){
+      const p=currentPackage();
+      const f=findFrame(window.selectedFrameId);
+      if(!p||!f){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        alert(!p?'Pilih paket terlebih dahulu.':'Pilih frame terlebih dahulu sebelum melanjutkan ke pembayaran.');
+        syncSummary();
+        return;
+      }
+      window.frameSelectionConfirmed=true;
+      syncSummary();
+      try{
+        if(typeof window.renderPayment==='function')window.renderPayment();
+        if(typeof window.goToStep==='function')window.goToStep(3);
+      }catch(err){console.warn('M3.9.8 payment navigation:',err)}
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    },true);
+  }
+  syncSummary();
 }
-function intercept(e){
-  const card=cardFromTarget(e.target);
-  if(!card)return;
-  const id=card.dataset.frameId;
-  if(!id||!resolve(id))return;
-  e.preventDefault();
-  e.stopImmediatePropagation();
-  choose(id);
-}
-window.addEventListener('pointerup',intercept,true);
-window.addEventListener('touchend',intercept,true);
-window.addEventListener('click',intercept,true);
-window.addEventListener('boothpro-frames-updated',()=>setTimeout(summary,40));
-window.addEventListener('boothpro-config-updated',()=>setTimeout(summary,40));
-setTimeout(summary,100);
-setTimeout(summary,500);
-})();
-</script>
-
-
-<!-- M3.9.7 DIRECT FRAME CARD SELECTION REPAIR -->
-<style id="m397-direct-frame-selection">
-#preFrameGrid [data-frame-id]{pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important}
-#preFrameGrid [data-frame-id].bp-m397-selected{border-color:#6366f1!important;box-shadow:0 0 0 3px rgba(99,102,241,.28)!important}
-</style>
-<script id="m397-direct-frame-selection">
-(function(){
-'use strict';
-function cardFrame(card){
-  if(!card)return null;
-  const id=card.getAttribute('data-frame-id');
-  if(!id)return null;
-  let f=null;
-  try{if(typeof getFrameChoicesSafe==='function')f=(getFrameChoicesSafe()||[]).find(x=>String(x.id)===String(id))||null}catch(e){}
-  if(!f)try{if(typeof getFrameChoices==='function')f=(getFrameChoices()||[]).find(x=>String(x.id)===String(id))||null}catch(e){}
-  if(!f)try{f=(Array.isArray(window.frameGallery)?window.frameGallery:[]).find(x=>String(x.id)===String(id))||null}catch(e){}
-  if(f)return f;
-  const img=card.querySelector('img'), label=card.querySelector('span');
-  return {id:id,name:(label&&label.textContent||'Frame').trim(),src:img&&img.currentSrc||img&&img.src||'',photos:requiredPhotosCount||4,category:window.bpStep1OpenCat||'CUSTOM'};
-}
-function mark(card){
-  const id=card&&card.getAttribute('data-frame-id');
-  document.querySelectorAll('#preFrameGrid [data-frame-id]').forEach(c=>{
-    const on=String(c.getAttribute('data-frame-id'))===String(id);
-    c.classList.toggle('bp-m397-selected',on);
-    const b=c.querySelector('.frame-selected-badge,.bp-m396-check');
-    if(b)b.classList.toggle('hidden',!on);
-    c.querySelectorAll('span').forEach(x=>{if(x.textContent.trim()==='✓')x.classList.toggle('hidden',!on)});
-  });
-}
-function pick(card){
-  const f=cardFrame(card); if(!f)return false;
-  try{selectFrame(f)}catch(e){try{selectedFrameId=f.id;selectedFrameSrc=f.src||'';frameSelectionConfirmed=!!selectedPackageId}catch(_){}}
-  try{selectedFrameId=f.id;selectedFrameSrc=f.src||'';frameSelectionConfirmed=!!selectedPackageId}catch(_){}
-  try{updatePackageSummary()}catch(_){}
-  mark(card);
-  return true;
-}
-function intercept(e){
-  const card=e.target&&e.target.closest?e.target.closest('#preFrameGrid [data-frame-id]'):null;
-  if(!card)return;
-  if(!pick(card))return;
-  e.preventDefault();e.stopImmediatePropagation();
-}
-window.addEventListener('pointerdown',intercept,true);
-window.addEventListener('pointerup',intercept,true);
-window.addEventListener('touchend',intercept,true);
-window.addEventListener('click',intercept,true);
+let tries=0;
+const timer=setInterval(function(){
+  install();
+  if(++tries>100)clearInterval(timer);
+},100);
+setTimeout(install,250);
+setTimeout(install,1000);
+window.addEventListener('boothpro-frames-updated',()=>setTimeout(install,50));
+window.addEventListener('boothpro-config-updated',()=>setTimeout(install,50));
 })();
 </script>
 

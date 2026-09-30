@@ -572,7 +572,7 @@ function updatePackageSummary(){
   if(name)name.innerHTML=p?escapeHtml(p.name)+'<div class="text-xs font-semibold text-indigo-300 mt-1">Frame: '+escapeHtml((f&&f.name)||'Belum dipilih')+'</div>':'Belum dipilih';
   if(price)price.innerText=p?fmt(p.price):'Rp0';
   if(desc)desc.innerText=p?p.photos+' foto · '+(p.prints||1)+' print · '+(frameSelectionConfirmed?'Frame siap digunakan':'Pilih frame terlebih dahulu'):'Pilih paket terlebih dahulu';
-  const ready=!!(p&&selectedFrameId&&frameSelectionConfirmed);
+  const ready=!!(p&&f&&selectedFrameId&&frameSelectionConfirmed);
   if(btn){btn.disabled=!ready;btn.classList.toggle('bpC16Ready',ready);btn.style.opacity=ready?'1':'0.72';btn.style.pointerEvents='auto';btn.style.cursor=ready?'pointer':'not-allowed';}
   if(label)label.innerText=ready?'Lanjut ke Pembayaran · '+p.name+' · '+fmt(p.price):(p?'Pilih Frame · '+p.name+' · '+fmt(p.price):'Lanjut ke Pembayaran');
 }
@@ -2325,10 +2325,14 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
   window.goToPayment=function(){
     const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
     if(!p){alert('Pilih paket terlebih dahulu.');return}
-    if(!selectedFrameId){alert('Pilih frame terlebih dahulu sebelum melanjutkan ke pembayaran.');return}
-    frameSelectionConfirmed=true;
-    updatePackageSummary();
-    try{goToStep(3)}catch(e){if(typeof oldGo==='function')oldGo()}
+    const f=(getFrameChoicesSafe()||[]).find(x=>String(x.id)===String(selectedFrameId||''));
+    if(!f||!selectedFrameId||!frameSelectionConfirmed){
+      alert('Pilih frame terlebih dahulu sebelum melanjutkan ke pembayaran.');
+      updatePackageSummary();
+      return;
+    }
+    /* M3.9.19: dashboard must not bypass the same payment guard used by kiosk. */
+    try{oldGo()}catch(e){console.warn('goToPayment:',e)}
   };
   window.renderDashFrameSlotManager=function(){
     const host=document.getElementById('dashFrameSlotManager');if(!host)return;host.innerHTML='';const fs=userFrames(),ss=slots();

@@ -64,7 +64,9 @@ def main():
             "High touch/pointer handler density increases mobile interaction regression risk.",
             [f"touchend={metrics['event_touchend']}", f"pointerup={metrics['event_pointerup']}"]))
 
-    ids = re.findall(r'\bid=["\']([^"\']+)["\']', src, re.I)
+    html_only = re.sub(r"<script\\b[^>]*>.*?</script\\s*>", "", src, flags=re.I | re.S)
+    html_only = re.sub(r"<style\\b[^>]*>.*?</style\\s*>", "", html_only, flags=re.I | re.S)
+    ids = re.findall(r"<[A-Za-z][^>]*\\bid=[\"']([^\"']+)[\"']", html_only, re.I)
     id_counts = {}
     for x in ids:
         id_counts[x] = id_counts.get(x, 0) + 1

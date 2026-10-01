@@ -1188,7 +1188,6 @@ async function getFinalMotionVideoBlob(){
   finalMotionVideoMime=blob.type||'video/mp4';
   return blob;
 }
-function downloadComposite(){if(!finalCompositeDataUrl)return;const a=document.createElement('a');a.href=finalCompositeDataUrl;a.download=`BoothPro-${sessionId}-final.jpg`;a.click()}
 async function saveSessionToFiles(){
   try{
     const files=[];

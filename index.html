@@ -928,7 +928,7 @@ async function drawStickersCanvas(ctx,w,h){
     }catch(e){console.warn('Sticker render dilewati:',e)}
   }
 }
-async async function ensureStickerRasterAssets(){
+async function ensureStickerRasterAssets(){
   if(!Array.isArray(stickers)||!stickers.length)return;
   for(const st of stickers){
     if(st?.src){

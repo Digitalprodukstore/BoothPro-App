@@ -15,7 +15,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: boothpro-qa-\${{ github.ref }}
+  group: boothpro-qa-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

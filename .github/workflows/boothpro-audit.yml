@@ -14,31 +14,55 @@ permissions:
 
 jobs:
   audit:
-    name: Static + Production Audit
+    name: Static + Browser + Production Audit
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Run BoothPro Audit
-        id: audit
-        run: python3 tools/boothpro_audit.py
-        continue-on-error: true
-      - name: Publish audit report
+
+      - name: Static audit
+        run: python3 tools/boothpro_audit.py | tee audit-console.txt
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Start local kiosk
+        run: |
+          nohup python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/boothpro-http.log 2>&1 &
+          sleep 2
+
+      - name: Browser interaction audit
+        run: node tools/boothpro_browser_audit.mjs
+
+      - name: Upload QA evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: boothpro-audit-report
-          path: audit-report.json
+          name: boothpro-audit-evidence
+          path: |
+            audit-report.json
+            audit-console.txt
+            boothpro-browser-report.json
+            boothpro-browser-failure.png
           if-no-files-found: ignore
           retention-days: 14
+
       - name: Job summary
         if: always()
         run: |
           echo "## BoothPro Audit & Guard" >> "$GITHUB_STEP_SUMMARY"
           if [ -f audit-report.json ]; then
-            python3 -c 'import json; d=json.load(open("audit-report.json")); s=d["summary"]; print("- FAIL:", s["fail"]); print("- WARN:", s["warn"]); print("- PASS:", s["pass"])' >> "$GITHUB_STEP_SUMMARY"
+            python3 -c 'import json; d=json.load(open("audit-report.json")); s=d["summary"]; print("- Static FAIL:",s["fail"]); print("- Static WARN:",s["warn"]); print("- Static PASS:",s["pass"])' >> "$GITHUB_STEP_SUMMARY"
           fi
-      - name: Fail on critical findings
-        if: steps.audit.outcome == 'failure'
-        run: exit 1
+          if [ -f boothpro-browser-report.json ]; then
+            python3 -c 'import json; d=json.load(open("boothpro-browser-report.json")); print("- Browser:",d.get("status")); [print("  -",c["name"],c["pass"]) for c in d.get("checks",[])]' >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -1346,9 +1346,21 @@ async function publishSessionCloud(){
       result.gifUrl=gu.secure_url||gu.url||null;
     }catch(gifErr){console.warn('GIF Cloudinary gagal',gifErr)}
 
-    /* Keep the existing Share API integration when configured. It now
-       receives exactly the three customer soft-file URLs. */
-    if(config.shareBase&&result.photoUrl&&result.videoUrl&&result.gifUrl){
+    /* The self-contained soft.html page is the authoritative customer
+       destination. This guarantees the QR always exposes exactly these 3
+       files even if an older external Share API still expects boomerang. */
+    if(result.photoUrl&&result.videoUrl&&result.gifUrl){
+      const softPage=new URL('soft.html',location.href);
+      softPage.searchParams.set('session',sessionId);
+      softPage.searchParams.set('photo',result.photoUrl);
+      softPage.searchParams.set('video',result.videoUrl);
+      softPage.searchParams.set('gif',result.gifUrl);
+      result.shareUrl=softPage.toString();
+    }
+
+    /* Preserve the configured Share API as an optional backend record/alias,
+       but never replace the customer QR destination with its legacy URL. */
+    if(config.shareBase&&result.shareUrl){
       try{
         const r=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{
           method:'POST',
@@ -1357,20 +1369,9 @@ async function publishSessionCloud(){
         });
         if(r.ok){
           const j=await r.json().catch(()=>({}));
-          result.shareUrl=j.shareUrl||null;
+          if(j.shareUrl)result.backendShareUrl=j.shareUrl;
         }
-      }catch(e){console.warn('Share API tidak tersedia',e)}
-    }
-
-    /* Self-contained fallback: the QR opens a lightweight public soft-file
-       page in this same deployment, so no customer login is required. */
-    if(!result.shareUrl&&result.photoUrl&&result.videoUrl&&result.gifUrl){
-      const softPage=new URL('soft.html',location.href);
-      softPage.searchParams.set('session',sessionId);
-      softPage.searchParams.set('photo',result.photoUrl);
-      softPage.searchParams.set('video',result.videoUrl);
-      softPage.searchParams.set('gif',result.gifUrl);
-      result.shareUrl=softPage.toString();
+      }catch(e){console.warn('Share API record skipped:',e)}
     }
 
     localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));

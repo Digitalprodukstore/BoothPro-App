@@ -908,33 +908,36 @@ async function drawStickersCanvas(ctx,w,h){
       const size=Math.max(8,Number(st?.size)||14);
       const x=Math.min(98,Math.max(2,Number(st?.x)||50))/100*w;
       const y=Math.min(98,Math.max(2,Number(st?.y)||50))/100*h;
-      if(st?.src){
-        const src=await resolveImageSourceDataUrl(st.src);
+      let src=String(st?._resolvedDataUrl||'').trim();
+      if(!src&&st?.src)src=await resolveImageSourceDataUrl(st.src);
+      if(!src&&st?.emoji)src=await resolveStickerEmojiDataUrl(st.emoji);
+      if(src){
         const im=await loadImage(src);
         const target=Math.max(24,(size/100)*w);
         const iw=im.naturalWidth||im.width||1,ih=im.naturalHeight||im.height||1;
         const scale=Math.min(target/iw,target/ih);
         ctx.drawImage(im,x-iw*scale/2,y-ih*scale/2,iw*scale,ih*scale);
-      }else{
-        const emoji=String(st?.emoji||'').trim();
-        if(!emoji)continue;
-        let data=String(st?._resolvedDataUrl||'');
-        if(!data)data=await resolveStickerEmojiDataUrl(emoji);
-        if(data){
-          try{const im=await loadImage(data);const target=Math.max(24,(size/100)*w);const iw=im.naturalWidth||im.width||1,ih=im.naturalHeight||im.height||1;const scale=Math.min(target/iw,target/ih);ctx.drawImage(im,x-iw*scale/2,y-ih*scale/2,iw*scale,ih*scale);continue}catch(e){}
-        }
-        ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=Math.max(12,(size/100)*w)+"px -apple-system, BlinkMacSystemFont, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";ctx.fillText(emoji,x,y);ctx.restore();
+        continue;
       }
+      const emoji=String(st?.emoji||'').trim();
+      if(!emoji)continue;
+      ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.font=Math.max(12,(size/100)*w)+"px -apple-system, BlinkMacSystemFont, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
+      ctx.fillText(emoji,x,y);ctx.restore();
     }catch(e){console.warn('Sticker render dilewati:',e)}
   }
 }
 async function ensureStickerRasterAssets(){
   if(!Array.isArray(stickers)||!stickers.length)return;
   for(const st of stickers){
-    if(st?.src)continue;
-    const emoji=String(st?.emoji||'').trim();
-    if(!emoji)continue;
-    try{st._resolvedDataUrl=await resolveStickerEmojiDataUrl(emoji)}catch(e){st._resolvedDataUrl=''}
+    try{
+      if(st?.src){
+        st._resolvedDataUrl=await resolveImageSourceDataUrl(st.src);
+        if(st._resolvedDataUrl&&st._resolvedDataUrl.startsWith('data:'))continue;
+      }
+      const emoji=String(st?.emoji||'').trim();
+      if(emoji)st._resolvedDataUrl=await resolveStickerEmojiDataUrl(emoji);
+    }catch(e){st._resolvedDataUrl=''}
   }
 }
 async function finishEditing(){
@@ -1147,6 +1150,8 @@ async function buildBoomerangVideoBlob(){
   if(typeof canvas.captureStream!=='function')throw new Error('Browser ini belum mendukung video dari canvas.');
   const mimeType=pickBoomerangMime();
   if(!mimeType)throw new Error('Format video tidak didukung browser ini.');
+  canvas.style.cssText='position:fixed;left:-10000px;top:-10000px;width:480px;height:720px;opacity:0;pointer-events:none;';
+  document.body.appendChild(canvas);
   const stream=canvas.captureStream(20);
   const chunks=[];
   const recorder=new MediaRecorder(stream,{mimeType});
@@ -1165,29 +1170,43 @@ async function buildBoomerangVideoBlob(){
     const seq=Array.isArray(sequences[slot])?sequences[slot]:[];
     return seq.length||1;
   }));
-  recorder.start();
   try{
+    /* Draw a real first frame before recording so Safari/iOS does not start
+       with an empty canvas stream. */
+    const firstPhotos=[];
+    for(let slot=0;slot<capturedPhotos.length;slot++){
+      const seq=Array.isArray(sequences[slot])&&sequences[slot].length?sequences[slot]:[capturedPhotos[slot]];
+      const src=seq[0]||capturedPhotos[slot];
+      try{firstPhotos.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){firstPhotos.push(fallbackPhotos[slot]||null)}
+    }
+    await drawFrameAwareComposition(canvas,true,firstPhotos,frameSrc,0,frameCount);
+    await new Promise(requestAnimationFrame);
+    recorder.start(100);
+    await new Promise(r=>setTimeout(r,120));
     for(let tick=0;tick<frameCount;tick++){
       const photos=[];
       for(let slot=0;slot<capturedPhotos.length;slot++){
         const seq=Array.isArray(sequences[slot])&&sequences[slot].length?sequences[slot]:[capturedPhotos[slot]];
         const src=seq[Math.min(tick,seq.length-1)]||capturedPhotos[slot];
-        try{photos.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){if(fallbackPhotos[slot])photos.push(fallbackPhotos[slot])}
+        try{photos.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){photos.push(fallbackPhotos[slot]||null)}
       }
       await drawFrameAwareComposition(canvas,true,photos,frameSrc,tick,frameCount);
-      /* Important: stickers are print-only. Do NOT call drawStickersCanvas here. */
-      await new Promise(r=>setTimeout(r,50));
+      await new Promise(requestAnimationFrame);
+      await new Promise(r=>setTimeout(r,70));
     }
+    await new Promise(r=>setTimeout(r,150));
+    if(recorder.state==='recording')recorder.stop();
+    const blob=await done;
+    if(!blob.size)throw new Error('Video kosong. Browser tidak mengirim frame dari canvas.');
+    return blob;
   }catch(e){
-    try{recorder.stop()}catch(_){}
-    stream.getTracks().forEach(t=>t.stop());
+    try{if(recorder.state!=='inactive')recorder.stop()}catch(_){}
+    try{await done}catch(_){}
     throw e;
+  }finally{
+    stream.getTracks().forEach(t=>t.stop());
+    canvas.remove();
   }
-  recorder.stop();
-  const blob=await done;
-  stream.getTracks().forEach(t=>t.stop());
-  if(!blob.size)throw new Error('Video kosong.');
-  return blob;
 }
 async function getFinalBoomerangBlob(){
   if(window.finalBoomerangVideoDataUrl){

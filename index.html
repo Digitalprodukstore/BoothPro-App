@@ -1228,6 +1228,53 @@ function renderHistory(){const h=getHistory();$('historyStats').innerText=h.leng
 function clearHistory(){if(confirm('Hapus seluruh riwayat lokal?')){localStorage.removeItem(HISTORY_KEY);renderHistory()}}
 /* ============ CLOUDINARY / UPLOADS ============ */
 async function uploadDataUrlToCloudinary(dataUrl,resourceType='image'){const c=config.cloudinary||{};if(!c.cloudName||!c.uploadPreset)throw new Error('Cloudinary belum dikonfigurasi. Buka Dashboard → Cloudinary Soft File lalu isi Cloud Name + Unsigned Upload Preset.');const endpoint='https://api.cloudinary.com/v1_1/'+encodeURIComponent(c.cloudName)+'/'+resourceType+'/upload';const fd=new FormData();fd.append('file',dataUrl);fd.append('upload_preset',c.uploadPreset);fd.append('folder','boothpro/'+sessionId);const res=await fetch(endpoint,{method:'POST',body:fd});let body=null;try{body=await res.json()}catch(e){}if(!res.ok)throw new Error('Upload Cloudinary gagal: '+(body?.error?.message||('HTTP '+res.status)));return body||{}}
+function cloudinaryAttachmentUrl(url,filename){
+  const u=String(url||'').trim();if(!u)return '';
+  if(!/^https:\/\/res\.cloudinary\.com\//i.test(u))return u;
+  const safe=String(filename||'download').replace(/[^a-z0-9._-]+/gi,'-');
+  if(u.includes('/upload/'))return u.replace('/upload/','/upload/fl_attachment:'+safe+'/');
+  return u;
+}
+function encodeSoftBundle(result){
+  const manifest={v:1,app:'BoothPro',sessionId:String(sessionId||''),files:[
+    {type:'photo',name:'BoothPro-'+sessionId+'-foto-final.jpg',url:cloudinaryAttachmentUrl(result?.photoUrl,'BoothPro-'+sessionId+'-foto-final.jpg')},
+    {type:'video',name:'BoothPro-'+sessionId+'-motion-video.'+((result?.videoUrl||'').includes('.webm')?'webm':'mp4'),url:cloudinaryAttachmentUrl(result?.videoUrl,'BoothPro-'+sessionId+'-motion-video.mp4')},
+    {type:'gif',name:'BoothPro-'+sessionId+'-motion.gif',url:cloudinaryAttachmentUrl(result?.gifUrl,'BoothPro-'+sessionId+'-motion.gif')}
+  ].filter(x=>x.url)};
+  try{
+    const json=JSON.stringify(manifest);
+    const b64=btoa(unescape(encodeURIComponent(json))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    return location.origin+location.pathname+'?bp_bundle='+b64;
+  }catch(e){return ''}
+}
+function decodeSoftBundle(raw){
+  try{
+    const b64=String(raw||'').replace(/-/g,'+').replace(/_/g,'/');
+    const pad=b64+'='.repeat((4-b64.length%4)%4);
+    return JSON.parse(decodeURIComponent(escape(atob(pad))));
+  }catch(e){return null}
+}
+function renderSoftBundlePage(manifest){
+  const files=Array.isArray(manifest?.files)?manifest.files.filter(x=>x?.url):[];
+  if(!files.length)return false;
+  document.body.innerHTML='<div style="min-height:100vh;background:#09090b;color:#f4f4f5;font-family:Plus Jakarta Sans,system-ui,sans-serif;padding:24px;display:flex;align-items:center;justify-content:center"><main style="width:min(520px,100%)"><div style="text-align:center;margin-bottom:22px"><div style="width:64px;height:64px;margin:0 auto 12px;border-radius:20px;background:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:28px">📸</div><div style="font-size:24px;font-weight:900">BoothPro Soft File</div><div style="font-size:12px;color:#71717a;margin-top:5px">ID Sesi '+String(manifest.sessionId||'-')+'</div><div style="font-size:11px;color:#a1a1aa;margin-top:10px">3 file tersedia untuk diunduh</div></div><div id="bpBundleList" style="display:grid;gap:10px"></div><div style="text-align:center;font-size:10px;color:#52525b;margin-top:18px">Link file berasal dari penyimpanan Cloud BoothPro.</div></main></div>';
+  const host=document.getElementById('bpBundleList');
+  files.forEach((f,i)=>{
+    const a=document.createElement('a');a.href=f.url;a.target='_blank';a.rel='noopener';a.download=f.name;
+    a.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border:1px solid #27272a;border-radius:16px;background:#111113;color:#fff;text-decoration:none;font-weight:800;font-size:13px';
+    const icon=f.type==='photo'?'📸':f.type==='video'?'🎬':'🌀';
+    a.innerHTML='<span>'+icon+' '+String(f.name||'Soft File '+(i+1))+'</span><span style="font-size:11px;color:#a78bfa">Download ↗</span>';
+    host.appendChild(a);
+  });
+  return true;
+}
+function bootSoftBundleRoute(){
+  try{
+    const raw=new URLSearchParams(location.search).get('bp_bundle');
+    if(raw)return renderSoftBundlePage(decodeSoftBundle(raw));
+  }catch(e){}
+  return false;
+}
 async function publishSessionCloud(){
  const status=$('cloudUploadStatus');
  if(status)status.innerText='Menyiapkan 3 soft file dan QR...';
@@ -1266,6 +1313,9 @@ async function publishSessionCloud(){
     }catch(e){console.warn('Share API tidak tersedia',e)}
   }
   localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
+  if(!result.shareUrl && result.files.length===3){
+    result.shareUrl=encodeSoftBundle(result);
+  }
   if(result.shareUrl){
     generateQR(result.shareUrl);
     $('qrModeBadge').innerText='DOWNLOAD';
@@ -1274,8 +1324,8 @@ async function publishSessionCloud(){
   }else{
     generateQR('');
     $('qrModeBadge').innerText='SETUP';
-    $('qrNote').innerText='Upload berhasil. Atur Share / QR Endpoint di Dashboard agar QR membuka halaman download.';
-    if(status)status.innerText='File sudah diunggah, tetapi halaman download belum dikonfigurasi.';
+    $('qrNote').innerText='Upload selesai, tetapi QR bundle gagal dibuat. Coba Upload / Refresh QR.';
+    if(status)status.innerText='File sudah diunggah, tetapi QR bundle belum tersedia.';
   }
   return result;
  }catch(e){
@@ -3967,6 +4017,7 @@ window.BoothProM36={addDashboardEntry,hydrateGallery};
  };
 })();
 </script>
+<script id="bp-soft-bundle-route-boot">if(!bootSoftBundleRoute()){}</script>
 </body>
 </html>
 <!-- QA trigger: verify latest fixed kiosk script on PR head. -->

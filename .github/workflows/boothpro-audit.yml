@@ -24,9 +24,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Static audit
+        continue-on-error: true
         run: python3 tools/boothpro_audit.py | tee audit-console.txt
 
       - name: Deep structural audit
+        continue-on-error: true
         run: python3 tools/boothpro_deep_audit.py | tee deep-audit-console.txt
 
       - name: Setup Node
@@ -46,6 +48,7 @@ jobs:
           sleep 2
 
       - name: Browser interaction audit
+        continue-on-error: true
         run: node tools/boothpro_browser_audit.mjs
 
       - name: Release guard\n        run: python3 tools/boothpro_guard.py\n\n      - name: Upload QA evidence

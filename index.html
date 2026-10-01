@@ -748,7 +748,24 @@ function startSessionTimer(){if(sessionTimerId)clearInterval(sessionTimerId);ses
 function renderTimer(){const m=Math.floor(sessionSecondsLeft/60),s=sessionSecondsLeft%60;$('sessionTimer').innerText=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');$('sessionTimer').classList.toggle('timer-danger',sessionSecondsLeft<=60)}
 function takePhoto(){if(sessionSecondsLeft<=0||capturedPhotos.length>=requiredPhotosCount||countdownTimer)return;const btn=$('shutterBtn'),overlay=$('countdownOverlay'),ct=$('countdownText');btn.disabled=true;overlay.classList.remove('hidden');let count=Math.max(1,Number(config.countdown)||3);ct.innerText=count;countdownTimer=setInterval(()=>{count--;if(count>0){ct.innerText=count}else{clearInterval(countdownTimer);countdownTimer=null;overlay.classList.add('hidden');const flash=$('flashLayer');flash.style.opacity='1';setTimeout(()=>flash.style.opacity='0',150);captureCurrentFrame()}},700)}
 function getAppliedFilter(){const parts=[];if(currentFilter&&currentFilter!=='none')parts.push(currentFilter);if(adjState.brightness!==100)parts.push(`brightness(${adjState.brightness}%)`);if(adjState.contrast!==100)parts.push(`contrast(${adjState.contrast}%)`);if(adjState.saturate!==100)parts.push(`saturate(${adjState.saturate}%)`);return parts.length?parts.join(' '):'none'}
-async function captureCurrentFrame(){let imgData='';const burst=[];if(useSimulation){const c=document.createElement('canvas');c.width=640;c.height=480;const x=c.getContext('2d'),h=Math.floor(Math.random()*360);x.fillStyle=`hsl(${h},65%,45%)`;x.fillRect(0,0,c.width,c.height);x.fillStyle='#fff';x.font='bold 30px sans-serif';x.textAlign='center';x.fillText(`Pose ${capturedPhotos.length+1}`,320,240);imgData=c.toDataURL('image/jpeg',.9);for(let i=0;i<8;i++)burst.push(imgData)}else{const video=$('webcam');if(!video.videoWidth||!video.videoHeight){$('cameraMessage').innerText='Kamera belum siap. Tunggu preview lalu coba lagi.';$('cameraPlaceholder').classList.remove('hidden');$('shutterBtn').disabled=false;return}const capture=()=>{const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;const x=c.getContext('2d');if(mirrorOn){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(video,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.88)};imgData=capture();burst.push(imgData);for(let i=0;i<7;i++){await new Promise(r=>setTimeout(r,120));burst.push(capture())}}capturedPhotos.push(imgData);capturedGifSequences.push(burst.length?burst:[imgData]);updateGalleryPreviews();renderCaptureReview();$('shutterBtn').disabled=capturedPhotos.length>=requiredPhotosCount;if(capturedPhotos.length>=requiredPhotosCount)$('nextToFrameBtn').disabled=false;updateStatusBadge()}
+async function captureCurrentFrame(){
+  let imgData='';const burst=[];const BURST_FRAMES=16;const BURST_INTERVAL=75;
+  if(useSimulation){
+    const c=document.createElement('canvas');c.width=640;c.height=480;const x=c.getContext('2d'),baseHue=Math.floor(Math.random()*360);
+    for(let i=0;i<BURST_FRAMES;i++){x.fillStyle=`hsl(${(baseHue+i*5)%360},65%,45%)`;x.fillRect(0,0,c.width,c.height);x.fillStyle='#fff';x.font='bold 30px sans-serif';x.textAlign='center';x.fillText(`Pose ${capturedPhotos.length+1} · ${i+1}`,320,240);burst.push(c.toDataURL('image/jpeg',.82));await new Promise(r=>setTimeout(r,BURST_INTERVAL))}
+    imgData=burst[0];
+  }else{
+    const video=$('webcam');
+    if(!video.videoWidth||!video.videoHeight){$('cameraMessage').innerText='Kamera belum siap. Tunggu preview lalu coba lagi.';$('cameraPlaceholder').classList.remove('hidden');$('shutterBtn').disabled=false;return}
+    const capture=()=>{const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;const x=c.getContext('2d');if(mirrorOn){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(video,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.82)};
+    for(let i=0;i<BURST_FRAMES;i++){burst.push(capture());if(i<BURST_FRAMES-1)await new Promise(r=>setTimeout(r,BURST_INTERVAL))}
+    imgData=burst[0]||capture();
+  }
+  capturedPhotos.push(imgData);capturedGifSequences.push(burst.length?burst:[imgData]);
+  finalGifDataUrl='';
+  updateGalleryPreviews();renderCaptureReview();$('shutterBtn').disabled=capturedPhotos.length>=requiredPhotosCount;
+  if(capturedPhotos.length>=requiredPhotosCount)$('nextToFrameBtn').disabled=false;updateStatusBadge()
+}
 function updateGalleryPreviews(){$('capturedCount').innerText=capturedPhotos.length;const g=$('filmStripGallery');g.innerHTML='';capturedPhotos.forEach((src,idx)=>{const item=document.createElement('div');item.className='relative bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden aspect-[4/3]';const im=document.createElement('img');im.src=src;im.className='w-full h-full object-cover';const b=document.createElement('div');b.className='absolute top-1 left-1 bg-black/70 rounded-md text-[10px] px-1.5 py-0.5 font-bold';b.textContent='#'+(idx+1);const del=document.createElement('button');del.className='absolute top-1 right-1 h-7 w-7 rounded-full bg-red-600/90 text-white';del.title='Hapus / retake';del.innerHTML='<i class="fa-solid fa-trash text-[11px]"></i>';del.onclick=()=>deleteCaptured(idx);item.append(im,b,del);g.appendChild(item)})}
 function deleteCaptured(idx){if(retakeCount>=3){alert('Batas retake 3 kali sudah tercapai.');return}capturedPhotos.splice(idx,1);if(Array.isArray(capturedGifSequences))capturedGifSequences.splice(idx,1);retakeCount++;$('retakeCount').innerText=retakeCount;$('nextToFrameBtn').disabled=true;$('shutterBtn').disabled=false;updateGalleryPreviews();renderCaptureReview();updateStatusBadge()}
 /* ============ FRAMES & PREVIEW ============ */
@@ -833,14 +850,11 @@ function renderStickerOverlay(){renderActiveStickerControls();document.querySele
 /* ============ FINAL / COMPOSITE ============ */
 async function drawStickerEmoji(ctx,emoji,x,y,fontPx){
   const text=String(emoji||'').trim();if(!text)return;
-  const box=Math.max(64,Math.ceil(fontPx*2.4));
-  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+box+'" height="'+box+'" viewBox="0 0 '+box+' '+box+'"><text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-family="-apple-system,BlinkMacSystemFont,Apple Color Emoji,Segoe UI Emoji,sans-serif" font-size="'+Math.max(8,fontPx)+'">'+escapeHtml(text)+'</text></svg>';
-  try{
-    const im=await loadImage('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg));
-    ctx.drawImage(im,x-box/2,y-box/2,box,box);
-  }catch(e){
-    ctx.save();ctx.font=fontPx+"px -apple-system, BlinkMacSystemFont, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif";ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,x,y);ctx.restore();
-  }
+  /* Draw directly on the output canvas first. This keeps emoji stickers inside
+     the same raster that is sent to Print/Download/GIF, including iOS. */
+  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font=fontPx+"px -apple-system, BlinkMacSystemFont, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
+  ctx.fillText(text,x,y);ctx.restore();
 }
 async function drawStickersCanvas(ctx,w,h){
   if(!ctx||!Array.isArray(stickers)||!stickers.length)return;
@@ -933,7 +947,7 @@ async function printViaHardwareBridge(){
 }
 function savePrintSettings(){config.printSize=$('dashPrintSize').value||'4x6';saveConfig();applyPrintSize();alert('Ukuran cetak disimpan: '+config.printSize)}
 async function printComposite(){
- if(!finalCompositeDataUrl){try{finalCompositeDataUrl=await buildCompositeCanvas()}catch(e){alert('Hasil foto belum siap dicetak.');return}}
+ try{finalCompositeDataUrl=await buildCompositeCanvas()}catch(e){alert('Hasil foto belum siap dicetak: '+(e?.message||String(e)));return}
  if(config.hardware?.autoPrint && config.hardware?.bridgeUrl){
    const ok=await printViaHardwareBridge();
    if(ok)return;
@@ -986,26 +1000,35 @@ async function buildPhotoboothGifBlob(){
   if(!capturedPhotos.length)throw new Error('Tidak ada foto untuk membuat GIF.');
   if(typeof GIF==='undefined')throw new Error('Generator GIF belum termuat. Muat ulang halaman dan coba lagi.');
   const workerScript=await getBoothProGifWorkerUrl();
-  /* SMOOTH LOOP: use the final still for each slot as the stable source.
-     The old burst sequence could carry camera/preview boundaries into the
-     animation. We keep the multi-slot layout and give every slot its own
-     smooth, phase-shifted boomerang motion instead. */
-  const frameCount=12;
-  const gif=new GIF({workers:Math.min(2,Math.max(1,capturedPhotos.length)),quality:10,width:480,height:720,workerScript});
+  const sequences=Array.isArray(capturedGifSequences)?capturedGifSequences:[];
+  const slotCount=capturedPhotos.length;
+  const sourceLength=Math.max(1,...Array.from({length:slotCount},(_,i)=>Array.isArray(sequences[i])&&sequences[i].length?sequences[i].length:1));
+  const frameOrder=[];
+  for(let t=0;t<sourceLength;t++)frameOrder.push(t);
+  for(let t=sourceLength-2;t>0;t--)frameOrder.push(t);
+  const frameCount=frameOrder.length;
+  const gif=new GIF({workers:Math.min(3,Math.max(1,slotCount)),quality:8,width:480,height:720,workerScript});
   let settled=false;
-  const timer=setTimeout(()=>{if(!settled){settled=true;try{gif.abort()}catch(e){}reject(new Error('GIF membutuhkan waktu terlalu lama. Silakan coba lagi.'))}},45000);
+  const timer=setTimeout(()=>{if(!settled){settled=true;try{gif.abort()}catch(e){}reject(new Error('GIF membutuhkan waktu terlalu lama. Silakan coba lagi.'))}},60000);
   return await new Promise(async(resolve,reject)=>{
     gif.on('finished',blob=>{clearTimeout(timer);if(!settled){settled=true;resolve(blob)}});
     gif.on('abort',()=>{clearTimeout(timer);if(!settled){settled=true;reject(new Error('Proses GIF dibatalkan.'))}});
     try{
       const frameSrc=await resolveImageSourceDataUrl(selectedFrameSrc);
-      const photos=[];
-      for(const src of capturedPhotos)photos.push(await loadImage(await resolveImageSourceDataUrl(src)));
+      const fallbackPhotos=[];
+      for(const src of capturedPhotos)fallbackPhotos.push(await loadImage(await resolveImageSourceDataUrl(src)));
       for(let t=0;t<frameCount;t++){
         const canvas=document.createElement('canvas');canvas.width=480;canvas.height=720;
-        await drawFrameAwareComposition(canvas,true,photos,frameSrc,t,frameCount);
+        const photos=[];
+        const sourceIndex=frameOrder[t];
+        for(let slot=0;slot<slotCount;slot++){
+          const seq=Array.isArray(sequences[slot])&&sequences[slot].length?sequences[slot]:[capturedPhotos[slot]];
+          const src=seq[Math.min(sourceIndex,seq.length-1)]||capturedPhotos[slot];
+          try{photos.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){photos.push(fallbackPhotos[slot])}
+        }
+        await drawFrameAwareComposition(canvas,true,photos,frameSrc,0,1);
         await drawStickersCanvas(canvas,480,720);
-        gif.addFrame(canvas,{delay:90,copy:true});
+        gif.addFrame(canvas,{delay:75,copy:true});
       }
       gif.render();
     }catch(e){clearTimeout(timer);if(!settled){settled=true;reject(e instanceof Error?e:new Error(String(e||'GIF gagal dibuat.')))}}

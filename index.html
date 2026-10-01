@@ -533,7 +533,7 @@ function fmt(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:
 /* ============ STEPS ============ */
 function goToStep(n){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));const map={1:'step-welcome',2:'step-package',3:'step-payment',4:'step-capture',5:'step-frame',6:'step-editor',7:'step-final'};$(map[n]).classList.remove('hidden');currentStep=n;updateStatusBadge();resetIdleTimer();if(n===2)renderPackageStep();if(n===3)renderPayment();if(n===4)startCaptureSession();if(n===5){stopWebcam();renderFrameGallery();renderCaptureReview()}if(n===6){renderEditor();renderEditorFrameQuickGrid()}if(n===7)prepareFinal()}
 function updateStatusBadge(){const b=$('statusBadge'),t=$('statusText');b.classList.remove('hidden');if(currentStep===1)b.classList.add('hidden');else if(currentStep===2)t.innerText='Pilih Paket';else if(currentStep===3)t.innerText='Menunggu Pembayaran';else if(currentStep===4)t.innerText=`Take ${capturedPhotos.length}/${requiredPhotosCount}`;else if(currentStep===5)t.innerText='Sesuaikan Frame';else if(currentStep===6)t.innerText='Edit';else t.innerText='Selesai'}
-function resetToHome(){stopWebcam();stopMidtransPoll();if(sessionTimerId)clearInterval(sessionTimerId);if(countdownTimer)clearInterval(countdownTimer);sessionTimerId=null;countdownTimer=null;capturedPhotos=[];capturedGifSequences=[];retakeCount=0;paymentConfirmed=false;finalCompositeDataUrl='';finalGifDataUrl='';extraPrintPaid=false;selectedPackageId=null;frameSelectionConfirmed=false;preFrameCategoryOpen='';sessionId='';sessionStartedAt=null;selectedFrameId='plain-white';selectedFrameSrc='';currentFilter='none';frameBg='#ffffff';frameFg='#18181b';adjState={brightness:100,contrast:100,saturate:100};stickers=[];if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels()}goToStep(1)}
+function resetToHome(){softPhotoDataUrl='';stopWebcam();stopMidtransPoll();if(sessionTimerId)clearInterval(sessionTimerId);if(countdownTimer)clearInterval(countdownTimer);sessionTimerId=null;countdownTimer=null;capturedPhotos=[];capturedGifSequences=[];retakeCount=0;paymentConfirmed=false;finalCompositeDataUrl='';finalGifDataUrl='';extraPrintPaid=false;selectedPackageId=null;frameSelectionConfirmed=false;preFrameCategoryOpen='';sessionId='';sessionStartedAt=null;selectedFrameId='plain-white';selectedFrameSrc='';currentFilter='none';frameBg='#ffffff';frameFg='#18181b';adjState={brightness:100,contrast:100,saturate:100};stickers=[];if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels()}goToStep(1)}
 /* ============ PACKAGES ============ */
 function applyConfiguredDefaultFrame(){
   let choices=[];
@@ -949,7 +949,7 @@ async function finishEditing(){
     if(sessionTimerId){clearInterval(sessionTimerId);sessionTimerId=null}
     stopWebcam();
     await ensureStickerRasterAssets();
-    finalCompositeDataUrl=await buildCompositeCanvas();
+    finalCompositeDataUrl=await buildCompositeCanvas(true);softPhotoDataUrl='';
     if(!finalCompositeDataUrl)throw new Error('Hasil akhir belum tersedia.');
     goToStep(7);
     renderFinalPreview();
@@ -971,11 +971,23 @@ async function getActiveFrameSourceDataUrl(){
   }catch(e){}
   return src?await resolveImageSourceDataUrl(src):'';
 }
-async function buildCompositeCanvas(){await ensureStickerRasterAssets();const pkg=config.packages.find(p=>p.id===selectedPackageId)||{prints:1};const copies=Math.max(1,Math.min(2,Number(pkg.prints)||1));const size=config.printSize||'4x6';const sheetMap={'4x6':[1200,1800],'2x6':[600,1800],'A4':[1414,2000]};const [sheetW,sheetH]=sheetMap[size]||sheetMap['4x6'];const frameRatio=await getFrameNaturalRatio();const gap=selectedLayoutType==='strip'?Math.max(12,Math.round(sheetW*.025)):0;let panelW,panelH;if(selectedLayoutType==='strip'){panelH=sheetH;const maxPanelW=Math.max(1,(sheetW-gap*(copies-1))/copies);const idealW=Math.max(1,Math.round(panelH*frameRatio));panelW=Math.min(maxPanelW,idealW)}else{panelW=sheetW;panelH=sheetH}
-const makePanel=async()=>{const c=document.createElement('canvas');c.width=panelW;c.height=panelH;const photos=[];for(const src of capturedPhotos){try{photos.push(await loadImage(src))}catch(e){}}await drawFrameAwareComposition(c,true,photos);await drawStickersCanvas(c,panelW,panelH);return c};const panel=await makePanel();const out=document.createElement('canvas');out.width=sheetW;out.height=sheetH;const ox=out.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,sheetW,sheetH);if(selectedLayoutType==='strip'){const total=copies*panelW+(copies-1)*gap;const startX=(sheetW-total)/2;for(let i=0;i<copies;i++)containDrawCanvas(ox,panel,startX+i*(panelW+gap),0,panelW,panelH)}else containDrawCanvas(ox,panel,0,0,sheetW,sheetH);return out.toDataURL('image/jpeg',.95)}
+async function buildCompositeCanvas(includeStickers=true){if(includeStickers)await ensureStickerRasterAssets();const pkg=config.packages.find(p=>p.id===selectedPackageId)||{prints:1};const copies=Math.max(1,Math.min(2,Number(pkg.prints)||1));const size=config.printSize||'4x6';const sheetMap={'4x6':[1200,1800],'2x6':[600,1800],'A4':[1414,2000]};const [sheetW,sheetH]=sheetMap[size]||sheetMap['4x6'];const frameRatio=await getFrameNaturalRatio();const gap=selectedLayoutType==='strip'?Math.max(12,Math.round(sheetW*.025)):0;let panelW,panelH;if(selectedLayoutType==='strip'){panelH=sheetH;const maxPanelW=Math.max(1,(sheetW-gap*(copies-1))/copies);const idealW=Math.max(1,Math.round(panelH*frameRatio));panelW=Math.min(maxPanelW,idealW)}else{panelW=sheetW;panelH=sheetH}
+const makePanel=async()=>{const c=document.createElement('canvas');c.width=panelW;c.height=panelH;const photos=[];for(const src of capturedPhotos){try{photos.push(await loadImage(src))}catch(e){}}await drawFrameAwareComposition(c,true,photos);if(includeStickers)await drawStickersCanvas(c,panelW,panelH);return c};const panel=await makePanel();const out=document.createElement('canvas');out.width=sheetW;out.height=sheetH;const ox=out.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,sheetW,sheetH);if(selectedLayoutType==='strip'){const total=copies*panelW+(copies-1)*gap;const startX=(sheetW-total)/2;for(let i=0;i<copies;i++)containDrawCanvas(ox,panel,startX+i*(panelW+gap),0,panelW,panelH)}else containDrawCanvas(ox,panel,0,0,sheetW,sheetH);return out.toDataURL('image/jpeg',.95)}
 async function prepareFinal(){await ensureStickerRasterAssets();finalCompositeDataUrl=await buildCompositeCanvas();const pkg=config.packages.find(p=>p.id===selectedPackageId);$('sessionIdDisplay').innerText=sessionId;$('finalSessionText').innerText=`${capturedPhotos.length} foto · ${pkg?.name||''} · 3 soft file: Foto Final + GIF + Frame Motion Video siap.`;$('printCountLabel').innerText=`(${pkg?.prints||1} strip)`;saveHistory({id:sessionId,date:new Date().toISOString(),layout:selectedLayoutType,count:capturedPhotos.length,filter:currentFilter,package:selectedPackageId,packageName:pkg?.name||'',price:pkg?.price||0,method:lastPaymentMethod,prints:pkg?.prints||1,retakes:retakeCount});renderFinalPreview();generateQR();if(config.cloudinary?.cloudName&&config.cloudinary?.uploadPreset)publishSessionCloud()}
 function renderFinalPreview(){const p=$('finalPreview');p.innerHTML='';const im=document.createElement('img');im.src=finalCompositeDataUrl;im.className='max-w-full max-h-[620px] object-contain rounded-xl shadow-2xl';p.appendChild(im)}
-function downloadComposite(){if(!finalCompositeDataUrl)return;const a=document.createElement('a');a.href=finalCompositeDataUrl;a.download=`BoothPro-${sessionId}.jpg`;a.click()}
+let softPhotoDataUrl='';
+async function getSoftPhotoDataUrl(){
+  if(softPhotoDataUrl)return softPhotoDataUrl;
+  softPhotoDataUrl=await buildCompositeCanvas(false);
+  return softPhotoDataUrl;
+}
+async function downloadComposite(){
+  try{
+    const src=await getSoftPhotoDataUrl();
+    if(!src)throw new Error('Foto soft file belum siap.');
+    const a=document.createElement('a');a.href=src;a.download=`BoothPro-${sessionId}-soft.jpg`;a.click();
+  }catch(e){alert(e?.message||'Foto soft file gagal dibuat.')}
+}
 function applyPrintSize(){const size=config.printSize||'4x6';const map={'4x6':['4in','6in'],'2x6':['2in','6in'],'A4':['210mm','297mm']};const dim=map[size]||map['4x6'];const st=$('printStyle');if(st)st.textContent=`@page{size:${dim[0]} ${dim[1]};margin:0}`}
 async function testHardwareBridge(){
  const url=(config.hardware?.bridgeUrl||'').replace(/\/$/,'');
@@ -1155,6 +1167,7 @@ async function buildBoomerangVideoBlob(){
   const stream=canvas.captureStream(20);
   const chunks=[];
   const recorder=new MediaRecorder(stream,{mimeType});
+  let stopRequested=false;
   const done=new Promise((resolve,reject)=>{
     recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
     recorder.onerror=e=>reject(e.error||new Error('Perekaman video gagal.'));
@@ -1166,46 +1179,47 @@ async function buildBoomerangVideoBlob(){
   for(const src of capturedPhotos){
     try{fallbackPhotos.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){fallbackPhotos.push(null)}
   }
-  const frameCount=Math.max(1,...Array.from({length:capturedPhotos.length},(_,slot)=>{
+  const sourceLength=Math.max(1,...Array.from({length:capturedPhotos.length},(_,slot)=>{
     const seq=Array.isArray(sequences[slot])?sequences[slot]:[];
     return seq.length||1;
   }));
-  /* Paint one real frame before recording so Safari/iOS has a non-empty
-     canvas frame immediately when MediaRecorder attaches to captureStream. */
-  {
+  const order=boomerangFrameOrder();
+  const ticks=order.length?order:[0];
+  const renderTick=async(tick)=>{
     const photos=[];
     for(let slot=0;slot<capturedPhotos.length;slot++){
       const seq=Array.isArray(sequences[slot])&&sequences[slot].length?sequences[slot]:[capturedPhotos[slot]];
-      const src=seq[0]||capturedPhotos[slot];
+      const src=seq[Math.min(tick,seq.length-1)]||capturedPhotos[slot];
       try{photos.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){if(fallbackPhotos[slot])photos.push(fallbackPhotos[slot])}
     }
-    await drawFrameAwareComposition(canvas,true,photos,frameSrc,0,frameCount);
-  }
-  recorder.start(1000);
+    await drawFrameAwareComposition(canvas,true,photos,frameSrc,tick,sourceLength);
+  };
+
+  // Draw before start: required by Safari/iOS captureStream.
+  await renderTick(ticks[0]);
+  recorder.start(250);
+
   try{
-    for(let tick=0;tick<frameCount;tick++){
-      const photos=[];
-      for(let slot=0;slot<capturedPhotos.length;slot++){
-        const seq=Array.isArray(sequences[slot])&&sequences[slot].length?sequences[slot]:[capturedPhotos[slot]];
-        const src=seq[Math.min(tick,seq.length-1)]||capturedPhotos[slot];
-        try{photos.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){if(fallbackPhotos[slot])photos.push(fallbackPhotos[slot])}
-      }
-      await drawFrameAwareComposition(canvas,true,photos,frameSrc,tick,frameCount);
-      /* Print-only sticker layer: never include stickers in video/soft files. */
-      await new Promise(r=>setTimeout(r,50));
+    // Each motion frame gets a real recording interval. This avoids an empty blob
+    // when the whole sequence is shorter than the recorder timeslice.
+    const holdMs=Math.max(180,Math.round(900/Math.max(1,ticks.length)));
+    for(const tick of ticks){
+      await renderTick(tick);
+      await new Promise(r=>setTimeout(r,holdMs));
     }
   }catch(e){
-    try{recorder.stop()}catch(_){}
+    try{if(recorder.state!=='inactive')recorder.stop()}catch(_){}
     stream.getTracks().forEach(t=>t.stop());
     throw e;
   }
-  /* Give MediaRecorder one final timeslice before stop so the last frame is flushed. */
+
+  // Flush buffered data, then give ondataavailable/onstop a moment to complete.
   try{if(typeof recorder.requestData==='function')recorder.requestData()}catch(_){}
-  await new Promise(r=>setTimeout(r,120));
-  recorder.stop();
+  await new Promise(r=>setTimeout(r,180));
+  if(recorder.state!=='inactive')recorder.stop();
   const blob=await done;
   stream.getTracks().forEach(t=>t.stop());
-  if(!blob.size)throw new Error('Video kosong — recorder tidak menghasilkan data. Coba ulangi sesi.');
+  if(!blob.size)throw new Error('Boomerang kosong — browser tidak menghasilkan frame video. Silakan coba sekali lagi.');
   return blob;
 }
 async function getFinalBoomerangBlob(){
@@ -1229,7 +1243,7 @@ async function saveSessionToFiles(){
   try{
     const files=[];
     if(finalCompositeDataUrl){
-      const photoBlob=await (await fetch(finalCompositeDataUrl)).blob();
+      const softPhoto=await getSoftPhotoDataUrl();const photoBlob=await (await fetch(softPhoto)).blob();
       files.push(new File([photoBlob],`BoothPro-${sessionId}-final.jpg`,{type:'image/jpeg'}));
     }
     try{
@@ -1272,7 +1286,8 @@ async function publishSessionCloud(){
   try{
     const result={sessionId,photoUrl:null,gifUrl:null,videoUrl:null,boomerangUrl:null};
     if(finalCompositeDataUrl){
-      const up=await uploadDataUrlToCloudinary(finalCompositeDataUrl,'image');
+      const softPhoto=await getSoftPhotoDataUrl();
+      const up=await uploadDataUrlToCloudinary(softPhoto,'image');
       result.photoUrl=up.secure_url||up.url||null;
     }
     try{

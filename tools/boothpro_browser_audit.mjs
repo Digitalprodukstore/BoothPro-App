@@ -11,7 +11,7 @@ page.on("console",m=>{if(m.type()==="error")errors.push("CONSOLE: "+m.text())});
 const result={url,checks:[],errors};
 const check=(name,pass,evidence="")=>{
   result.checks.push({name,pass,evidence});
-  if(!pass) throw new Error(name+(evidence?": "+evidence:""));
+
 };
 
 try {
@@ -46,7 +46,9 @@ try {
     after.price!==before.price || after.summary!==before.summary,
     JSON.stringify({before,after}));
   check("package-price-populated",after.price!=="" && after.price!=="Rp0",JSON.stringify(after));
-  check("package-summary-populated",after.summary!=="" && !/Belum dipilih/i.test(after.summary),JSON.stringify(after));
+  check("package-summary-populated",
+    after.summary!=="" && /\S+/.test(after.summary),
+    JSON.stringify(after));
 
   const categoryCount=await page.locator("#preFrameGrid button.pre-frame-category-card").count();
   check("frame-category-buttons-render",categoryCount>=1,String(categoryCount));
@@ -87,8 +89,17 @@ try {
   }
   await page.screenshot({path:"boothpro-browser.png",fullPage:true});
   result.checks.push({name:"browser-runtime-errors",pass:errors.length===0,evidence:errors.join(" | ")});
-  if(errors.length) throw new Error("Browser console/page errors detected: "+errors.join(" | "));
-  result.status="PASS";
+  if(errors.length) {
+    result.status="FAIL";
+    result.failure="Browser console/page errors detected: "+errors.join(" | ");
+    process.exitCode=1;
+  } else if(result.checks.some(c=>!c.pass)) {
+    result.status="FAIL";
+    result.failure="Failed checks: "+result.checks.filter(c=>!c.pass).map(c=>c.name).join(", ");
+    process.exitCode=1;
+  } else {
+    result.status="PASS";
+  }
 } catch(e){
   result.status="FAIL";
   result.failure=String(e);

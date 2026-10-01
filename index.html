@@ -3125,6 +3125,29 @@ async function cloudSaveBrands(){
      }
    }
  }
+ // Reconcile removals/deactivations so deleted Dashboard items cannot remain live in Kiosk.
+ // Soft-disable stale cloud rows instead of deleting data, preserving recovery/auditability.
+ try{
+   const remote=await api(TABLE+'?workspace_id=eq.'+encodeURIComponent(uid)+'&select=id,category,enabled',{token:s.access_token});
+   const desired=new Set();
+   for(const b of brands){
+     if(b.enabled!==false)desired.add('brand-'+String(b.id));
+     for(const f of (b.frames||[])){
+       if(f.enabled!==false && f.storagePath)desired.add(String(f.id));
+     }
+   }
+   for(const row of (remote||[])){
+     const id=String(row.id||'');
+     const isManaged=id.startsWith('brand-')||String(row.category||'').startsWith(FRAME_PREFIX);
+     if(isManaged && !desired.has(id) && row.enabled!==false){
+       await api(TABLE+'?id=eq.'+encodeURIComponent(id),{
+         method:'PATCH',
+         body:{enabled:false,updated_at:new Date().toISOString()},
+         token:s.access_token
+       });
+     }
+   }
+ }catch(err){console.warn('M3.2 cloud reconcile:',err)}
  M.brandGroups=brands;
  config.brandGroups=brands.map(b=>({...b,frames:(b.frames||[]).map(f=>({...f,pngUrl:'',_localSrc:''}))}));
  try{saveConfig({skipCloud:true,silent:true})}catch(e){}

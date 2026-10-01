@@ -1257,17 +1257,21 @@ async function saveSessionToFiles(){
   try{
     const files=[];
     try{
-      const gif=await getFinalGifBlob();
-      files.push(new File([gif],`BoothPro-${sessionId}-burst.gif`,{type:'image/gif'}));
-    }catch(e){console.warn('Burst GIF untuk Files dilewati:',e)}
+      const cleanPhoto=await buildCompositeCanvas(false);
+      const blob=await (await fetch(cleanPhoto)).blob();
+      files.push(new File([blob],`BoothPro-${sessionId}-photo-clean.jpg`,{type:'image/jpeg'}));
+    }catch(e){console.warn('Foto clean untuk Files dilewati:',e)}
     try{
-      const video=await getFinalBoomerangBlob();
-      const ext=(video.type||'').includes('webm')?'webm':'mp4';
-      files.push(new File([video],`BoothPro-${sessionId}-boomerang.${ext}`,{type:video.type||'video/mp4'}));
-    }catch(e){console.warn('Boomerang untuk Files dilewati:',e)}
-    if(!files.length)throw new Error('Tidak ada soft file animasi yang berhasil dibuat.');
+      const gif=await getFinalGifBlob();
+      files.push(new File([gif],`BoothPro-${sessionId}-photo-motion.gif`,{type:'image/gif'}));
+    }catch(e){console.warn('GIF foto untuk Files dilewati:',e)}
+    try{
+      const frameGif=await getFinalFrameGifBlob();
+      files.push(new File([frameGif],`BoothPro-${sessionId}-frame-motion.gif`,{type:'image/gif'}));
+    }catch(e){console.warn('GIF frame untuk Files dilewati:',e)}
+    if(!files.length)throw new Error('Tidak ada soft file bersih yang berhasil dibuat.');
     if(navigator.share&&navigator.canShare?.({files})){
-      await navigator.share({title:'BoothPro Soft File',text:'2 soft file BoothPro: Burst GIF + Boomerang Video.',files});
+      await navigator.share({title:'BoothPro Soft File',text:'BoothPro: foto bersih + 2 GIF bersih.',files});
       return;
     }
     for(const file of files){
@@ -1275,7 +1279,7 @@ async function saveSessionToFiles(){
       const a=document.createElement('a');a.href=url;a.download=file.name;a.rel='noopener';a.click();
       setTimeout(()=>URL.revokeObjectURL(url),3000);
     }
-    alert('2 soft file animasi sudah disiapkan. Jika browser tidak membuka Files/iCloud otomatis, gunakan menu berbagi/unduhan browser.');
+    alert('Soft file bersih sudah disiapkan: foto + 2 GIF. Jika browser tidak membuka Files/iCloud otomatis, gunakan menu berbagi/unduhan browser.');
   }catch(e){
     if(e?.name==='AbortError')return;
     alert('Gagal menyimpan soft file: '+(e?.message||String(e)));

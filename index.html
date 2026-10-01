@@ -190,7 +190,7 @@ main{width:100%!important;max-width:100vw!important;min-width:0!important;overfl
 <!-- 6 EDITOR -->
 <section id="step-editor" class="hidden w-full max-w-6xl animate-fadeIn"><div class="mb-5"><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 05</span><h2 class="text-3xl font-extrabold mt-2">Edit Foto</h2><p class="text-zinc-400 text-sm">Tambahkan efek, penyesuaian, dan stiker. Hasil akan terlihat di preview sebelum dicetak.</p></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 bg-zinc-950 border border-zinc-800 p-5 md:p-7 rounded-3xl flex items-center justify-center min-h-[560px]"><div id="editorPreview" class="preview-shell"></div></div><div class="bg-zinc-950 border border-zinc-800 p-5 rounded-3xl space-y-5 safe-scroll"><div><label class="text-xs font-semibold text-zinc-400 uppercase">Frame aktif</label><div id="editorFrameQuickGrid" class="grid grid-cols-4 gap-2 mt-2 max-h-28 overflow-auto"></div></div><div><label class="text-xs font-semibold text-zinc-400 uppercase">Efek</label><div class="grid grid-cols-2 gap-2 mt-2"><button onclick="applyImageFilter('none')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Original</b><span class="block text-zinc-500">Tanpa efek</span></button><button onclick="applyImageFilter('grayscale(100%)')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Retro B&W</b><span class="block text-zinc-500">Hitam putih</span></button><button onclick="applyImageFilter('sepia(60%) brightness(95%) contrast(105%)')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Vintage Warm</b><span class="block text-zinc-500">Klasik</span></button><button onclick="applyImageFilter('hue-rotate(180deg) saturate(140%)')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Cyberpunk</b><span class="block text-zinc-500">Neon</span></button></div></div><div><label class="text-xs font-semibold text-zinc-400 uppercase flex justify-between">Penyesuaian <button onclick="resetAdjustments()" class="text-[10px] text-indigo-400 normal-case">reset</button></label><div class="space-y-3 mt-2 text-[11px] text-zinc-500"><label class="block">Brightness <span id="adjBVal">100</span>%<input id="adjBrightness" type="range" min="50" max="160" value="100" class="w-full mt-1" oninput="applyAdjustments()"></label><label class="block">Contrast <span id="adjCVal">100</span>%<input id="adjContrast" type="range" min="50" max="160" value="100" class="w-full mt-1" oninput="applyAdjustments()"></label><label class="block">Saturation <span id="adjSVal">100</span>%<input id="adjSaturate" type="range" min="0" max="200" value="100" class="w-full mt-1" oninput="applyAdjustments()"></label></div></div><div><label class="text-xs font-semibold text-zinc-400 uppercase flex justify-between">Stiker <span class="pro-badge">PRO</span></label><div class="flex flex-wrap gap-2 mt-2" id="stickerPicker"></div><div id="activeStickerControls" class="flex flex-wrap gap-2 mt-2"></div><p class="text-[10px] text-zinc-500 mt-1">Ketuk stiker untuk tambah, seret untuk atur posisi. Ketuk ✕ pada stiker yang sudah dipakai untuk menghapusnya.</p></div><div><label class="text-xs font-semibold text-zinc-400 uppercase">Warna frame</label><div class="flex gap-3 mt-2"><button onclick="changeFrameBg('#ffffff','#18181b')" class="h-9 w-9 rounded-full bg-white border-2 border-indigo-500"></button><button onclick="changeFrameBg('#18181b','#f4f4f5')" class="h-9 w-9 rounded-full bg-zinc-900 border border-zinc-700"></button><button onclick="changeFrameBg('#fce7f3','#27272a')" class="h-9 w-9 rounded-full bg-pink-200"></button><button onclick="changeFrameBg('#1e1b4b','#e0e7ff')" class="h-9 w-9 rounded-full bg-indigo-950"></button></div></div><button id="finishEditingBtn" type="button" onclick="finishEditing()" class="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl font-bold relative z-[90] pointer-events-auto touch-manipulation select-none">OK, Lanjut Cetak & Soft File <i class="fa-solid fa-arrow-right ml-1"></i></button></div></div></section>
 <!-- 7 FINAL -->
-<section id="step-final" class="hidden w-full max-w-5xl animate-fadeIn"><div class="text-center mb-5"><div class="h-16 w-16 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl"><i class="fa-solid fa-circle-check"></i></div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 06</span><h2 class="text-3xl font-extrabold mt-3">Print Foto, Soft File & Selesai</h2><p id="finalSessionText" class="text-zinc-400 text-sm mt-1">Periksa hasil akhir, lalu cetak foto dan ambil soft file. Setelah selesai, Anda bisa memulai sesi baru.</p></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex justify-center"><div id="finalPreview" class="preview-shell"></div></div><div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5"><div class="text-xs text-zinc-500">ID Sesi</div><div id="sessionIdDisplay" class="font-mono text-indigo-300 font-bold mt-1"></div><div class="grid grid-cols-2 gap-2 mt-4"><button type="button" onclick="downloadComposite()" class="py-3 rounded-xl bg-indigo-600 font-bold text-sm touch-manipulation"><i class="fa-solid fa-download mr-1"></i>Foto</button><button type="button" onclick="downloadGif()" class="py-3 rounded-xl bg-violet-600 font-bold text-sm touch-manipulation"><i class="fa-solid fa-film mr-1"></i>GIF Foto</button><button type="button" onclick="downloadFrameGif()" class="py-3 rounded-xl bg-fuchsia-600 font-bold text-sm touch-manipulation"><i class="fa-solid fa-film mr-1"></i>GIF Frame</button><button type="button" onclick="saveSessionToFiles()" class="col-span-2 py-3 rounded-xl bg-emerald-600 font-bold text-sm touch-manipulation"><i class="fa-solid fa-folder-arrow-down mr-1"></i>Simpan Soft File Bersih</button></div><button onclick="downloadSessionReport()" class="mt-2 w-full py-2.5 rounded-xl bg-zinc-800 text-zinc-300 font-bold text-sm"><i class="fa-solid fa-file-lines mr-1"></i>Session Report</button><button onclick="openExtraPrint()" class="mt-2 w-full py-2.5 rounded-xl bg-amber-600/90 text-white font-bold text-sm"><i class="fa-solid fa-plus mr-1"></i>Cetak Tambahan</button><button type="button" onclick="printComposite()" class="mt-2 w-full min-h-[56px] py-4 px-4 rounded-xl bg-white text-zinc-900 font-bold text-base relative z-[80] pointer-events-auto touch-manipulation select-none shadow-lg active:scale-[.99]"><i class="fa-solid fa-print mr-1"></i>Cetak <span id="printCountLabel"></span></button><div class="mt-5 border-t border-zinc-800 pt-5"><div class="flex justify-between items-center"><div><div class="font-bold">QR Soft File</div><p class="text-xs text-zinc-500 mt-1">Scan untuk membuka hasil.</p></div><span id="qrModeBadge" class="text-[10px] px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">LOCAL</span></div><div id="qrBox" class="mt-3 bg-white rounded-2xl p-3 w-fit mx-auto min-h-[190px]"></div><p id="qrNote" class="text-[10px] text-zinc-500 text-center mt-2"></p><button onclick="publishSessionCloud()" class="mt-3 w-full py-2.5 rounded-xl bg-cyan-600 text-white text-sm font-bold"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Upload Soft File ke Cloud</button><p id="cloudUploadStatus" class="text-[10px] text-zinc-500 text-center mt-2"></p></div><button onclick="resetToHome()" class="mt-5 w-full py-3 rounded-xl bg-zinc-800 text-zinc-300 font-bold">Selesai / Sesi Baru</button></div></div></section>
+<section id="step-final" class="hidden w-full max-w-5xl animate-fadeIn"><div class="text-center mb-5"><div class="h-16 w-16 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl"><i class="fa-solid fa-circle-check"></i></div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 06</span><h2 class="text-3xl font-extrabold mt-3">Print Foto, Soft File & Selesai</h2><p id="finalSessionText" class="text-zinc-400 text-sm mt-1">Periksa hasil akhir, lalu cetak foto dan ambil soft file. Setelah selesai, Anda bisa memulai sesi baru.</p></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex justify-center"><div id="finalPreview" class="preview-shell"></div></div><div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5"><div class="text-xs text-zinc-500">ID Sesi</div><div id="sessionIdDisplay" class="font-mono text-indigo-300 font-bold mt-1"></div><div class="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center"><div class="text-emerald-300 font-black text-sm">3 SOFT FILE DALAM 1 QR</div><p class="text-xs text-zinc-400 mt-1">Scan QR sekali untuk mendapatkan foto final, video motion multi-slot, dan GIF.</p></div><button onclick="downloadSessionReport()" class="mt-2 w-full py-2.5 rounded-xl bg-zinc-800 text-zinc-300 font-bold text-sm"><i class="fa-solid fa-file-lines mr-1"></i>Session Report</button><button onclick="openExtraPrint()" class="mt-2 w-full py-2.5 rounded-xl bg-amber-600/90 text-white font-bold text-sm"><i class="fa-solid fa-plus mr-1"></i>Cetak Tambahan</button><button type="button" onclick="printComposite()" class="mt-2 w-full min-h-[56px] py-4 px-4 rounded-xl bg-white text-zinc-900 font-bold text-base relative z-[80] pointer-events-auto touch-manipulation select-none shadow-lg active:scale-[.99]"><i class="fa-solid fa-print mr-1"></i>Cetak <span id="printCountLabel"></span></button><div class="mt-5 border-t border-zinc-800 pt-5"><div class="flex justify-between items-center"><div><div class="font-bold">QR Soft File</div><p class="text-xs text-zinc-500 mt-1">Scan untuk membuka hasil.</p></div><span id="qrModeBadge" class="text-[10px] px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">LOCAL</span></div><div id="qrBox" class="mt-3 bg-white rounded-2xl p-3 w-fit mx-auto min-h-[190px]"></div><p id="qrNote" class="text-[10px] text-zinc-500 text-center mt-2"></p><button onclick="publishSessionCloud()" class="mt-3 w-full py-2.5 rounded-xl bg-cyan-600 text-white text-sm font-bold"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Upload Soft File ke Cloud</button><p id="cloudUploadStatus" class="text-[10px] text-zinc-500 text-center mt-2"></p></div><button onclick="resetToHome()" class="mt-5 w-full py-3 rounded-xl bg-zinc-800 text-zinc-300 font-bold">Selesai / Sesi Baru</button></div></div></section>
 </main>
 <footer class="border-t border-zinc-800 bg-zinc-950 px-6 py-3 text-center text-[11px] text-zinc-600">BoothPro v3.0 PRO · Midtrans QRIS · Camera HD · Retake · Frame Gallery · Editor PRO · Print WiFi/Bridge · Soft File Cloud</footer>
 <!-- DASHBOARD MODAL -->
@@ -371,7 +371,7 @@ main{width:100%!important;max-width:100vw!important;min-width:0!important;overfl
 <script>
 const $=id=>document.getElementById(id);
 const HISTORY_KEY='boothpro_history_v212';const CONFIG_KEY='boothpro_config_v300';const LEGACY_CONFIG_KEY='boothpro_config_v212';const FRAME_KEY='boothpro_frames_v212';const LICENSE_KEY='boothpro_license_v300';
-let extraPrintQty=1,extraPrintPaid=false;let currentStep=1,selectedLayoutType='strip',requiredPhotosCount=4,capturedPhotos=[],streamInstance=null,useSimulation=false,countdownTimer=null,sessionTimerId=null,sessionSecondsLeft=420,sessionStartedAt=null,sessionId='',retakeCount=0,selectedPackageId=null,selectedFrameId='plain-white',paymentMethod='qris',paymentConfirmed=false,currentFilter='none',frameBg='#ffffff',frameFg='#18181b',selectedFrameSrc='',finalCompositeDataUrl='',finalGifDataUrl='',adjState={brightness:100,contrast:100,saturate:100},stickers=[],mirrorOn=true,lastPaymentMethod='qris',midtransPollId=null,wakeLock=null,idleTimer=null;
+let extraPrintQty=1,extraPrintPaid=false;let currentStep=1,selectedLayoutType='strip',requiredPhotosCount=4,capturedPhotos=[],streamInstance=null,useSimulation=false,countdownTimer=null,sessionTimerId=null,sessionSecondsLeft=420,sessionStartedAt=null,sessionId='',retakeCount=0,selectedPackageId=null,selectedFrameId='plain-white',paymentMethod='qris',paymentConfirmed=false,currentFilter='none',frameBg='#ffffff',frameFg='#18181b',selectedFrameSrc='',finalCompositeDataUrl='',finalGifDataUrl='',finalMotionVideoDataUrl='',finalMotionVideoMime='',adjState={brightness:100,contrast:100,saturate:100},stickers=[],mirrorOn=true,lastPaymentMethod='qris',midtransPollId=null,wakeLock=null,idleTimer=null;
 let capturedGifSequences=[];let finalFrameGifDataUrl='';
 const STICKER_SET=['😍','🔥','✨','💯','🎉','⭐','💕','😎','🌸','🌈','🎀','👑','💎','🫶','❤️','💖','💫','🚀','🎵','📸','🥳','🎈','🦋','☕','🍓','🍒','🍋','🌻','🌷','⚡'];
 /* ============ BUILT-IN 2026 FRAME LIBRARY ============
@@ -533,7 +533,7 @@ function fmt(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:
 /* ============ STEPS ============ */
 function goToStep(n){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));const map={1:'step-welcome',2:'step-package',3:'step-payment',4:'step-capture',5:'step-frame',6:'step-editor',7:'step-final'};$(map[n]).classList.remove('hidden');currentStep=n;updateStatusBadge();resetIdleTimer();if(n===2)renderPackageStep();if(n===3)renderPayment();if(n===4)startCaptureSession();if(n===5){stopWebcam();renderFrameGallery();renderCaptureReview()}if(n===6){renderEditor();renderEditorFrameQuickGrid()}if(n===7)prepareFinal()}
 function updateStatusBadge(){const b=$('statusBadge'),t=$('statusText');b.classList.remove('hidden');if(currentStep===1)b.classList.add('hidden');else if(currentStep===2)t.innerText='Pilih Paket';else if(currentStep===3)t.innerText='Menunggu Pembayaran';else if(currentStep===4)t.innerText=`Take ${capturedPhotos.length}/${requiredPhotosCount}`;else if(currentStep===5)t.innerText='Sesuaikan Frame';else if(currentStep===6)t.innerText='Edit';else t.innerText='Selesai'}
-function resetToHome(){stopWebcam();stopMidtransPoll();if(sessionTimerId)clearInterval(sessionTimerId);if(countdownTimer)clearInterval(countdownTimer);sessionTimerId=null;countdownTimer=null;capturedPhotos=[];capturedGifSequences=[];retakeCount=0;paymentConfirmed=false;finalCompositeDataUrl='';finalGifDataUrl='';finalFrameGifDataUrl='';extraPrintPaid=false;selectedPackageId=null;frameSelectionConfirmed=false;preFrameCategoryOpen='';sessionId='';sessionStartedAt=null;selectedFrameId='plain-white';selectedFrameSrc='';currentFilter='none';frameBg='#ffffff';frameFg='#18181b';adjState={brightness:100,contrast:100,saturate:100};stickers=[];if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels()}goToStep(1)}
+function resetToHome(){stopWebcam();stopMidtransPoll();if(sessionTimerId)clearInterval(sessionTimerId);if(countdownTimer)clearInterval(countdownTimer);sessionTimerId=null;countdownTimer=null;capturedPhotos=[];capturedGifSequences=[];retakeCount=0;paymentConfirmed=false;finalCompositeDataUrl='';finalGifDataUrl='';finalFrameGifDataUrl='';finalMotionVideoDataUrl='';finalMotionVideoMime='';extraPrintPaid=false;selectedPackageId=null;frameSelectionConfirmed=false;preFrameCategoryOpen='';sessionId='';sessionStartedAt=null;selectedFrameId='plain-white';selectedFrameSrc='';currentFilter='none';frameBg='#ffffff';frameFg='#18181b';adjState={brightness:100,contrast:100,saturate:100};stickers=[];if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels()}goToStep(1)}
 /* ============ PACKAGES ============ */
 function applyConfiguredDefaultFrame(){
   let choices=[];
@@ -554,7 +554,7 @@ function renderPackageStep(){
     d.className='w-full text-left p-5 rounded-2xl border-2 cursor-pointer select-none '+(String(selectedPackageId)===String(p.id)?'border-indigo-500 bg-indigo-500/10':'border-zinc-800 bg-zinc-950')+' hover:border-indigo-500 transition';
     d.dataset.packageId=p.id;
     d.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();selectPackage(p.id);});
-    d.innerHTML='<div class="text-xs text-indigo-400 font-bold uppercase">'+p.prints+' Strip</div><div class="text-lg font-extrabold mt-1">'+escapeHtml(p.name)+'</div><div class="text-2xl font-black text-white mt-2">'+fmt(p.price)+'</div><div class="text-xs text-zinc-500 mt-2">'+p.photos+' foto · '+escapeHtml(p.desc||'')+'<br>Soft file + loop/GIF + efek + frame</div><div class="text-[10px] text-indigo-300 font-bold mt-3">'+(String(selectedPackageId)===String(p.id)?'✓ PAKET DIPILIH':'KETUK UNTUK MEMILIH')+'</div>';
+    d.innerHTML='<div class="text-xs text-indigo-400 font-bold uppercase">'+p.prints+' Strip</div><div class="text-lg font-extrabold mt-1">'+escapeHtml(p.name)+'</div><div class="text-2xl font-black text-white mt-2">'+fmt(p.price)+'</div><div class="text-xs text-zinc-500 mt-2">'+p.photos+' foto · '+escapeHtml(p.desc||'')+'<br>Soft file via QR + efek + frame</div><div class="text-[10px] text-indigo-300 font-bold mt-3">'+(String(selectedPackageId)===String(p.id)?'✓ PAKET DIPILIH':'KETUK UNTUK MEMILIH')+'</div>';
     g.appendChild(d);
   });
   try{renderPreFrames()}catch(e){console.warn('Step 1 frame render:',e)}
@@ -763,7 +763,8 @@ async function captureCurrentFrame(){
   }
   capturedPhotos.push(imgData);capturedGifSequences.push(burst.length?burst:[imgData]);
   finalGifDataUrl='';
-  finalBoomerangVideoDataUrl='';finalBoomerangVideoMime='';
+  finalFrameGifDataUrl='';
+  finalMotionVideoDataUrl='';finalMotionVideoMime='';
   updateGalleryPreviews();renderCaptureReview();$('shutterBtn').disabled=capturedPhotos.length>=requiredPhotosCount;
   if(capturedPhotos.length>=requiredPhotosCount)$('nextToFrameBtn').disabled=false;updateStatusBadge()
 }
@@ -976,7 +977,7 @@ async function buildCompositeCanvas(includeStickers=true){
  }else containDrawCanvas(ox,panel,0,0,sheetW,sheetH);
  return out.toDataURL('image/jpeg',.95);
 }
-async function prepareFinal(){finalCompositeDataUrl=await buildCompositeCanvas();const pkg=config.packages.find(p=>p.id===selectedPackageId);$('sessionIdDisplay').innerText=sessionId;$('finalSessionText').innerText=`${capturedPhotos.length} foto · ${pkg?.name||''} · Soft file bersih + 2 GIF siap.`;$('printCountLabel').innerText=`(${pkg?.prints||1} strip)`;saveHistory({id:sessionId,date:new Date().toISOString(),layout:selectedLayoutType,count:capturedPhotos.length,filter:currentFilter,package:selectedPackageId,packageName:pkg?.name||'',price:pkg?.price||0,method:lastPaymentMethod,prints:pkg?.prints||1,retakes:retakeCount});renderFinalPreview();generateQR();if(config.cloudinary?.cloudName&&config.cloudinary?.uploadPreset)publishSessionCloud()}
+async function prepareFinal(){finalCompositeDataUrl=await buildCompositeCanvas();const pkg=config.packages.find(p=>p.id===selectedPackageId);$('sessionIdDisplay').innerText=sessionId;$('finalSessionText').innerText=`${capturedPhotos.length} foto · ${pkg?.name||''} · 3 soft file via 1 QR: Foto Final + Motion Video + GIF siap.`;$('printCountLabel').innerText=`(${pkg?.prints||1} strip)`;saveHistory({id:sessionId,date:new Date().toISOString(),layout:selectedLayoutType,count:capturedPhotos.length,filter:currentFilter,package:selectedPackageId,packageName:pkg?.name||'',price:pkg?.price||0,method:lastPaymentMethod,prints:pkg?.prints||1,retakes:retakeCount});renderFinalPreview();generateQR();if(config.cloudinary?.cloudName&&config.cloudinary?.uploadPreset)publishSessionCloud()}
 function renderFinalPreview(){const p=$('finalPreview');p.innerHTML='';const im=document.createElement('img');im.src=finalCompositeDataUrl;im.className='max-w-full max-h-[620px] object-contain rounded-xl shadow-2xl';p.appendChild(im)}
 async function downloadComposite(){
  try{
@@ -1056,7 +1057,7 @@ async function printComposite(){
  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
  setTimeout(cleanup,10000);
 }
-function generateQR(overrideUrl){const q=$('qrBox');if(!q)return;q.innerHTML='';let payload=overrideUrl||'';const base=(config.softBase||'').trim();const share=(config.shareBase||'').trim();if(!payload&&share){payload=share.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId);$('qrModeBadge').innerText='SHARE';$('qrNote').innerText='QR mengarah ke halaman share/backend.'}else if(!payload&&base){payload=base.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId);$('qrModeBadge').innerText='CLOUD';$('qrNote').innerText='QR memakai endpoint soft file Dashboard.'}else if(!payload){payload=location.href.split('#')[0]+'#session='+encodeURIComponent(sessionId);$('qrModeBadge').innerText='LOCAL';$('qrNote').innerText='Mode lokal. Untuk HP customer aktifkan Cloudinary + Share URL.'}new QRCode(q,{text:payload,width:180,height:180,correctLevel:QRCode.CorrectLevel.M})}
+function generateQR(overrideUrl){const q=$('qrBox');if(!q)return;q.innerHTML='';let payload=overrideUrl||'';const base=(config.softBase||'').trim();const share=(config.shareBase||'').trim();if(!payload&&share){payload=share.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId);$('qrModeBadge').innerText='SHARE';$('qrNote').innerText='QR mengarah ke halaman 3 soft file.'}else if(!payload&&base){payload=base.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId);$('qrModeBadge').innerText='CLOUD';$('qrNote').innerText='QR memakai endpoint soft file Dashboard.'}else if(!payload){payload=location.href.split('#')[0]+'#session='+encodeURIComponent(sessionId);$('qrModeBadge').innerText='LOCAL';$('qrNote').innerText='Mode lokal. Aktifkan Cloudinary + Share URL untuk 3 soft file.'}new QRCode(q,{text:payload,width:180,height:180,correctLevel:QRCode.CorrectLevel.M})}
 async function resolveImageSourceDataUrl(src){
   const value=String(src||'').trim();
   if(!value)return '';
@@ -1172,6 +1173,72 @@ function downloadGif(){
    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
  }).catch(e=>alert(e.message||'GIF foto gagal dibuat.'));
 }
+function pickMotionVideoMime(){
+  if(typeof MediaRecorder==='undefined')return '';
+  const candidates=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp8','video/webm'];
+  return candidates.find(m=>!MediaRecorder.isTypeSupported||MediaRecorder.isTypeSupported(m))||'';
+}
+async function buildMotionVideoBlob(){
+  if(!capturedPhotos.length)throw new Error('Tidak ada foto untuk membuat video motion.');
+  if(typeof MediaRecorder==='undefined')throw new Error('Browser ini belum mendukung pembuatan video.');
+  const canvas=document.createElement('canvas');canvas.width=480;canvas.height=720;
+  if(typeof canvas.captureStream!=='function')throw new Error('Browser ini belum mendukung video dari canvas.');
+  const mimeType=pickMotionVideoMime();
+  if(!mimeType)throw new Error('Format video tidak didukung browser ini.');
+  const stream=canvas.captureStream(20),chunks=[],recorder=new MediaRecorder(stream,{mimeType});
+  const done=new Promise((resolve,reject)=>{
+    recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+    recorder.onerror=e=>reject(e.error||new Error('Perekaman video gagal.'));
+    recorder.onstop=()=>resolve(new Blob(chunks,{type:recorder.mimeType||mimeType}));
+  });
+  const sequences=Array.isArray(capturedGifSequences)?capturedGifSequences:[];
+  const frameSrc=selectedFrameSrc;
+  const fallbackPhotos=[];
+  for(const src of capturedPhotos)fallbackPhotos.push(await loadImage(await resolveImageSourceDataUrl(src)));
+  const valid=sequences.filter(seq=>Array.isArray(seq)&&seq.length);
+  const frameCount=Math.max(1,...valid.map(seq=>seq.length));
+  const loadedSequences=[];
+  for(let slot=0;slot<capturedPhotos.length;slot++){
+    const seq=Array.isArray(sequences[slot])&&sequences[slot].length?sequences[slot]:[capturedPhotos[slot]];
+    const loaded=[];
+    for(const src of seq){try{loaded.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){}}
+    loadedSequences.push(loaded.length?loaded:[fallbackPhotos[slot]]);
+  }
+  recorder.start();
+  try{
+    for(let t=0;t<frameCount;t++){
+      const slotPhotos=loadedSequences.map(seq=>seq[t%seq.length]);
+      /* Reuse the proven frame composition. Each slot receives its own
+         captured burst frame; no sticker layer is added to soft video. */
+      await drawFrameAwareComposition(canvas,true,slotPhotos,frameSrc,t,frameCount);
+      await new Promise(r=>setTimeout(r,50));
+    }
+  }catch(e){
+    try{recorder.stop()}catch(_){}
+    stream.getTracks().forEach(t=>t.stop());
+    throw e;
+  }
+  recorder.stop();
+  const blob=await done;
+  stream.getTracks().forEach(t=>t.stop());
+  if(!blob.size)throw new Error('Video motion kosong.');
+  return blob;
+}
+async function getFinalMotionVideoBlob(){
+  if(finalMotionVideoDataUrl){const res=await fetch(finalMotionVideoDataUrl);return await res.blob()}
+  const blob=await buildMotionVideoBlob();
+  finalMotionVideoDataUrl=URL.createObjectURL(blob);
+  finalMotionVideoMime=blob.type||'video/mp4';
+  return blob;
+}
+function downloadMotionVideo(){
+  getFinalMotionVideoBlob().then(blob=>{
+    const ext=(blob.type||'').includes('webm')?'webm':'mp4';
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=`BoothPro-${sessionId}-frame-motion.${ext}`;a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  }).catch(e=>alert(e.message||'Video motion gagal dibuat.'));
+}
 function boomerangFrameOrder(){
   const sequences=Array.isArray(capturedGifSequences)?capturedGifSequences:[];
   const slotCount=capturedPhotos.length;
@@ -1256,22 +1323,15 @@ function downloadBoomerang(){
 async function saveSessionToFiles(){
   try{
     const files=[];
-    try{
-      const cleanPhoto=await buildCompositeCanvas(false);
-      const blob=await (await fetch(cleanPhoto)).blob();
-      files.push(new File([blob],`BoothPro-${sessionId}-photo-clean.jpg`,{type:'image/jpeg'}));
-    }catch(e){console.warn('Foto clean untuk Files dilewati:',e)}
-    try{
-      const gif=await getFinalGifBlob();
-      files.push(new File([gif],`BoothPro-${sessionId}-photo-motion.gif`,{type:'image/gif'}));
-    }catch(e){console.warn('GIF foto untuk Files dilewati:',e)}
-    try{
-      const frameGif=await getFinalFrameGifBlob();
-      files.push(new File([frameGif],`BoothPro-${sessionId}-frame-motion.gif`,{type:'image/gif'}));
-    }catch(e){console.warn('GIF frame untuk Files dilewati:',e)}
-    if(!files.length)throw new Error('Tidak ada soft file bersih yang berhasil dibuat.');
+    const photoBlob=await (await fetch(finalCompositeDataUrl)).blob();
+    files.push(new File([photoBlob],`BoothPro-${sessionId}-final.jpg`,{type:'image/jpeg'}));
+    const gif=await getFinalGifBlob();
+    files.push(new File([gif],`BoothPro-${sessionId}-motion.gif`,{type:'image/gif'}));
+    const video=await getFinalMotionVideoBlob();
+    const ext=(video.type||'').includes('webm')?'webm':'mp4';
+    files.push(new File([video],`BoothPro-${sessionId}-frame-motion.${ext}`,{type:video.type||'video/mp4'}));
     if(navigator.share&&navigator.canShare?.({files})){
-      await navigator.share({title:'BoothPro Soft File',text:'BoothPro: foto bersih + 2 GIF bersih.',files});
+      await navigator.share({title:'BoothPro Soft File',text:'3 soft file BoothPro: Foto Final + Motion Video + GIF.',files});
       return;
     }
     for(const file of files){
@@ -1279,10 +1339,9 @@ async function saveSessionToFiles(){
       const a=document.createElement('a');a.href=url;a.download=file.name;a.rel='noopener';a.click();
       setTimeout(()=>URL.revokeObjectURL(url),3000);
     }
-    alert('Soft file bersih sudah disiapkan: foto + 2 GIF. Jika browser tidak membuka Files/iCloud otomatis, gunakan menu berbagi/unduhan browser.');
   }catch(e){
     if(e?.name==='AbortError')return;
-    alert('Gagal menyimpan soft file: '+(e?.message||String(e)));
+    alert('Gagal menyiapkan 3 soft file: '+(e?.message||String(e)));
   }
 }
 function downloadSessionReport(){const p=config.packages.find(x=>x.id===selectedPackageId)||{};const report={app:'BoothPro',version:'3.0',session_id:sessionId,started_at:sessionStartedAt,completed_at:new Date().toISOString(),package:p.name||'',price:p.price||0,payment_method:lastPaymentMethod,photos:capturedPhotos.length,prints:p.prints||1,retakes:retakeCount,filter:currentFilter,frame:selectedFrameId,stickers:stickers.map(s=>s.emoji)};const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`BoothPro-${sessionId}-report.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
@@ -1296,43 +1355,56 @@ function clearHistory(){if(confirm('Hapus seluruh riwayat lokal?')){localStorage
 async function uploadDataUrlToCloudinary(dataUrl,resourceType='image'){const c=config.cloudinary||{};if(!c.cloudName||!c.uploadPreset)throw new Error('Cloudinary belum dikonfigurasi. Buka Dashboard → Cloudinary Soft File lalu isi Cloud Name + Unsigned Upload Preset.');const endpoint='https://api.cloudinary.com/v1_1/'+encodeURIComponent(c.cloudName)+'/'+resourceType+'/upload';const fd=new FormData();fd.append('file',dataUrl);fd.append('upload_preset',c.uploadPreset);fd.append('folder','boothpro/'+sessionId);const res=await fetch(endpoint,{method:'POST',body:fd});let body=null;try{body=await res.json()}catch(e){}if(!res.ok)throw new Error('Upload Cloudinary gagal: '+(body?.error?.message||('HTTP '+res.status)));return body||{}}
 async function publishSessionCloud(){
  const status=$('cloudUploadStatus');
- if(status)status.innerText='Mengunggah soft file...';
+ if(status)status.innerText='Menyiapkan 3 soft file untuk 1 QR...';
  try{
-   const result={sessionId,photoUrl:null,gifUrl:null,frameGifUrl:null,boomerangUrl:null};
+   const result={sessionId,photoUrl:null,gifUrl:null,videoUrl:null,frameGifUrl:null};
+   if(finalCompositeDataUrl){
+     if(status)status.innerText='1/3 · Mengunggah foto final (termasuk sticker)...';
+     const up=await uploadDataUrlToCloudinary(finalCompositeDataUrl,'image');
+     result.photoUrl=up.secure_url||up.url||null;
+   }
+   if(status)status.innerText='2/3 · Membuat & mengunggah GIF bersih...';
    try{
-     const cleanPhoto=await buildCompositeCanvas(false);
-     if(cleanPhoto){
-       const up=await uploadDataUrlToCloudinary(cleanPhoto,'image');
-       result.photoUrl=up.secure_url||up.url;
-     }
-   }catch(photoErr){console.warn('Foto clean Cloudinary gagal',photoErr)}
-   try{
-     const gifBlob=await generateGifBlob();
+     const gifBlob=await getFinalGifBlob();
      const gifData=await new Promise((resolve,reject)=>{const rr=new FileReader();rr.onload=()=>resolve(rr.result);rr.onerror=reject;rr.readAsDataURL(gifBlob)});
      const gu=await uploadDataUrlToCloudinary(gifData,'image');
-     result.gifUrl=gu.secure_url||gu.url;
+     result.gifUrl=gu.secure_url||gu.url||null;
      finalGifDataUrl=URL.createObjectURL(gifBlob);
-   }catch(gifErr){console.warn('GIF foto Cloudinary gagal',gifErr)}
+   }catch(gifErr){console.warn('GIF Cloudinary gagal',gifErr)}
+   if(status)status.innerText='3/3 · Membuat & mengunggah video motion multi-slot...';
    try{
-     const frameGif=await buildFrameGifBlob();
-     const frameData=await new Promise((resolve,reject)=>{const rr=new FileReader();rr.onload=()=>resolve(rr.result);rr.onerror=reject;rr.readAsDataURL(frameGif)});
-     const fu=await uploadDataUrlToCloudinary(frameData,'image');
-     result.frameGifUrl=fu.secure_url||fu.url;
-     finalFrameGifDataUrl=URL.createObjectURL(frameGif);
-   }catch(frameGifErr){console.warn('Frame GIF Cloudinary gagal',frameGifErr)}
+     const videoBlob=await getFinalMotionVideoBlob();
+     const videoData=await new Promise((resolve,reject)=>{const rr=new FileReader();rr.onload=()=>resolve(rr.result);rr.onerror=reject;rr.readAsDataURL(videoBlob)});
+     const vu=await uploadDataUrlToCloudinary(videoData,'video');
+     result.videoUrl=vu.secure_url||vu.url||null;
+   }catch(videoErr){console.warn('Video motion Cloudinary gagal',videoErr)}
    if(config.shareBase){
      try{
-       const r=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});
-       if(r.ok){const j=await r.json();result.shareUrl=j.shareUrl||null}
+       const r=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{
+         method:'POST',
+         headers:{'Content-Type':'application/json'},
+         body:JSON.stringify({...result,photoLabel:'Foto Final',gifLabel:'Motion GIF',videoLabel:'Motion Video'})
+       });
+       if(r.ok){const j=await r.json();result.shareUrl=j.shareUrl||j.url||null}
      }catch(e){console.warn('Share API tidak tersedia',e)}
    }
    localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
-   if(result.shareUrl||result.photoUrl){
-     generateQR(result.shareUrl||result.photoUrl);
-     if(status)status.innerText='Foto bersih + 2 GIF siap diakses.';
-   }else if(status)status.innerText='Upload selesai; Share URL belum dikonfigurasi.';
+   const qrUrl=result.shareUrl||(
+     config.shareBase ? config.shareBase.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId) :
+     config.softBase ? config.softBase.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId) : ''
+   );
+   if(qrUrl){
+     generateQR(qrUrl);
+     $('qrModeBadge').innerText='CLOUD';
+     $('qrNote').innerText='1 QR · 3 soft file: Foto Final + Motion Video + GIF';
+     if(status)status.innerText='3 soft file online. 1 QR siap dipindai.';
+   }else if(status)status.innerText='File dibuat, tetapi Share Base belum dikonfigurasi.';
    return result;
- }catch(e){console.warn(e);if(status)status.innerText='Cloud belum aktif: '+e.message;return null}
+ }catch(e){
+   console.warn(e);
+   if(status)status.innerText='Cloud belum aktif: '+e.message;
+   return null;
+ }
 }
 function handleQrisUpload(e){const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{config.qris=r.result;saveConfig();$('dashQrisPreview').src=r.result;$('dashQrisPreview').classList.remove('hidden')};r.readAsDataURL(f)}
 /* ============ AUTO FRAME TRANSPARENCY (UPLOAD ONLY) ============ */

@@ -372,7 +372,7 @@ main{width:100%!important;max-width:100vw!important;min-width:0!important;overfl
 const $=id=>document.getElementById(id);
 const HISTORY_KEY='boothpro_history_v212';const CONFIG_KEY='boothpro_config_v300';const LEGACY_CONFIG_KEY='boothpro_config_v212';const FRAME_KEY='boothpro_frames_v212';const LICENSE_KEY='boothpro_license_v300';
 let extraPrintQty=1,extraPrintPaid=false;let currentStep=1,selectedLayoutType='strip',requiredPhotosCount=4,capturedPhotos=[],streamInstance=null,useSimulation=false,countdownTimer=null,sessionTimerId=null,sessionSecondsLeft=420,sessionStartedAt=null,sessionId='',retakeCount=0,selectedPackageId=null,selectedFrameId='plain-white',paymentMethod='qris',paymentConfirmed=false,currentFilter='none',frameBg='#ffffff',frameFg='#18181b',selectedFrameSrc='',finalCompositeDataUrl='',finalGifDataUrl='',finalMotionVideoDataUrl='',finalMotionVideoMime='',adjState={brightness:100,contrast:100,saturate:100},stickers=[],mirrorOn=true,lastPaymentMethod='qris',midtransPollId=null,wakeLock=null,idleTimer=null;
-let capturedGifSequences=[];let finalFrameGifDataUrl='';
+let capturedGifSequences=[];let finalStickerSnapshot=[];let finalFrameGifDataUrl='';
 const STICKER_SET=['😍','🔥','✨','💯','🎉','⭐','💕','😎','🌸','🌈','🎀','👑','💎','🫶','❤️','💖','💫','🚀','🎵','📸','🥳','🎈','🦋','☕','🍓','🍒','🍋','🌻','🌷','⚡'];
 /* ============ BUILT-IN 2026 FRAME LIBRARY ============
    40 lightweight SVG frames. Photo windows are genuinely transparent,
@@ -533,7 +533,7 @@ function fmt(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:
 /* ============ STEPS ============ */
 function goToStep(n){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));const map={1:'step-welcome',2:'step-package',3:'step-payment',4:'step-capture',5:'step-frame',6:'step-editor',7:'step-final'};$(map[n]).classList.remove('hidden');currentStep=n;updateStatusBadge();resetIdleTimer();if(n===2)renderPackageStep();if(n===3)renderPayment();if(n===4)startCaptureSession();if(n===5){stopWebcam();renderFrameGallery();renderCaptureReview()}if(n===6){renderEditor();renderEditorFrameQuickGrid()}if(n===7)prepareFinal()}
 function updateStatusBadge(){const b=$('statusBadge'),t=$('statusText');b.classList.remove('hidden');if(currentStep===1)b.classList.add('hidden');else if(currentStep===2)t.innerText='Pilih Paket';else if(currentStep===3)t.innerText='Menunggu Pembayaran';else if(currentStep===4)t.innerText=`Take ${capturedPhotos.length}/${requiredPhotosCount}`;else if(currentStep===5)t.innerText='Sesuaikan Frame';else if(currentStep===6)t.innerText='Edit';else t.innerText='Selesai'}
-function resetToHome(){stopWebcam();stopMidtransPoll();if(sessionTimerId)clearInterval(sessionTimerId);if(countdownTimer)clearInterval(countdownTimer);sessionTimerId=null;countdownTimer=null;capturedPhotos=[];capturedGifSequences=[];retakeCount=0;paymentConfirmed=false;finalCompositeDataUrl='';finalGifDataUrl='';finalFrameGifDataUrl='';finalMotionVideoDataUrl='';finalMotionVideoMime='';extraPrintPaid=false;selectedPackageId=null;frameSelectionConfirmed=false;preFrameCategoryOpen='';sessionId='';sessionStartedAt=null;selectedFrameId='plain-white';selectedFrameSrc='';currentFilter='none';frameBg='#ffffff';frameFg='#18181b';adjState={brightness:100,contrast:100,saturate:100};stickers=[];if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels()}goToStep(1)}
+function resetToHome(){stopWebcam();stopMidtransPoll();if(sessionTimerId)clearInterval(sessionTimerId);if(countdownTimer)clearInterval(countdownTimer);sessionTimerId=null;countdownTimer=null;capturedPhotos=[];capturedGifSequences=[];retakeCount=0;paymentConfirmed=false;finalCompositeDataUrl='';finalGifDataUrl='';finalFrameGifDataUrl='';finalMotionVideoDataUrl='';finalMotionVideoMime='';extraPrintPaid=false;selectedPackageId=null;frameSelectionConfirmed=false;preFrameCategoryOpen='';sessionId='';sessionStartedAt=null;selectedFrameId='plain-white';selectedFrameSrc='';currentFilter='none';frameBg='#ffffff';frameFg='#18181b';adjState={brightness:100,contrast:100,saturate:100};stickers=[];finalStickerSnapshot=[];if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels()}goToStep(1)}
 /* ============ PACKAGES ============ */
 function applyConfiguredDefaultFrame(){
   let choices=[];
@@ -843,12 +843,12 @@ function applyAdjustments(){adjState.brightness=Number($('adjBrightness').value)
 function updateAdjLabels(){if($('adjBVal'))$('adjBVal').innerText=adjState.brightness;if($('adjCVal'))$('adjCVal').innerText=adjState.contrast;if($('adjSVal'))$('adjSVal').innerText=adjState.saturate}
 function resetAdjustments(){adjState={brightness:100,contrast:100,saturate:100};if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels();renderEditor()}}
 function initStickerPicker(){const p=$('stickerPicker');if(!p)return;p.innerHTML='';STICKER_SET.forEach(e=>{const b=document.createElement('button');b.type='button';b.className='h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-700 text-lg hover:border-indigo-500';b.textContent=e;b.title='Stiker '+e;b.onclick=()=>addSticker(e);p.appendChild(b)});customStickerGallery.forEach(st=>{const b=document.createElement('button');b.type='button';b.className='h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-700 overflow-hidden hover:border-indigo-500';b.title=st.name||'Stiker custom';b.innerHTML='<img src="'+st.src+'" alt="" class="w-full h-full object-contain">';b.onclick=()=>addSticker(st);p.appendChild(b)})}
-function addSticker(item){if(!isPro()){openLicense();return}const isObj=item&&typeof item==='object';stickers.push(isObj?{id:item.id||'',name:item.name||'',src:item.src||'',emoji:item.emoji||'',x:50,y:50,size:14}:{emoji:String(item||''),x:50,y:50,size:14});renderStickerOverlay()}
+function addSticker(item){if(!isPro()){openLicense();return}const isObj=item&&typeof item==='object';const sticker=isObj?{id:item.id||'',name:item.name||'',src:item.src||'',emoji:item.emoji||'',x:50,y:50,size:14}:{emoji:String(item||''),x:50,y:50,size:14};stickers.push(sticker);finalStickerSnapshot=stickers.map(st=>({...st}));renderStickerOverlay()}
 function removeSticker(idx){if(idx<0||idx>=stickers.length)return;stickers.splice(idx,1);renderStickerOverlay()}
 function removeLastSticker(){if(!stickers.length)return;stickers.pop();renderStickerOverlay()}
 function clearAllStickers(){if(!stickers.length)return;stickers=[];renderStickerOverlay()}
 function renderActiveStickerControls(){const host=$('activeStickerControls');if(!host)return;host.innerHTML='';if(!stickers.length){const empty=document.createElement('span');empty.className='text-[10px] text-zinc-600 self-center';empty.textContent='Belum ada stiker dipilih';host.appendChild(empty);return}const label=document.createElement('span');label.className='text-[10px] text-zinc-500 self-center';label.textContent='Stiker:';host.appendChild(label);stickers.forEach((st,i)=>{const wrap=document.createElement('div');wrap.className='inline-flex items-center gap-1 px-1.5 py-1 rounded-lg bg-zinc-900 border border-zinc-700';const b=document.createElement('button');b.type='button';b.className='text-base leading-none';b.title='Pilih stiker ini';b.textContent=st.emoji;b.onclick=()=>{window.__bpActiveStickerIndex=i;renderStickerOverlay()};const minus=document.createElement('button');minus.type='button';minus.className='w-5 h-5 rounded-md bg-zinc-800 text-[11px]';minus.textContent='−';minus.title='Kecilkan';minus.onclick=()=>{st.size=Math.max(8,(Number(st.size)||14)-2);renderStickerOverlay()};const plus=document.createElement('button');plus.type='button';plus.className='w-5 h-5 rounded-md bg-zinc-800 text-[11px]';plus.textContent='+';plus.title='Besarkan';plus.onclick=()=>{st.size=Math.min(40,(Number(st.size)||14)+2);renderStickerOverlay()};const del=document.createElement('button');del.type='button';del.className='w-5 h-5 rounded-md bg-red-950/70 text-red-200 text-[11px]';del.textContent='×';del.title='Hapus stiker ini';del.onclick=()=>removeSticker(i);wrap.append(b,minus,plus,del);host.appendChild(wrap)});const all=document.createElement('button');all.type='button';all.className='px-2 py-1 rounded-lg bg-red-950/50 border border-red-900/60 text-[10px] text-red-300';all.textContent='Hapus semua';all.onclick=clearAllStickers;host.appendChild(all)}
-function renderStickerOverlay(){renderActiveStickerControls();document.querySelectorAll('.text-layer').forEach(layer=>{layer.innerHTML='';stickers.forEach((st,i)=>{const chip=document.createElement('div');chip.className='sticker-chip';chip.innerHTML=(st.src?'<img src="'+st.src+'" alt="" style="width:'+Math.max(18,(Number(st.size)||14)*2)+'px;height:'+Math.max(18,(Number(st.size)||14)*2)+'px;object-fit:contain">':'<span>'+st.emoji+'</span>')+'<button type="button" aria-label="Hapus stiker" title="Hapus stiker">×</button>';chip.style.left=st.x+'%';chip.style.top=st.y+'%';chip.style.fontSize=(st.size/100*layer.clientWidth||st.size*2)+'px';chip.title='Seret untuk pindah · tombol × untuk hapus';const del=chip.querySelector('button');if(del){del.onpointerdown=e=>e.stopPropagation();del.onclick=e=>{e.preventDefault();e.stopPropagation();removeSticker(i)}}chip.oncontextmenu=e=>{e.preventDefault();removeSticker(i)};chip.onpointerdown=e=>{e.preventDefault();chip.setPointerCapture(e.pointerId);const rect=layer.getBoundingClientRect();const move=ev=>{st.x=Math.min(98,Math.max(2,(ev.clientX-rect.left)/rect.width*100));st.y=Math.min(98,Math.max(2,(ev.clientY-rect.top)/rect.height*100));chip.style.left=st.x+'%';chip.style.top=st.y+'%'};const up=()=>{chip.removeEventListener('pointermove',move);chip.removeEventListener('pointerup',up)};chip.addEventListener('pointermove',move);chip.addEventListener('pointerup',up)};layer.appendChild(chip)})})}
+function renderStickerOverlay(){renderActiveStickerControls();document.querySelectorAll('.text-layer').forEach(layer=>{layer.innerHTML='';stickers.forEach((st,i)=>{const chip=document.createElement('div');chip.className='sticker-chip';chip.innerHTML=(st.src?'<img src="'+st.src+'" alt="" style="width:'+Math.max(18,(Number(st.size)||14)*2)+'px;height:'+Math.max(18,(Number(st.size)||14)*2)+'px;object-fit:contain">':'<span>'+st.emoji+'</span>')+'<button type="button" aria-label="Hapus stiker" title="Hapus stiker">×</button>';chip.style.left=st.x+'%';chip.style.top=st.y+'%';chip.style.fontSize=(st.size/100*layer.clientWidth||st.size*2)+'px';chip.title='Seret untuk pindah · tombol × untuk hapus';const del=chip.querySelector('button');if(del){del.onpointerdown=e=>e.stopPropagation();del.onclick=e=>{e.preventDefault();e.stopPropagation();removeSticker(i)}}chip.oncontextmenu=e=>{e.preventDefault();removeSticker(i)};chip.onpointerdown=e=>{e.preventDefault();chip.setPointerCapture(e.pointerId);const rect=layer.getBoundingClientRect();const move=ev=>{st.x=Math.min(98,Math.max(2,(ev.clientX-rect.left)/rect.width*100));st.y=Math.min(98,Math.max(2,(ev.clientY-rect.top)/rect.height*100));finalStickerSnapshot=stickers.map(s=>({...s}));chip.style.left=st.x+'%';chip.style.top=st.y+'%'};const up=()=>{chip.removeEventListener('pointermove',move);chip.removeEventListener('pointerup',up)};chip.addEventListener('pointermove',move);chip.addEventListener('pointerup',up)};layer.appendChild(chip)})})}
 /* ============ FINAL / COMPOSITE ============ */
 function stickerEmojiCodepoints(emoji){
   return Array.from(String(emoji||'').trim())
@@ -901,9 +901,9 @@ async function drawStickerEmoji(ctx,emoji,x,y,fontPx){
   ctx.font=fontPx+"px -apple-system, BlinkMacSystemFont, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
   ctx.fillText(text,x,y);ctx.restore();
 }
-async function drawStickersCanvas(ctx,w,h){
-  if(!ctx||!Array.isArray(stickers)||!stickers.length)return;
-  const snapshot=stickers.map(st=>({...st}));
+async function drawStickersCanvas(ctx,w,h,stickerList=stickers){
+  if(!ctx||!Array.isArray(stickerList)||!stickerList.length)return;
+  const snapshot=stickerList.map(st=>({...st}));
   for(const st of snapshot){
     try{
       const size=Math.max(8,Number(st?.size)||14);
@@ -926,6 +926,7 @@ async function drawStickersCanvas(ctx,w,h){
   }
 }
 async function finishEditing(){
+  finalStickerSnapshot=Array.isArray(stickers)?stickers.map(st=>({...st})):[];
   const btn=$('finishEditingBtn');
   if(btn){btn.disabled=true;btn.style.pointerEvents='none';btn.textContent='Menyiapkan hasil akhir...'}
   try{
@@ -964,7 +965,7 @@ async function buildCompositeCanvas(includeStickers=true){
    const photos=[];
    for(const src of capturedPhotos){try{photos.push(await loadImage(src))}catch(e){}}
    await drawFrameAwareComposition(c,true,photos);
-   if(includeStickers)await drawStickersCanvas(c,panelW,panelH);
+   if(includeStickers){const printStickers=(Array.isArray(finalStickerSnapshot)&&finalStickerSnapshot.length?finalStickerSnapshot:stickers);await drawStickersCanvas(c,panelW,panelH,printStickers)}
    return c;
  };
  const panel=await makePanel();
@@ -1183,45 +1184,28 @@ async function buildMotionVideoBlob(){
   if(typeof MediaRecorder==='undefined')throw new Error('Browser ini belum mendukung pembuatan video.');
   const canvas=document.createElement('canvas');canvas.width=480;canvas.height=720;
   if(typeof canvas.captureStream!=='function')throw new Error('Browser ini belum mendukung video dari canvas.');
-  const mimeType=pickMotionVideoMime();
-  if(!mimeType)throw new Error('Format video tidak didukung browser ini.');
-  const stream=canvas.captureStream(20),chunks=[],recorder=new MediaRecorder(stream,{mimeType});
-  const done=new Promise((resolve,reject)=>{
-    recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
-    recorder.onerror=e=>reject(e.error||new Error('Perekaman video gagal.'));
-    recorder.onstop=()=>resolve(new Blob(chunks,{type:recorder.mimeType||mimeType}));
-  });
-  const sequences=Array.isArray(capturedGifSequences)?capturedGifSequences:[];
-  const frameSrc=selectedFrameSrc;
-  const fallbackPhotos=[];
+  const mimeType=pickMotionVideoMime();if(!mimeType)throw new Error('Format video tidak didukung browser ini.');
+  const stream=canvas.captureStream(20),chunks=[];let recorder;
+  try{recorder=new MediaRecorder(stream,{mimeType})}catch(err){stream.getTracks().forEach(t=>t.stop());throw new Error('Recorder video tidak dapat dimulai: '+(err?.message||err))}
+  const done=new Promise((resolve,reject)=>{recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};recorder.onerror=e=>reject(e.error||new Error('Perekaman video gagal.'));recorder.onstop=()=>resolve(new Blob(chunks,{type:recorder.mimeType||mimeType}))});
+  const sequences=Array.isArray(capturedGifSequences)?capturedGifSequences:[],frameSrc=selectedFrameSrc,fallbackPhotos=[];
   for(const src of capturedPhotos)fallbackPhotos.push(await loadImage(await resolveImageSourceDataUrl(src)));
-  const valid=sequences.filter(seq=>Array.isArray(seq)&&seq.length);
-  const frameCount=Math.max(1,...valid.map(seq=>seq.length));
+  const valid=sequences.filter(seq=>Array.isArray(seq)&&seq.length),frameCount=Math.max(1,...valid.map(seq=>seq.length));
   const loadedSequences=[];
   for(let slot=0;slot<capturedPhotos.length;slot++){
-    const seq=Array.isArray(sequences[slot])&&sequences[slot].length?sequences[slot]:[capturedPhotos[slot]];
-    const loaded=[];
+    const seq=Array.isArray(sequences[slot])&&sequences[slot].length?sequences[slot]:[capturedPhotos[slot]],loaded=[];
     for(const src of seq){try{loaded.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){}}
     loadedSequences.push(loaded.length?loaded:[fallbackPhotos[slot]]);
   }
-  recorder.start();
+  const renderFrame=async(t)=>{const slotPhotos=loadedSequences.map(seq=>seq[t%seq.length]);await drawFrameAwareComposition(canvas,true,slotPhotos,frameSrc,t,frameCount)};
   try{
-    for(let t=0;t<frameCount;t++){
-      const slotPhotos=loadedSequences.map(seq=>seq[t%seq.length]);
-      /* Reuse the proven frame composition. Each slot receives its own
-         captured burst frame; no sticker layer is added to soft video. */
-      await drawFrameAwareComposition(canvas,true,slotPhotos,frameSrc,t,frameCount);
-      await new Promise(r=>setTimeout(r,50));
-    }
-  }catch(e){
-    try{recorder.stop()}catch(_){}
-    stream.getTracks().forEach(t=>t.stop());
-    throw e;
-  }
-  recorder.stop();
-  const blob=await done;
-  stream.getTracks().forEach(t=>t.stop());
-  if(!blob.size)throw new Error('Video motion kosong.');
+    await renderFrame(0);await new Promise(r=>setTimeout(r,120));recorder.start();
+    for(let t=1;t<frameCount;t++){await renderFrame(t);await new Promise(r=>setTimeout(r,70))}
+    await new Promise(r=>setTimeout(r,220));if(typeof recorder.requestData==='function'){try{recorder.requestData()}catch(e){}}await new Promise(r=>setTimeout(r,80));
+  }catch(err){try{if(recorder.state!=='inactive')recorder.stop()}catch(_){}stream.getTracks().forEach(t=>t.stop());throw err}
+  if(recorder.state!=='inactive')recorder.stop();
+  const blob=await done;stream.getTracks().forEach(t=>t.stop());
+  if(!blob||!blob.size)throw new Error('Video motion kosong. Browser tidak mengeluarkan data video.');
   return blob;
 }
 async function getFinalMotionVideoBlob(){
@@ -1276,7 +1260,7 @@ async function publishSessionCloud(){
  const status=$('cloudUploadStatus');
  if(status)status.innerText='Menyiapkan 3 soft file untuk 1 QR...';
  try{
-   const result={sessionId,photoUrl:null,gifUrl:null,videoUrl:null,frameGifUrl:null};
+   const result={sessionId,photoUrl:null,gifUrl:null,videoUrl:null};
    if(finalCompositeDataUrl){
      if(status)status.innerText='1/3 · Mengunggah foto final (termasuk sticker)...';
      const up=await uploadDataUrlToCloudinary(finalCompositeDataUrl,'image');

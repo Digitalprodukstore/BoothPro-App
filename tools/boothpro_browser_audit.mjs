@@ -58,11 +58,13 @@ try {
     }));
     check("frame-click-produces-selection",/selected|dipilih|frame/i.test(frameState.text+frameState.summary),JSON.stringify(frameState));
   }
+  await page.screenshot({path:"boothpro-browser.png",fullPage:true});
+  if(errors.length) throw new Error("Browser console/page errors detected: "+errors.join(" | "));
   result.status="PASS";
 } catch(e){
   result.status="FAIL";
   result.failure=String(e);
-  try { await page.screenshot({path:"boothpro-browser-failure.png",fullPage:true}); } catch {}
+  try { await page.screenshot({path:"boothpro-browser.png",fullPage:true}); } catch {}\n  try { await page.screenshot({path:"boothpro-browser-failure.png",fullPage:true}); } catch {}
   process.exitCode=1;
 } finally {
   console.log(JSON.stringify(result,null,2));

@@ -64,7 +64,8 @@ try {
 } catch(e){
   result.status="FAIL";
   result.failure=String(e);
-  try { await page.screenshot({path:"boothpro-browser.png",fullPage:true}); } catch {}\n  try { await page.screenshot({path:"boothpro-browser-failure.png",fullPage:true}); } catch {}
+  try { await page.screenshot({path:"boothpro-browser.png",fullPage:true}); } catch {}
+  try { await page.screenshot({path:"boothpro-browser-failure.png",fullPage:true}); } catch {}
   process.exitCode=1;
 } finally {
   console.log(JSON.stringify(result,null,2));

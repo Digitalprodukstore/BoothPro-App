@@ -1185,32 +1185,15 @@ function downloadBoomerang(){
   }).catch(e=>alert(e.message||'Video Boomerang gagal dibuat.'))
 }
 async function saveSessionToFiles(){
-  try{
-    const files=[];
-    try{
-      const gif=await getFinalGifBlob();
-      files.push(new File([gif],`BoothPro-${sessionId}-burst.gif`,{type:'image/gif'}));
-    }catch(e){console.warn('Burst GIF untuk Files dilewati:',e)}
-    try{
-      const video=await getFinalBoomerangBlob();
-      const ext=(video.type||'').includes('webm')?'webm':'mp4';
-      files.push(new File([video],`BoothPro-${sessionId}-boomerang.${ext}`,{type:video.type||'video/mp4'}));
-    }catch(e){console.warn('Boomerang untuk Files dilewati:',e)}
-    if(!files.length)throw new Error('Tidak ada soft file animasi yang berhasil dibuat.');
-    if(navigator.share&&navigator.canShare?.({files})){
-      await navigator.share({title:'BoothPro Soft File',text:'2 soft file BoothPro: Burst GIF + Boomerang Video.',files});
-      return;
-    }
-    for(const file of files){
-      const url=URL.createObjectURL(file);
-      const a=document.createElement('a');a.href=url;a.download=file.name;a.rel='noopener';a.click();
-      setTimeout(()=>URL.revokeObjectURL(url),3000);
-    }
-    alert('2 soft file animasi sudah disiapkan. Jika browser tidak membuka Files/iCloud otomatis, gunakan menu berbagi/unduhan browser.');
-  }catch(e){
-    if(e?.name==='AbortError')return;
-    alert('Gagal menyimpan soft file: '+(e?.message||String(e)));
-  }
+ try{
+  const files=[];
+  try{const gif=await getFinalGifBlob();files.push(new File([gif],'BoothPro-'+sessionId+'-photo.gif',{type:'image/gif'}))}catch(e){console.warn('GIF Foto untuk Files dilewati:',e)}
+  try{const frameGif=await getFinalFrameGifBlob();files.push(new File([frameGif],'BoothPro-'+sessionId+'-frame.gif',{type:'image/gif'}))}catch(e){console.warn('GIF Frame untuk Files dilewati:',e)}
+  if(!files.length)throw new Error('Tidak ada soft file GIF yang berhasil dibuat.');
+  if(navigator.share&&navigator.canShare?.({files})){await navigator.share({title:'BoothPro Soft File',text:'2 soft file BoothPro: GIF Foto + GIF Frame.',files});return}
+  for(const file of files){const url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;a.rel='noopener';a.click();setTimeout(()=>URL.revokeObjectURL(url),3000)}
+  alert('2 GIF soft file sudah disiapkan. Jika browser tidak membuka Files/iCloud otomatis, gunakan menu berbagi/unduhan browser.');
+ }catch(e){if(e?.name==='AbortError')return;alert('Gagal menyimpan soft file: '+(e?.message||String(e)))}
 }
 function downloadSessionReport(){const p=config.packages.find(x=>x.id===selectedPackageId)||{};const report={app:'BoothPro',version:'3.0',session_id:sessionId,started_at:sessionStartedAt,completed_at:new Date().toISOString(),package:p.name||'',price:p.price||0,payment_method:lastPaymentMethod,photos:capturedPhotos.length,prints:p.prints||1,retakes:retakeCount,filter:currentFilter,frame:selectedFrameId,stickers:stickers.map(s=>s.emoji)};const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`BoothPro-${sessionId}-report.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 /* ============ HISTORY ============ */

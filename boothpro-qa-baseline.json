@@ -1,0 +1,16 @@
+{
+  "name": "BoothPro protected QA baseline",
+  "purpose": "Release-gate invariants. This file intentionally stores thresholds/invariants rather than volatile timestamps.",
+  "policy": {
+    "static_fail": 0,
+    "deep_fail": 0,
+    "browser_status": "PASS",
+    "required_browser_checks": [
+      "page-load",
+      "package-buttons-render",
+      "package-click-changes-summary",
+      "frame-buttons-render",
+      "frame-click-produces-selection"
+    ]
+  }
+}

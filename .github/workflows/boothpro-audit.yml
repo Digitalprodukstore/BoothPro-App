@@ -66,6 +66,31 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Automatic failure ticket
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'BoothPro QA Guard failure - ' + context.ref;
+            const q = 'repo:' + context.repo.owner + '/' + context.repo.repo + ' is:issue is:open in:title "BoothPro QA Guard failure"';
+            const found = await github.rest.search.issuesAndPullRequests({q});
+            if (!found.data.items.length) {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo, title,
+                body: 'Automated QA Guard failure.\n\nRun: ' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + '\nCommit: ' + context.sha + '\nRef: ' + context.ref + '\n\nReview the uploaded QA artifacts and fix the failing gate before release.'
+              });
+            }
+
+      - name: PR failure comment
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number,
+              body: '⛔ BoothPro QA Guard blocked this PR. Review the workflow artifacts and failing checks before merge.\n\nRun: ' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId
+            });
+
       - name: Job summary
         if: always()
         run: |

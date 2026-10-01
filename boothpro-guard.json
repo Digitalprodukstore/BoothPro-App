@@ -1,0 +1,15 @@
+{
+  "max_static_fail": 0,
+  "max_deep_fail": 0,
+  "required_browser_checks": [
+    "page-load",
+    "anchor-packageGrid",
+    "anchor-preFrameGrid",
+    "anchor-toPaymentBtn",
+    "anchor-step-package",
+    "package-buttons-render",
+    "package-click-changes-summary",
+    "frame-buttons-render",
+    "frame-click-produces-selection"
+  ]
+}

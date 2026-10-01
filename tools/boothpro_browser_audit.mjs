@@ -63,15 +63,15 @@ try {
     const frameName=(await firstFrame.innerText()).trim();
     await firstFrame.click({timeout:10000});
     await page.waitForTimeout(250);
-    const frameState=await page.evaluate(()=>({
+    const frameState=await page.evaluate((name)=>({
       text:document.getElementById("preFrameGrid")?.innerText||"",
       summary:document.getElementById("selectedPackageSummary")?.textContent||"",
       buttonDisabled:document.getElementById("toPaymentBtn")?.disabled ?? null,
-      selectedFrameId:typeof window.selectedFrameId!=="undefined"?window.selectedFrameId:null,
-      frameSelectionConfirmed:typeof window.frameSelectionConfirmed!=="undefined"?window.frameSelectionConfirmed:null
-    }));
+      selectedButton:!!document.querySelector("#preFrameGrid button[data-frame-id] .frame-selected-badge:not(.hidden)"),
+      selectedFrameNameVisible:!!name && ((document.getElementById("selectedPackageSummary")?.textContent||"").includes(name))
+    }),frameName);
     check("frame-click-produces-selection",
-      !!frameState.selectedFrameId && frameState.frameSelectionConfirmed===true,
+      frameState.selectedButton && frameState.selectedFrameNameVisible,
       JSON.stringify(frameState));
     check("selected-frame-name-visible",
       frameName && (frameState.summary.includes(frameName) || frameState.text.includes(frameName)),

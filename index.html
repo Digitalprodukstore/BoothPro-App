@@ -850,24 +850,33 @@ function renderActiveStickerControls(){const host=$('activeStickerControls');if(
 function renderStickerOverlay(){renderActiveStickerControls();document.querySelectorAll('.text-layer').forEach(layer=>{layer.innerHTML='';stickers.forEach((st,i)=>{const chip=document.createElement('div');chip.className='sticker-chip';chip.innerHTML=(st.src?'<img src="'+st.src+'" alt="" style="width:'+Math.max(18,(Number(st.size)||14)*2)+'px;height:'+Math.max(18,(Number(st.size)||14)*2)+'px;object-fit:contain">':'<span>'+st.emoji+'</span>')+'<button type="button" aria-label="Hapus stiker" title="Hapus stiker">×</button>';chip.style.left=st.x+'%';chip.style.top=st.y+'%';chip.style.fontSize=(st.size/100*layer.clientWidth||st.size*2)+'px';chip.title='Seret untuk pindah · tombol × untuk hapus';const del=chip.querySelector('button');if(del){del.onpointerdown=e=>e.stopPropagation();del.onclick=e=>{e.preventDefault();e.stopPropagation();removeSticker(i)}}chip.oncontextmenu=e=>{e.preventDefault();removeSticker(i)};chip.onpointerdown=e=>{e.preventDefault();chip.setPointerCapture(e.pointerId);const rect=layer.getBoundingClientRect();const move=ev=>{st.x=Math.min(98,Math.max(2,(ev.clientX-rect.left)/rect.width*100));st.y=Math.min(98,Math.max(2,(ev.clientY-rect.top)/rect.height*100));chip.style.left=st.x+'%';chip.style.top=st.y+'%'};const up=()=>{chip.removeEventListener('pointermove',move);chip.removeEventListener('pointerup',up)};chip.addEventListener('pointermove',move);chip.addEventListener('pointerup',up)};layer.appendChild(chip)})})}
 /* ============ FINAL / COMPOSITE ============ */
 function stickerEmojiCodepoints(emoji){
-  return Array.from(String(emoji||'').trim()).map(ch=>ch.codePointAt(0).toString(16)).join('-');
+  return Array.from(String(emoji||'').trim())
+    .map(ch=>ch.codePointAt(0).toString(16))
+    .filter(cp=>cp!=='fe0e'&&cp!=='fe0f')
+    .join('-');
 }
 async function resolveStickerEmojiDataUrl(emoji){
   const code=stickerEmojiCodepoints(emoji);
   if(!code)return '';
-  const cacheKey='boothpro:twemoji:'+code;
+  const cacheKey='boothpro:twemoji:png:'+code;
   try{const cached=sessionStorage.getItem(cacheKey);if(cached)return cached}catch(e){}
   const candidates=[
-    'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/'+code+'.svg',
-    'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/'+code+'.svg'
+    'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/'+code+'.png',
+    'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/'+code+'.png'
   ];
   for(const url of candidates){
     try{
       const res=await fetch(url,{cache:'force-cache'});
       if(!res.ok)continue;
-      const svg=await res.text();
-      if(!svg.trim())continue;
-      const data='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      const blob=await res.blob();
+      if(!blob.size)continue;
+      const data=await new Promise((resolve,reject)=>{
+        const rd=new FileReader();
+        rd.onload=()=>resolve(String(rd.result||''));
+        rd.onerror=reject;
+        rd.readAsDataURL(blob);
+      });
+      if(!data)continue;
       try{sessionStorage.setItem(cacheKey,data)}catch(e){}
       return data;
     }catch(e){}
@@ -1048,41 +1057,40 @@ async function buildPhotoboothGifBlob(){
   if(!capturedPhotos.length)throw new Error('Tidak ada foto untuk membuat GIF.');
   if(typeof GIF==='undefined')throw new Error('Generator GIF belum termuat. Muat ulang halaman dan coba lagi.');
   const workerScript=await getBoothProGifWorkerUrl();
-  const sequences=Array.isArray(capturedGifSequences)?capturedGifSequences:[];
-  const slotCount=capturedPhotos.length;
-  const sourceLength=Math.max(1,...Array.from({length:slotCount},(_,i)=>Array.isArray(sequences[i])&&sequences[i].length?sequences[i].length:1));
-  const frameOrder=[];
-  for(let t=0;t<sourceLength;t++)frameOrder.push(t);
-  for(let t=sourceLength-2;t>0;t--)frameOrder.push(t);
-  const frameCount=frameOrder.length;
-  const gif=new GIF({workers:Math.min(3,Math.max(1,slotCount)),quality:6,width:480,height:720,workerScript});
+  const sourcePhotos=capturedPhotos.slice();
+  const gif=new GIF({workers:Math.min(3,Math.max(1,sourcePhotos.length)),quality:6,width:480,height:720,workerScript});
   let settled=false;
   const timer=setTimeout(()=>{if(!settled){settled=true;try{gif.abort()}catch(e){}reject(new Error('GIF membutuhkan waktu terlalu lama. Silakan coba lagi.'))}},60000);
   return await new Promise(async(resolve,reject)=>{
     gif.on('finished',blob=>{clearTimeout(timer);if(!settled){settled=true;resolve(blob)}});
     gif.on('abort',()=>{clearTimeout(timer);if(!settled){settled=true;reject(new Error('Proses GIF dibatalkan.'))}});
     try{
-      const frameSrc=await resolveImageSourceDataUrl(selectedFrameSrc);
-      const fallbackPhotos=[];
-      for(const src of capturedPhotos)fallbackPhotos.push(await loadImage(await resolveImageSourceDataUrl(src)));
-      for(let t=0;t<frameCount;t++){
+      const photos=[];
+      for(const src of sourcePhotos){
+        try{photos.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){}
+      }
+      if(!photos.length)throw new Error('Foto untuk GIF tidak dapat dimuat.');
+      /*
+       * BoothPro GIF mode follows the standard photobooth slideshow model:
+       * each captured photo is one animation frame, played forward in order
+       * and allowed to loop naturally. It is intentionally NOT ping-pong /
+       * boomerang; boomerang remains a separate output.
+       */
+      for(let i=0;i<photos.length;i++){
         const canvas=document.createElement('canvas');canvas.width=480;canvas.height=720;
-        const photos=[];
-        const sourceIndex=frameOrder[t];
-        for(let slot=0;slot<slotCount;slot++){
-          const seq=Array.isArray(sequences[slot])&&sequences[slot].length?sequences[slot]:[capturedPhotos[slot]];
-          const src=seq[Math.min(sourceIndex,seq.length-1)]||capturedPhotos[slot];
-          try{photos.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){photos.push(fallbackPhotos[slot])}
-        }
-        await drawFrameAwareComposition(canvas,true,photos,frameSrc,0,1);
-        await drawStickersCanvas(canvas,480,720);
-        gif.addFrame(canvas,{delay:60,copy:true});
+        const ctx=canvas.getContext('2d');
+        ctx.fillStyle='#000';ctx.fillRect(0,0,480,720);
+        fitImageInRect(ctx,photos[i],0,0,480,720,'cover');
+        await drawStickersCanvas(ctx,480,720);
+        gif.addFrame(canvas,{delay:250,copy:true});
       }
       gif.render();
-    }catch(e){clearTimeout(timer);if(!settled){settled=true;reject(e instanceof Error?e:new Error(String(e||'GIF gagal dibuat.')))}}
+    }catch(e){
+      clearTimeout(timer);
+      if(!settled)settled=true,reject(e instanceof Error?e:new Error(String(e||'GIF gagal dibuat.')));
+    }
   });
-}
-function generateGifBlob(){return buildPhotoboothGifBlob()}
+}function generateGifBlob(){return buildPhotoboothGifBlob()}
 async function getFinalGifBlob(){
   if(finalGifDataUrl){
     const res=await fetch(finalGifDataUrl);return await res.blob();

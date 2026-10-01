@@ -11,7 +11,7 @@ page.on("console",m=>{if(m.type()==="error")errors.push("CONSOLE: "+m.text())});
 const result={url,checks:[],errors};
 const check=(name,pass,evidence="")=>{
   result.checks.push({name,pass,evidence});
-  if(!pass) throw new Error(name+(evidence?": "+evidence:""));
+
 };
 
 try {
@@ -45,23 +45,61 @@ try {
   check("package-click-changes-summary",
     after.price!==before.price || after.summary!==before.summary,
     JSON.stringify({before,after}));
+  check("package-price-populated",after.price!=="" && after.price!=="Rp0",JSON.stringify(after));
+  check("package-summary-populated",
+    after.summary!=="" && /\S+/.test(after.summary),
+    JSON.stringify(after));
 
-  const frameCount=await page.locator("#preFrameGrid button").count();
+  const categoryCount=await page.locator("#preFrameGrid button.frame-category-card").count();
+  check("frame-category-buttons-render",categoryCount>=1,String(categoryCount));
+  if(categoryCount>=1){
+    await page.locator("#preFrameGrid button.frame-category-card").first().click({timeout:10000});
+    await page.waitForTimeout(250);
+  }
+  const frameCount=await page.locator("#preFrameGrid button[data-frame-id]").count();
   check("frame-buttons-render",frameCount>=1,String(frameCount));
   if(frameCount>=1){
-    await page.locator("#preFrameGrid button").first().click({timeout:10000});
+    const firstFrame=page.locator("#preFrameGrid button[data-frame-id]").first();
+    const frameName=(await firstFrame.innerText()).trim();
+    await firstFrame.click({timeout:10000});
     await page.waitForTimeout(250);
-    const frameState=await page.evaluate(()=>({
+    const frameState=await page.evaluate((name)=>({
       text:document.getElementById("preFrameGrid")?.innerText||"",
       summary:document.getElementById("selectedPackageSummary")?.textContent||"",
-      buttonDisabled:document.getElementById("toPaymentBtn")?.disabled ?? null
-    }));
-    check("frame-click-produces-selection",/selected|dipilih|frame/i.test(frameState.text+frameState.summary),JSON.stringify(frameState));
+      buttonDisabled:document.getElementById("toPaymentBtn")?.disabled ?? null,
+      selectedButton:!!document.querySelector("#preFrameGrid button[data-frame-id] .frame-selected-badge:not(.hidden)"),
+      selectedFrameNameVisible:!!name && ((document.getElementById("selectedPackageSummary")?.textContent||"").includes(name))
+    }),frameName);
+    check("frame-click-produces-selection",
+      frameState.selectedButton && frameState.selectedFrameNameVisible,
+      JSON.stringify(frameState));
+    check("selected-frame-name-visible",
+      frameName && (frameState.summary.includes(frameName) || frameState.text.includes(frameName)),
+      JSON.stringify({frameName,frameState}));
+    check("payment-button-enabled",
+      frameState.buttonDisabled===false,
+      JSON.stringify(frameState));
+    await page.locator("#toPaymentBtn").click({timeout:10000});
+    await page.waitForTimeout(300);
+    const paymentVisible=await page.evaluate(()=>{
+      const el=document.getElementById("step-payment");
+      return !!el && !el.classList.contains("hidden");
+    });
+    check("payment-step-opens",paymentVisible);
   }
   await page.screenshot({path:"boothpro-browser.png",fullPage:true});
   result.checks.push({name:"browser-runtime-errors",pass:errors.length===0,evidence:errors.join(" | ")});
-  if(errors.length) throw new Error("Browser console/page errors detected: "+errors.join(" | "));
-  result.status="PASS";
+  if(errors.length) {
+    result.status="FAIL";
+    result.failure="Browser console/page errors detected: "+errors.join(" | ");
+    process.exitCode=1;
+  } else if(result.checks.some(c=>!c.pass)) {
+    result.status="FAIL";
+    result.failure="Failed checks: "+result.checks.filter(c=>!c.pass).map(c=>c.name).join(", ");
+    process.exitCode=1;
+  } else {
+    result.status="PASS";
+  }
 } catch(e){
   result.status="FAIL";
   result.failure=String(e);

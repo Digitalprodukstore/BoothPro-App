@@ -11,6 +11,12 @@
     "package-click-changes-summary",
     "frame-buttons-render",
     "frame-click-produces-selection",
-    "browser-runtime-errors"
+    "browser-runtime-errors",
+    "package-price-populated",
+    "package-summary-populated",
+    "frame-category-buttons-render",
+    "selected-frame-name-visible",
+    "payment-button-enabled",
+    "payment-step-opens"
   ]
 }

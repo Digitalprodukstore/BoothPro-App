@@ -5,7 +5,7 @@ const url=process.env.BOOTHPRO_AUDIT_URL || "http://127.0.0.1:4173/index.html";
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
 const errors=[];
-page.on("pageerror",e=>errors.push("PAGEERROR: "+e.message));
+page.on("pageerror",e=>errors.push("PAGEERROR: "+e.message+(e.stack?"\n"+e.stack:"")));
 page.on("console",m=>{if(m.type()==="error")errors.push("CONSOLE: "+m.text())});
 
 const result={url,checks:[],errors};

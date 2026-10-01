@@ -50,10 +50,10 @@ try {
     after.summary!=="" && /\S+/.test(after.summary),
     JSON.stringify(after));
 
-  const categoryCount=await page.locator("#preFrameGrid button.pre-frame-category-card").count();
+  const categoryCount=await page.locator("#preFrameGrid button.frame-category-card").count();
   check("frame-category-buttons-render",categoryCount>=1,String(categoryCount));
   if(categoryCount>=1){
-    await page.locator("#preFrameGrid button.pre-frame-category-card").first().click({timeout:10000});
+    await page.locator("#preFrameGrid button.frame-category-card").first().click({timeout:10000});
     await page.waitForTimeout(250);
   }
   const frameCount=await page.locator("#preFrameGrid button[data-frame-id]").count();

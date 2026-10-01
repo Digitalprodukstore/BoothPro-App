@@ -188,9 +188,9 @@ main{width:100%!important;max-width:100vw!important;min-width:0!important;overfl
 <!-- 5 FRAME GALLERY -->
 <section id="step-frame" class="hidden w-full max-w-6xl animate-fadeIn"><div class="flex justify-between items-end mb-5"><div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 04</span><h2 class="text-3xl font-extrabold mt-2">Menyesuaikan Foto & Frame</h2><p class="text-zinc-400 text-sm mt-1">Di halaman ini Anda melihat hasil foto dengan frame pilihan awal. Jika kurang cocok, Anda masih bisa mengganti frame sekarang sebelum lanjut ke edit dan print.</p></div><label class="cursor-pointer px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-sm"><i class="fa-solid fa-upload mr-2"></i>Upload Frame<input id="frameUpload" type="file" accept="image/png,image/jpeg,image/webp" multiple class="hidden" onchange="handleFrameUpload(event)"></label></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 min-w-0 overflow-hidden"><div class="mb-2"><div class="frame-swipe-hint m-0 justify-start"><i class="fa-solid fa-hand-pointer"></i> Pilih kategori untuk membuka grid frame</div><p class="text-[11px] text-zinc-500 mt-1">Ini adalah <b class="text-zinc-300">penyesuaian frame final</b>. Frame yang dipilih di Langkah 1 sudah dipasang otomatis. Jika kurang cocok, pilih frame lain di kategori mana pun sebelum lanjut ke Edit.</p></div><div id="frameGallery" class="min-w-0"></div></div><div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5"><div id="frameMiniPreview" class="preview-shell mx-auto"></div><button onclick="goToStep(6)" class="mt-5 w-full py-4 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl font-bold">Frame Sudah Sesuai — Lanjut Edit <i class="fa-solid fa-arrow-right ml-1"></i></button><p class="text-[11px] text-zinc-500 text-center mt-2">Belum cocok? Pilih frame lain di galeri di sebelah kiri. Perubahan langsung diterapkan ke hasil foto.</p></div></div></section>
 <!-- 6 EDITOR -->
-<section id="step-editor" class="hidden w-full max-w-6xl animate-fadeIn"><div class="mb-5"><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 05</span><h2 class="text-3xl font-extrabold mt-2">Edit Foto</h2><p class="text-zinc-400 text-sm">Tambahkan efek, penyesuaian, dan stiker. Hasil akan terlihat di preview sebelum dicetak.</p></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 bg-zinc-950 border border-zinc-800 p-5 md:p-7 rounded-3xl flex items-center justify-center min-h-[560px]"><div id="editorPreview" class="preview-shell"></div></div><div class="bg-zinc-950 border border-zinc-800 p-5 rounded-3xl space-y-5 safe-scroll"><div><label class="text-xs font-semibold text-zinc-400 uppercase">Frame aktif</label><div id="editorFrameQuickGrid" class="grid grid-cols-4 gap-2 mt-2 max-h-28 overflow-auto"></div></div><div><label class="text-xs font-semibold text-zinc-400 uppercase">Efek</label><div class="grid grid-cols-2 gap-2 mt-2"><button onclick="applyImageFilter('none')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Original</b><span class="block text-zinc-500">Tanpa efek</span></button><button onclick="applyImageFilter('grayscale(100%)')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Retro B&W</b><span class="block text-zinc-500">Hitam putih</span></button><button onclick="applyImageFilter('sepia(60%) brightness(95%) contrast(105%)')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Vintage Warm</b><span class="block text-zinc-500">Klasik</span></button><button onclick="applyImageFilter('hue-rotate(180deg) saturate(140%)')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Cyberpunk</b><span class="block text-zinc-500">Neon</span></button></div></div><div><label class="text-xs font-semibold text-zinc-400 uppercase flex justify-between">Penyesuaian <button onclick="resetAdjustments()" class="text-[10px] text-indigo-400 normal-case">reset</button></label><div class="space-y-3 mt-2 text-[11px] text-zinc-500"><label class="block">Brightness <span id="adjBVal">100</span>%<input id="adjBrightness" type="range" min="50" max="160" value="100" class="w-full mt-1" oninput="applyAdjustments()"></label><label class="block">Contrast <span id="adjCVal">100</span>%<input id="adjContrast" type="range" min="50" max="160" value="100" class="w-full mt-1" oninput="applyAdjustments()"></label><label class="block">Saturation <span id="adjSVal">100</span>%<input id="adjSaturate" type="range" min="0" max="200" value="100" class="w-full mt-1" oninput="applyAdjustments()"></label></div></div><div><label class="text-xs font-semibold text-zinc-400 uppercase flex justify-between">Stiker <span class="pro-badge">PRO</span></label><div class="flex flex-wrap gap-2 mt-2" id="stickerPicker"></div><div id="activeStickerControls" class="flex flex-wrap gap-2 mt-2"></div><p class="text-[10px] text-zinc-500 mt-1">Ketuk stiker untuk tambah, seret untuk atur posisi. Ketuk ✕ pada stiker yang sudah dipakai untuk menghapusnya.</p></div><div><label class="text-xs font-semibold text-zinc-400 uppercase">Warna frame</label><div class="flex gap-3 mt-2"><button onclick="changeFrameBg('#ffffff','#18181b')" class="h-9 w-9 rounded-full bg-white border-2 border-indigo-500"></button><button onclick="changeFrameBg('#18181b','#f4f4f5')" class="h-9 w-9 rounded-full bg-zinc-900 border border-zinc-700"></button><button onclick="changeFrameBg('#fce7f3','#27272a')" class="h-9 w-9 rounded-full bg-pink-200"></button><button onclick="changeFrameBg('#1e1b4b','#e0e7ff')" class="h-9 w-9 rounded-full bg-indigo-950"></button></div></div><button onclick="finishEditing()" class="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl font-bold">OK, Lanjut Cetak & Soft File <i class="fa-solid fa-arrow-right ml-1"></i></button></div></div></section>
+<section id="step-editor" class="hidden w-full max-w-6xl animate-fadeIn"><div class="mb-5"><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 05</span><h2 class="text-3xl font-extrabold mt-2">Edit Foto</h2><p class="text-zinc-400 text-sm">Tambahkan efek, penyesuaian, dan stiker. Hasil akan terlihat di preview sebelum dicetak.</p></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 bg-zinc-950 border border-zinc-800 p-5 md:p-7 rounded-3xl flex items-center justify-center min-h-[560px]"><div id="editorPreview" class="preview-shell"></div></div><div class="bg-zinc-950 border border-zinc-800 p-5 rounded-3xl space-y-5 safe-scroll"><div><label class="text-xs font-semibold text-zinc-400 uppercase">Frame aktif</label><div id="editorFrameQuickGrid" class="grid grid-cols-4 gap-2 mt-2 max-h-28 overflow-auto"></div></div><div><label class="text-xs font-semibold text-zinc-400 uppercase">Efek</label><div class="grid grid-cols-2 gap-2 mt-2"><button onclick="applyImageFilter('none')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Original</b><span class="block text-zinc-500">Tanpa efek</span></button><button onclick="applyImageFilter('grayscale(100%)')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Retro B&W</b><span class="block text-zinc-500">Hitam putih</span></button><button onclick="applyImageFilter('sepia(60%) brightness(95%) contrast(105%)')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Vintage Warm</b><span class="block text-zinc-500">Klasik</span></button><button onclick="applyImageFilter('hue-rotate(180deg) saturate(140%)')" class="filter-btn p-3 bg-zinc-900 rounded-xl text-left text-xs"><b>Cyberpunk</b><span class="block text-zinc-500">Neon</span></button></div></div><div><label class="text-xs font-semibold text-zinc-400 uppercase flex justify-between">Penyesuaian <button onclick="resetAdjustments()" class="text-[10px] text-indigo-400 normal-case">reset</button></label><div class="space-y-3 mt-2 text-[11px] text-zinc-500"><label class="block">Brightness <span id="adjBVal">100</span>%<input id="adjBrightness" type="range" min="50" max="160" value="100" class="w-full mt-1" oninput="applyAdjustments()"></label><label class="block">Contrast <span id="adjCVal">100</span>%<input id="adjContrast" type="range" min="50" max="160" value="100" class="w-full mt-1" oninput="applyAdjustments()"></label><label class="block">Saturation <span id="adjSVal">100</span>%<input id="adjSaturate" type="range" min="0" max="200" value="100" class="w-full mt-1" oninput="applyAdjustments()"></label></div></div><div><label class="text-xs font-semibold text-zinc-400 uppercase flex justify-between">Stiker <span class="pro-badge">PRO</span></label><div class="flex flex-wrap gap-2 mt-2" id="stickerPicker"></div><div id="activeStickerControls" class="flex flex-wrap gap-2 mt-2"></div><p class="text-[10px] text-zinc-500 mt-1">Ketuk stiker untuk tambah, seret untuk atur posisi. Ketuk ✕ pada stiker yang sudah dipakai untuk menghapusnya.</p></div><div><label class="text-xs font-semibold text-zinc-400 uppercase">Warna frame</label><div class="flex gap-3 mt-2"><button onclick="changeFrameBg('#ffffff','#18181b')" class="h-9 w-9 rounded-full bg-white border-2 border-indigo-500"></button><button onclick="changeFrameBg('#18181b','#f4f4f5')" class="h-9 w-9 rounded-full bg-zinc-900 border border-zinc-700"></button><button onclick="changeFrameBg('#fce7f3','#27272a')" class="h-9 w-9 rounded-full bg-pink-200"></button><button onclick="changeFrameBg('#1e1b4b','#e0e7ff')" class="h-9 w-9 rounded-full bg-indigo-950"></button></div></div><button id="finishEditingBtn" type="button" onclick="finishEditing()" class="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl font-bold relative z-[90] pointer-events-auto touch-manipulation select-none">OK, Lanjut Cetak & Soft File <i class="fa-solid fa-arrow-right ml-1"></i></button></div></div></section>
 <!-- 7 FINAL -->
-<section id="step-final" class="hidden w-full max-w-5xl animate-fadeIn"><div class="text-center mb-5"><div class="h-16 w-16 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl"><i class="fa-solid fa-circle-check"></i></div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 06</span><h2 class="text-3xl font-extrabold mt-3">Print Foto, Soft File & Selesai</h2><p id="finalSessionText" class="text-zinc-400 text-sm mt-1">Periksa hasil akhir, lalu cetak foto dan ambil soft file. Setelah selesai, Anda bisa memulai sesi baru.</p></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex justify-center"><div id="finalPreview" class="preview-shell"></div></div><div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5"><div class="text-xs text-zinc-500">ID Sesi</div><div id="sessionIdDisplay" class="font-mono text-indigo-300 font-bold mt-1"></div><div class="grid grid-cols-2 gap-2 mt-4"><button onclick="downloadComposite()" class="py-3 rounded-xl bg-indigo-600 font-bold text-sm"><i class="fa-solid fa-download mr-1"></i>Foto</button><button onclick="downloadGif()" class="py-3 rounded-xl bg-violet-600 font-bold text-sm"><i class="fa-solid fa-film mr-1"></i>Loop/GIF</button></div><button onclick="downloadSessionReport()" class="mt-2 w-full py-2.5 rounded-xl bg-zinc-800 text-zinc-300 font-bold text-sm"><i class="fa-solid fa-file-lines mr-1"></i>Session Report</button><button onclick="openExtraPrint()" class="mt-2 w-full py-2.5 rounded-xl bg-amber-600/90 text-white font-bold text-sm"><i class="fa-solid fa-plus mr-1"></i>Cetak Tambahan</button><button type="button" onclick="printComposite()" class="mt-2 w-full min-h-[56px] py-4 px-4 rounded-xl bg-white text-zinc-900 font-bold text-base relative z-[80] pointer-events-auto touch-manipulation select-none shadow-lg active:scale-[.99]"><i class="fa-solid fa-print mr-1"></i>Cetak <span id="printCountLabel"></span></button><div class="mt-5 border-t border-zinc-800 pt-5"><div class="flex justify-between items-center"><div><div class="font-bold">QR Soft File</div><p class="text-xs text-zinc-500 mt-1">Scan untuk membuka hasil.</p></div><span id="qrModeBadge" class="text-[10px] px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">LOCAL</span></div><div id="qrBox" class="mt-3 bg-white rounded-2xl p-3 w-fit mx-auto min-h-[190px]"></div><p id="qrNote" class="text-[10px] text-zinc-500 text-center mt-2"></p><button onclick="publishSessionCloud()" class="mt-3 w-full py-2.5 rounded-xl bg-cyan-600 text-white text-sm font-bold"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Upload Soft File ke Cloud</button><p id="cloudUploadStatus" class="text-[10px] text-zinc-500 text-center mt-2"></p></div><button onclick="resetToHome()" class="mt-5 w-full py-3 rounded-xl bg-zinc-800 text-zinc-300 font-bold">Selesai / Sesi Baru</button></div></div></section>
+<section id="step-final" class="hidden w-full max-w-5xl animate-fadeIn"><div class="text-center mb-5"><div class="h-16 w-16 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl"><i class="fa-solid fa-circle-check"></i></div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 06</span><h2 class="text-3xl font-extrabold mt-3">Print Foto, Soft File & Selesai</h2><p id="finalSessionText" class="text-zinc-400 text-sm mt-1">Periksa hasil akhir, lalu cetak foto dan ambil soft file. Setelah selesai, Anda bisa memulai sesi baru.</p></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex justify-center"><div id="finalPreview" class="preview-shell"></div></div><div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5"><div class="text-xs text-zinc-500">ID Sesi</div><div id="sessionIdDisplay" class="font-mono text-indigo-300 font-bold mt-1"></div><div class="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center"><div class="text-emerald-300 font-black text-sm">3 SOFT FILE DALAM 1 QR</div><p class="text-xs text-zinc-400 mt-1">Scan QR sekali untuk mendapatkan foto final, video motion multi-slot, dan GIF.</p></div><button onclick="downloadSessionReport()" class="mt-2 w-full py-2.5 rounded-xl bg-zinc-800 text-zinc-300 font-bold text-sm"><i class="fa-solid fa-file-lines mr-1"></i>Session Report</button><button onclick="openExtraPrint()" class="mt-2 w-full py-2.5 rounded-xl bg-amber-600/90 text-white font-bold text-sm"><i class="fa-solid fa-plus mr-1"></i>Cetak Tambahan</button><button type="button" onclick="printComposite()" class="mt-2 w-full min-h-[56px] py-4 px-4 rounded-xl bg-white text-zinc-900 font-bold text-base relative z-[80] pointer-events-auto touch-manipulation select-none shadow-lg active:scale-[.99]"><i class="fa-solid fa-print mr-1"></i>Cetak <span id="printCountLabel"></span></button><div class="mt-5 border-t border-zinc-800 pt-5"><div class="flex justify-between items-center"><div><div class="font-bold">QR Soft File</div><p class="text-xs text-zinc-500 mt-1">Scan untuk membuka hasil.</p></div><span id="qrModeBadge" class="text-[10px] px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">LOCAL</span></div><div id="qrBox" class="mt-3 bg-white rounded-2xl p-3 w-fit mx-auto min-h-[190px]"></div><p id="qrNote" class="text-[10px] text-zinc-500 text-center mt-2"></p><button onclick="publishSessionCloud()" class="mt-3 w-full py-2.5 rounded-xl bg-cyan-600 text-white text-sm font-bold"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Upload Soft File ke Cloud</button><p id="cloudUploadStatus" class="text-[10px] text-zinc-500 text-center mt-2"></p></div><button onclick="resetToHome()" class="mt-5 w-full py-3 rounded-xl bg-zinc-800 text-zinc-300 font-bold">Selesai / Sesi Baru</button></div></div></section>
 </main>
 <footer class="border-t border-zinc-800 bg-zinc-950 px-6 py-3 text-center text-[11px] text-zinc-600">BoothPro v3.0 PRO · Midtrans QRIS · Camera HD · Retake · Frame Gallery · Editor PRO · Print WiFi/Bridge · Soft File Cloud</footer>
 <!-- DASHBOARD MODAL -->
@@ -342,10 +342,17 @@ main{width:100%!important;max-width:100vw!important;min-width:0!important;overfl
   <p class="text-[10px] text-zinc-500 mb-3">Kotak ini adalah wadah frame buatan Anda. Upload PNG/JPG/WebP di atas; frame upload akan otomatis masuk ke gallery kiosk. Nama slot bisa diedit dan akan tampil di Kiosk.</p>
   <div id="dashFrameSlotManager" class="space-y-2 max-h-72 overflow-auto pr-1"></div>
 </div><div class="mt-3 p-3 rounded-xl bg-zinc-950 border border-zinc-800"><div class="text-xs font-bold text-zinc-300 mb-2">Atur Frame Bawaan & Frame Default</div><div id="dashFrameManager" class="space-y-2 max-h-72 overflow-auto pr-1"></div></div></div>
+<div class="p-4 rounded-2xl bg-zinc-900 border border-fuchsia-500/20">
+<h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-icons text-fuchsia-400"></i> Sticker Gallery Kiosk</h3>
+<p class="text-xs text-zinc-500 mt-1">Tambahkan sticker branding PNG/WebP transparan dari Dashboard. Sticker custom akan tersedia di editor kiosk setelah tersimpan.</p>
+<label class="mt-3 cursor-pointer block px-4 py-3 rounded-xl bg-fuchsia-600 text-sm font-bold text-center"><i class="fa-solid fa-upload mr-2"></i>Upload Sticker Custom<input id="dashStickerUpload" type="file" accept="image/png,image/webp,image/jpeg" multiple class="hidden" onchange="handleStickerUpload(event)"></label>
+<div id="dashStickerCount" class="text-xs text-zinc-500 mt-2"></div>
+<div id="dashStickerManager" class="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-3 max-h-56 overflow-auto pr-1"></div>
+</div>
 <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><h3 class="font-bold">Branding & Warna Frame Bawaan</h3><p class="text-xs text-zinc-500 mt-1">Atur warna dan tulisan template bawaan. Perubahan berlaku ke seluruh frame bawaan tanpa mengganti desain/layout.</p><div class="grid grid-cols-3 gap-2 mt-3"><label class="text-[11px] text-zinc-400">Warna utama<input id="dashFramePrimary" type="color" class="mt-1 w-full h-10 rounded-lg bg-zinc-950"></label><label class="text-[11px] text-zinc-400">Warna aksen<input id="dashFrameSecondary" type="color" class="mt-1 w-full h-10 rounded-lg bg-zinc-950"></label><label class="text-[11px] text-zinc-400">Warna teks<input id="dashFrameText" type="color" class="mt-1 w-full h-10 rounded-lg bg-zinc-950"></label></div><label class="block text-xs text-zinc-400 mt-3">Branding tulisan<input id="dashFrameBrandText" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm" placeholder="BOOTH MOMENTS"></label><label class="block text-xs text-zinc-400 mt-3">Nama / teks bawah frame (opsional)<input id="dashFrameNameText" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm" placeholder="Kosong = nama template"></label><div class="grid grid-cols-3 gap-2 mt-3 text-[11px] text-zinc-400"><label class="flex items-center gap-2"><input id="dashFrameShowBrand" type="checkbox" class="h-4 w-4"> Branding</label><label class="flex items-center gap-2"><input id="dashFrameShowName" type="checkbox" class="h-4 w-4"> Nama frame</label><label class="flex items-center gap-2"><input id="dashFrameShowCount" type="checkbox" class="h-4 w-4"> Jumlah foto</label></div><button onclick="saveFrameStyleSettings()" class="mt-3 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-bold">Simpan Branding Frame</button></div>
 <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><h3 class="font-bold">Tampilan Kiosk</h3><div class="grid grid-cols-2 gap-2 mt-3"><label class="text-xs text-zinc-400">Warna latar<input id="dashBgColor" type="color" class="mt-1 w-full h-10 rounded-lg bg-zinc-950"></label><label class="text-xs text-zinc-400">Warna aksen<input id="dashAccentColor" type="color" class="mt-1 w-full h-10 rounded-lg bg-zinc-950"></label></div><label class="block text-xs text-zinc-400 mt-3">Gaya latar<select id="dashBgStyle" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5"><option value="solid">Solid</option><option value="gradient">Gradient</option></select></label><label class="mt-3 block cursor-pointer px-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-sm"><i class="fa-solid fa-image mr-2"></i>Upload Background<input id="dashBgImage" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="handleBackgroundUpload(event)"></label><button onclick="saveThemeSettings()" class="mt-3 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-bold">Simpan Tampilan</button></div>
 <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><h3 class="font-bold"><i class="fa-solid fa-palette text-violet-400 mr-2"></i>Tampilan Dashboard</h3><p class="text-xs text-zinc-500 mt-1">Atur tampilan panel admin tanpa mengubah tampilan kiosk pelanggan.</p><div class="grid grid-cols-2 gap-2 mt-3"><label class="text-xs text-zinc-400">Latar dashboard<input id="dashDashBg" type="color" class="mt-1 w-full h-10 rounded-lg bg-zinc-950"></label><label class="text-xs text-zinc-400">Aksen dashboard<input id="dashDashAccent" type="color" class="mt-1 w-full h-10 rounded-lg bg-zinc-950"></label></div><label class="block text-xs text-zinc-400 mt-3">Gaya panel<select id="dashDashStyle" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5"><option value="solid">Solid Premium</option><option value="gradient">Gradient Premium</option></select></label><button onclick="saveDashboardThemeSettings()" class="mt-3 px-4 py-2 rounded-xl bg-violet-600 text-sm font-bold">Simpan Tampilan Dashboard</button></div>
-<div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><h3 class="font-bold">Cloudinary Soft File</h3><p class="text-xs text-zinc-500">Opsional. Isi Cloud Name + unsigned Upload Preset.</p><input id="dashCloudName" class="mt-3 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm" placeholder="Cloud Name"><input id="dashCloudPreset" class="mt-2 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm" placeholder="Unsigned Upload Preset"><button onclick="saveCloudinarySettings()" class="mt-2 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-bold">Simpan Cloudinary</button><div id="cloudStatus" class="text-[11px] text-zinc-500 mt-2"></div></div>
+<div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><h3 class="font-bold">Cloudinary Soft File</h3><p class="text-xs text-zinc-500">Opsional. Isi Cloud Name + unsigned Upload Preset.</p><input id="dashCloudName" class="mt-3 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm" placeholder="Cloud Name"><input id="dashCloudPreset" class="mt-2 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm" placeholder="Unsigned Upload Preset"><div class="flex gap-2 mt-2"><button type="button" onclick="saveCloudinarySettings()" class="flex-1 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-bold">Simpan & Test</button><button type="button" onclick="testCloudinarySettings()" class="px-4 py-2 rounded-xl bg-zinc-800 text-sm font-bold">Test</button></div><div id="cloudStatus" class="text-[11px] text-zinc-500 mt-2"></div></div>
 <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><h3 class="font-bold">Share / QR Endpoint</h3><input id="dashShareBase" class="mt-3 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm" placeholder="https://domain-kamu.com/share/"><button onclick="saveShareBase()" class="mt-2 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-bold">Simpan Share URL</button></div>
 <div class="p-4 rounded-2xl bg-zinc-900 border border-emerald-500/20"><h3 class="font-bold"><i class="fa-solid fa-share-nodes text-emerald-400 mr-2"></i>Share Soft File · Bantuan Customer</h3><p class="text-xs text-zinc-500 mt-1">Gunakan untuk membantu pelanggan yang kesulitan membuka atau mengunduh soft file. Tombol akan membuka WhatsApp/Email di perangkat admin.</p><div class="grid md:grid-cols-2 gap-2 mt-3"><input id="dashSharePhone" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm" placeholder="No. WhatsApp, contoh 0812xxxx"><input id="dashShareEmail" type="email" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm" placeholder="Email pelanggan"></div><textarea id="dashShareMessage" rows="2" class="mt-2 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm" placeholder="Pesan share"></textarea><div class="grid grid-cols-3 gap-2 mt-2"><button onclick="shareLatestWhatsApp()" class="py-2.5 rounded-xl bg-emerald-600 font-bold text-xs"><i class="fa-brands fa-whatsapp mr-1"></i>WhatsApp</button><button onclick="shareLatestEmail()" class="py-2.5 rounded-xl bg-blue-600 font-bold text-xs"><i class="fa-solid fa-envelope mr-1"></i>Email</button><button onclick="copyLatestShareLink()" class="py-2.5 rounded-xl bg-zinc-800 font-bold text-xs"><i class="fa-solid fa-copy mr-1"></i>Copy Link</button></div><p id="dashShareStatus" class="text-[10px] text-zinc-500 text-center mt-2"></p></div>
 <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><h3 class="font-bold">Watermark & Tanggal Frame</h3><label class="block text-xs text-zinc-400 mt-3">Watermark<input id="dashWatermark" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm" placeholder="⚡ BOOTHPRO"></label><label class="flex items-center gap-2 mt-3 text-xs text-zinc-400"><input id="dashShowDate" type="checkbox" class="h-4 w-4"> Tampilkan tanggal</label><label class="block text-xs text-zinc-400 mt-3">Format tanggal<select id="dashDateFormat" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm"><option value="id-short">24/09/2026</option><option value="id-long">24 September 2026</option><option value="iso">2026-09-24</option><option value="datetime">24/09/2026 00:42</option></select></label><button onclick="saveFooterSettings()" class="mt-3 px-4 py-2 rounded-xl bg-indigo-600 text-sm font-bold">Simpan Watermark & Tanggal</button></div>
@@ -364,8 +371,9 @@ main{width:100%!important;max-width:100vw!important;min-width:0!important;overfl
 <script>
 const $=id=>document.getElementById(id);
 const HISTORY_KEY='boothpro_history_v212';const CONFIG_KEY='boothpro_config_v300';const LEGACY_CONFIG_KEY='boothpro_config_v212';const FRAME_KEY='boothpro_frames_v212';const LICENSE_KEY='boothpro_license_v300';
-let extraPrintQty=1,extraPrintPaid=false;let currentStep=1,selectedLayoutType='strip',requiredPhotosCount=4,capturedPhotos=[],streamInstance=null,useSimulation=false,countdownTimer=null,sessionTimerId=null,sessionSecondsLeft=420,sessionStartedAt=null,sessionId='',retakeCount=0,selectedPackageId=null,selectedFrameId='plain-white',paymentMethod='qris',paymentConfirmed=false,currentFilter='none',frameBg='#ffffff',frameFg='#18181b',selectedFrameSrc='',finalCompositeDataUrl='',finalGifDataUrl='',adjState={brightness:100,contrast:100,saturate:100},stickers=[],mirrorOn=true,lastPaymentMethod='qris',midtransPollId=null,wakeLock=null,idleTimer=null;
-const STICKER_SET=['😍','🔥','✨','💯','🎉','⭐','💕','😎','🌸','⚡'];
+let extraPrintQty=1,extraPrintPaid=false;let currentStep=1,selectedLayoutType='strip',requiredPhotosCount=4,capturedPhotos=[],streamInstance=null,useSimulation=false,countdownTimer=null,sessionTimerId=null,sessionSecondsLeft=420,sessionStartedAt=null,sessionId='',retakeCount=0,selectedPackageId=null,selectedFrameId='plain-white',paymentMethod='qris',paymentConfirmed=false,currentFilter='none',frameBg='#ffffff',frameFg='#18181b',selectedFrameSrc='',finalCompositeDataUrl='',finalGifDataUrl='',finalMotionVideoDataUrl='',finalMotionVideoMime='',adjState={brightness:100,contrast:100,saturate:100},stickers=[],mirrorOn=true,lastPaymentMethod='qris',midtransPollId=null,wakeLock=null,idleTimer=null;
+let capturedGifSequences=[];let finalStickerSnapshot=[];let finalFrameGifDataUrl='';
+const STICKER_SET=['😍','🔥','✨','💯','🎉','⭐','💕','😎','🌸','🌈','🎀','👑','💎','🫶','❤️','💖','💫','🚀','🎵','📸','🥳','🎈','🦋','☕','🍓','🍒','🍋','🌻','🌷','⚡'];
 /* ============ BUILT-IN 2026 FRAME LIBRARY ============
    40 lightweight SVG frames. Photo windows are genuinely transparent,
    so the same hole coordinates are used by preview, editor and print.
@@ -471,7 +479,8 @@ setTimeout(()=>{
   hydrateFrameStorage().then(()=>{
     try{renderFrameGallery();renderPreFrames();renderCaptureReview();renderEditorFrameQuickGrid();renderDashFrameManager()}catch(e){console.warn('BoothPro boot render:',e)}
   }).catch(e=>console.warn('BoothPro frame hydration:',e));
-  try{refreshPlanBadge();applyWatermarkGate();initStickerPicker();initPWA();resetIdleTimer()}catch(e){console.warn('BoothPro boot init:',e)}
+  try{refreshPlanBadge();applyWatermarkGate();initPWA();resetIdleTimer()}catch(e){console.warn('BoothPro boot init:',e)}
+  hydrateStickerStorage().catch(e=>console.warn('Sticker storage:',e));
   setTimeout(()=>initBoothProCloudSync(),700);
 },0);
 /* ============ LICENSE / PRO ============ */
@@ -492,10 +501,15 @@ function deactivateLicense(){if(!confirm('Reset lisensi ke mode FREE/trial?'))re
 function applyWatermarkGate(){if(!isPro()){config.footer=Object.assign({},config.footer,{watermark:'📸 MADE WITH BOOTHPRO FREE',showDate:true});saveConfig()}else if(!license.key){/* keep user setting */}renderCaptureReview();renderFrameMiniPreview();renderEditor()}
 /* ============ CONFIG ============ */
 function loadConfig(){try{const saved=JSON.parse(localStorage.getItem(CONFIG_KEY)||localStorage.getItem(LEGACY_CONFIG_KEY)||'{}');const c=structuredClone(defaultConfig);Object.assign(c,saved);c.auth=Object.assign({},defaultConfig.auth,saved.auth||{});c.theme=Object.assign({},defaultConfig.theme,saved.theme||{});c.dashboardTheme=Object.assign({},defaultConfig.dashboardTheme,saved.dashboardTheme||{});c.shareTools=Object.assign({},defaultConfig.shareTools,saved.shareTools||{});c.cloudSync=Object.assign({},defaultConfig.cloudSync,saved.cloudSync||{});c.cloudinary=Object.assign({},defaultConfig.cloudinary,saved.cloudinary||{});c.camera=Object.assign({},defaultConfig.camera,saved.camera||{});c.midtrans=Object.assign({},defaultConfig.midtrans,saved.midtrans||{});c.hardware=Object.assign({},defaultConfig.hardware,saved.hardware||{});c.brand=Object.assign({},defaultConfig.brand,saved.brand||{});c.footer=Object.assign({},defaultConfig.footer,saved.footer||{});c.frameStyle=Object.assign({},defaultConfig.frameStyle,saved.frameStyle||{});c.frameLibrary=Object.assign({},defaultConfig.frameLibrary,saved.frameLibrary||{});c.frameLibrary.disabledBuiltins=Array.isArray(c.frameLibrary.disabledBuiltins)?c.frameLibrary.disabledBuiltins:[];c.frameSlots=Array.isArray(saved.frameSlots)?saved.frameSlots:structuredClone(defaultConfig.frameSlots);c.frameSlots=Array.from({length:12},(_,i)=>Object.assign({},defaultConfig.frameSlots[i],c.frameSlots[i]||{}));return c}catch(e){return structuredClone(defaultConfig)}}
-const FRAME_DB_NAME='BoothProFrameDB_v1',FRAME_DB_STORE='frames';
+const FRAME_DB_NAME='BoothProFrameDB_v1',FRAME_DB_STORE='frames',STICKER_DB_STORE='stickers';
 let frameCategoryFilter='all';
 function loadFrames(){try{const raw=JSON.parse(localStorage.getItem(FRAME_KEY)||'[]');return Array.isArray(raw)?raw:[]}catch(e){return[]}}
-function openFrameDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB tidak tersedia'));return}const req=indexedDB.open(FRAME_DB_NAME,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(FRAME_DB_STORE))db.createObjectStore(FRAME_DB_STORE,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('IndexedDB gagal'))})}
+let customStickerGallery=[];
+async function stickerDBGetAll(){try{const db=await openFrameDB();return await new Promise((resolve,reject)=>{const tx=db.transaction(STICKER_DB_STORE,'readonly');const r=tx.objectStore(STICKER_DB_STORE).getAll();r.onsuccess=()=>{db.close();resolve(r.result||[])};r.onerror=()=>{db.close();reject(r.error)}})}catch(e){return[]}}
+async function stickerDBPut(item){try{const db=await openFrameDB();return await new Promise((resolve,reject)=>{const tx=db.transaction(STICKER_DB_STORE,'readwrite');tx.objectStore(STICKER_DB_STORE).put(item);tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}})}catch(e){return false}}
+async function stickerDBDelete(id){try{const db=await openFrameDB();return await new Promise((resolve,reject)=>{const tx=db.transaction(STICKER_DB_STORE,'readwrite');tx.objectStore(STICKER_DB_STORE).delete(id);tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}})}catch(e){return false}}
+async function hydrateStickerStorage(){customStickerGallery=await stickerDBGetAll();renderDashboardStickerManager();initStickerPicker()}
+function openFrameDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB tidak tersedia'));return}const req=indexedDB.open(FRAME_DB_NAME,2);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(FRAME_DB_STORE))db.createObjectStore(FRAME_DB_STORE,{keyPath:'id'});if(!db.objectStoreNames.contains(STICKER_DB_STORE))db.createObjectStore(STICKER_DB_STORE,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('IndexedDB gagal'))})}
 async function frameDBPut(id,src){const db=await openFrameDB();return new Promise((resolve,reject)=>{const tx=db.transaction(FRAME_DB_STORE,'readwrite');tx.objectStore(FRAME_DB_STORE).put({id,src,updatedAt:Date.now()});tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}})}
 async function frameDBGetAll(){const db=await openFrameDB();return new Promise((resolve,reject)=>{const tx=db.transaction(FRAME_DB_STORE,'readonly');const r=tx.objectStore(FRAME_DB_STORE).getAll();r.onsuccess=()=>{db.close();resolve(r.result||[])};r.onerror=()=>{db.close();reject(r.error)}})}
 async function frameDBDelete(id){try{const db=await openFrameDB();return await new Promise((resolve,reject)=>{const tx=db.transaction(FRAME_DB_STORE,'readwrite');tx.objectStore(FRAME_DB_STORE).delete(id);tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}})}catch(e){return false}}
@@ -519,7 +533,7 @@ function fmt(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:
 /* ============ STEPS ============ */
 function goToStep(n){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));const map={1:'step-welcome',2:'step-package',3:'step-payment',4:'step-capture',5:'step-frame',6:'step-editor',7:'step-final'};$(map[n]).classList.remove('hidden');currentStep=n;updateStatusBadge();resetIdleTimer();if(n===2)renderPackageStep();if(n===3)renderPayment();if(n===4)startCaptureSession();if(n===5){stopWebcam();renderFrameGallery();renderCaptureReview()}if(n===6){renderEditor();renderEditorFrameQuickGrid()}if(n===7)prepareFinal()}
 function updateStatusBadge(){const b=$('statusBadge'),t=$('statusText');b.classList.remove('hidden');if(currentStep===1)b.classList.add('hidden');else if(currentStep===2)t.innerText='Pilih Paket';else if(currentStep===3)t.innerText='Menunggu Pembayaran';else if(currentStep===4)t.innerText=`Take ${capturedPhotos.length}/${requiredPhotosCount}`;else if(currentStep===5)t.innerText='Sesuaikan Frame';else if(currentStep===6)t.innerText='Edit';else t.innerText='Selesai'}
-function resetToHome(){stopWebcam();stopMidtransPoll();if(sessionTimerId)clearInterval(sessionTimerId);if(countdownTimer)clearInterval(countdownTimer);sessionTimerId=null;countdownTimer=null;capturedPhotos=[];retakeCount=0;paymentConfirmed=false;finalCompositeDataUrl='';finalGifDataUrl='';extraPrintPaid=false;selectedPackageId=null;frameSelectionConfirmed=false;preFrameCategoryOpen='';sessionId='';sessionStartedAt=null;selectedFrameId='plain-white';selectedFrameSrc='';currentFilter='none';frameBg='#ffffff';frameFg='#18181b';adjState={brightness:100,contrast:100,saturate:100};stickers=[];if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels()}goToStep(1)}
+function resetToHome(){stopWebcam();stopMidtransPoll();if(sessionTimerId)clearInterval(sessionTimerId);if(countdownTimer)clearInterval(countdownTimer);sessionTimerId=null;countdownTimer=null;capturedPhotos=[];capturedGifSequences=[];retakeCount=0;paymentConfirmed=false;finalCompositeDataUrl='';finalGifDataUrl='';finalFrameGifDataUrl='';finalMotionVideoDataUrl='';finalMotionVideoMime='';extraPrintPaid=false;selectedPackageId=null;frameSelectionConfirmed=false;preFrameCategoryOpen='';sessionId='';sessionStartedAt=null;selectedFrameId='plain-white';selectedFrameSrc='';currentFilter='none';frameBg='#ffffff';frameFg='#18181b';adjState={brightness:100,contrast:100,saturate:100};stickers=[];finalStickerSnapshot=[];if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels()}goToStep(1)}
 /* ============ PACKAGES ============ */
 function applyConfiguredDefaultFrame(){
   let choices=[];
@@ -540,7 +554,7 @@ function renderPackageStep(){
     d.className='w-full text-left p-5 rounded-2xl border-2 cursor-pointer select-none '+(String(selectedPackageId)===String(p.id)?'border-indigo-500 bg-indigo-500/10':'border-zinc-800 bg-zinc-950')+' hover:border-indigo-500 transition';
     d.dataset.packageId=p.id;
     d.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();selectPackage(p.id);});
-    d.innerHTML='<div class="text-xs text-indigo-400 font-bold uppercase">'+p.prints+' Strip</div><div class="text-lg font-extrabold mt-1">'+escapeHtml(p.name)+'</div><div class="text-2xl font-black text-white mt-2">'+fmt(p.price)+'</div><div class="text-xs text-zinc-500 mt-2">'+p.photos+' foto · '+escapeHtml(p.desc||'')+'<br>Soft file + loop/GIF + efek + frame</div><div class="text-[10px] text-indigo-300 font-bold mt-3">'+(String(selectedPackageId)===String(p.id)?'✓ PAKET DIPILIH':'KETUK UNTUK MEMILIH')+'</div>';
+    d.innerHTML='<div class="text-xs text-indigo-400 font-bold uppercase">'+p.prints+' Strip</div><div class="text-lg font-extrabold mt-1">'+escapeHtml(p.name)+'</div><div class="text-2xl font-black text-white mt-2">'+fmt(p.price)+'</div><div class="text-xs text-zinc-500 mt-2">'+p.photos+' foto · '+escapeHtml(p.desc||'')+'<br>Soft file via QR + efek + frame</div><div class="text-[10px] text-indigo-300 font-bold mt-3">'+(String(selectedPackageId)===String(p.id)?'✓ PAKET DIPILIH':'KETUK UNTUK MEMILIH')+'</div>';
     g.appendChild(d);
   });
   try{renderPreFrames()}catch(e){console.warn('Step 1 frame render:',e)}
@@ -729,14 +743,33 @@ function toggleMirror(){mirrorOn=!mirrorOn;applyMirror()}
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen')}}catch(e){}}
 function setupZoom(){try{const track=streamInstance?.getVideoTracks()[0];const caps=track?.getCapabilities?.();if(caps&&caps.zoom){const z=$('zoomRange');z.min=caps.zoom.min;z.max=caps.zoom.max;z.step=(caps.zoom.max-caps.zoom.min)/50;z.value=caps.zoom.min;$('zoomWrap').classList.remove('hidden');$('zoomWrap').classList.add('flex');z.oninput=()=>track.applyConstraints({advanced:[{zoom:Number(z.value)}]}).catch(()=>{})}}catch(e){}}
 /* ============ CAPTURE ============ */
-function startCaptureSession(){if(!paymentConfirmed){goToStep(3);return}capturedPhotos=[];retakeCount=0;$('filmStripGallery').innerHTML='';$('capturedCount').innerText='0';$('retakeCount').innerText='0';$('maxPhotosCount').innerText=requiredPhotosCount;$('nextToFrameBtn').disabled=true;$('cameraPlaceholder').classList.remove('hidden');$('cameraMessage').innerText='Membuka akses kamera...';startWebcam().then(()=>{$('shutterBtn').disabled=false});startSessionTimer();requestWakeLock()}
+function startCaptureSession(){if(!paymentConfirmed){goToStep(3);return}capturedPhotos=[];capturedGifSequences=[];retakeCount=0;$('filmStripGallery').innerHTML='';$('capturedCount').innerText='0';$('retakeCount').innerText='0';$('maxPhotosCount').innerText=requiredPhotosCount;$('nextToFrameBtn').disabled=true;$('cameraPlaceholder').classList.remove('hidden');$('cameraMessage').innerText='Membuka akses kamera...';startWebcam().then(()=>{$('shutterBtn').disabled=false});startSessionTimer();requestWakeLock()}
 function startSessionTimer(){if(sessionTimerId)clearInterval(sessionTimerId);sessionSecondsLeft=Math.max(7,Number(config.duration)||7)*60;renderTimer();sessionTimerId=setInterval(()=>{sessionSecondsLeft--;renderTimer();if(sessionSecondsLeft<=0){clearInterval(sessionTimerId);sessionTimerId=null;$('shutterBtn').disabled=true;alert('Waktu sesi habis. Lanjutkan ke frame jika foto sudah lengkap.')}},1000)}
 function renderTimer(){const m=Math.floor(sessionSecondsLeft/60),s=sessionSecondsLeft%60;$('sessionTimer').innerText=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');$('sessionTimer').classList.toggle('timer-danger',sessionSecondsLeft<=60)}
 function takePhoto(){if(sessionSecondsLeft<=0||capturedPhotos.length>=requiredPhotosCount||countdownTimer)return;const btn=$('shutterBtn'),overlay=$('countdownOverlay'),ct=$('countdownText');btn.disabled=true;overlay.classList.remove('hidden');let count=Math.max(1,Number(config.countdown)||3);ct.innerText=count;countdownTimer=setInterval(()=>{count--;if(count>0){ct.innerText=count}else{clearInterval(countdownTimer);countdownTimer=null;overlay.classList.add('hidden');const flash=$('flashLayer');flash.style.opacity='1';setTimeout(()=>flash.style.opacity='0',150);captureCurrentFrame()}},700)}
 function getAppliedFilter(){const parts=[];if(currentFilter&&currentFilter!=='none')parts.push(currentFilter);if(adjState.brightness!==100)parts.push(`brightness(${adjState.brightness}%)`);if(adjState.contrast!==100)parts.push(`contrast(${adjState.contrast}%)`);if(adjState.saturate!==100)parts.push(`saturate(${adjState.saturate}%)`);return parts.length?parts.join(' '):'none'}
-function captureCurrentFrame(){let imgData='';if(useSimulation){const c=document.createElement('canvas');c.width=640;c.height=480;const x=c.getContext('2d'),h=Math.floor(Math.random()*360);x.fillStyle=`hsl(${h},65%,45%)`;x.fillRect(0,0,c.width,c.height);x.fillStyle='#fff';x.font='bold 30px sans-serif';x.textAlign='center';x.fillText(`Pose ${capturedPhotos.length+1}`,320,240);imgData=c.toDataURL('image/jpeg',.9)}else{const video=$('webcam');if(!video.videoWidth||!video.videoHeight){$('cameraMessage').innerText='Kamera belum siap. Tunggu preview lalu coba lagi.';$('cameraPlaceholder').classList.remove('hidden');$('shutterBtn').disabled=false;return}const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;const x=c.getContext('2d');if(mirrorOn){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(video,0,0,c.width,c.height);imgData=c.toDataURL('image/jpeg',.9)}capturedPhotos.push(imgData);updateGalleryPreviews();renderCaptureReview();$('shutterBtn').disabled=capturedPhotos.length>=requiredPhotosCount;if(capturedPhotos.length>=requiredPhotosCount)$('nextToFrameBtn').disabled=false;updateStatusBadge()}
+async function captureCurrentFrame(){
+  let imgData='';const burst=[];const BURST_FRAMES=18;const BURST_INTERVAL=60;
+  if(useSimulation){
+    const c=document.createElement('canvas');c.width=640;c.height=480;const x=c.getContext('2d'),baseHue=Math.floor(Math.random()*360);
+    for(let i=0;i<BURST_FRAMES;i++){x.fillStyle=`hsl(${(baseHue+i*5)%360},65%,45%)`;x.fillRect(0,0,c.width,c.height);x.fillStyle='#fff';x.font='bold 30px sans-serif';x.textAlign='center';x.fillText(`Pose ${capturedPhotos.length+1} · ${i+1}`,320,240);burst.push(c.toDataURL('image/jpeg',.82));await new Promise(r=>setTimeout(r,BURST_INTERVAL))}
+    imgData=burst[0];
+  }else{
+    const video=$('webcam');
+    if(!video.videoWidth||!video.videoHeight){$('cameraMessage').innerText='Kamera belum siap. Tunggu preview lalu coba lagi.';$('cameraPlaceholder').classList.remove('hidden');$('shutterBtn').disabled=false;return}
+    const capture=()=>{const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;const x=c.getContext('2d');if(mirrorOn){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(video,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.82)};
+    for(let i=0;i<BURST_FRAMES;i++){burst.push(capture());if(i<BURST_FRAMES-1)await new Promise(r=>setTimeout(r,BURST_INTERVAL))}
+    imgData=burst[0]||capture();
+  }
+  capturedPhotos.push(imgData);capturedGifSequences.push(burst.length?burst:[imgData]);
+  finalGifDataUrl='';
+  finalFrameGifDataUrl='';
+  finalMotionVideoDataUrl='';finalMotionVideoMime='';
+  updateGalleryPreviews();renderCaptureReview();$('shutterBtn').disabled=capturedPhotos.length>=requiredPhotosCount;
+  if(capturedPhotos.length>=requiredPhotosCount)$('nextToFrameBtn').disabled=false;updateStatusBadge()
+}
 function updateGalleryPreviews(){$('capturedCount').innerText=capturedPhotos.length;const g=$('filmStripGallery');g.innerHTML='';capturedPhotos.forEach((src,idx)=>{const item=document.createElement('div');item.className='relative bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden aspect-[4/3]';const im=document.createElement('img');im.src=src;im.className='w-full h-full object-cover';const b=document.createElement('div');b.className='absolute top-1 left-1 bg-black/70 rounded-md text-[10px] px-1.5 py-0.5 font-bold';b.textContent='#'+(idx+1);const del=document.createElement('button');del.className='absolute top-1 right-1 h-7 w-7 rounded-full bg-red-600/90 text-white';del.title='Hapus / retake';del.innerHTML='<i class="fa-solid fa-trash text-[11px]"></i>';del.onclick=()=>deleteCaptured(idx);item.append(im,b,del);g.appendChild(item)})}
-function deleteCaptured(idx){if(retakeCount>=3){alert('Batas retake 3 kali sudah tercapai.');return}capturedPhotos.splice(idx,1);retakeCount++;$('retakeCount').innerText=retakeCount;$('nextToFrameBtn').disabled=true;$('shutterBtn').disabled=false;updateGalleryPreviews();renderCaptureReview();updateStatusBadge()}
+function deleteCaptured(idx){if(retakeCount>=3){alert('Batas retake 3 kali sudah tercapai.');return}capturedPhotos.splice(idx,1);if(Array.isArray(capturedGifSequences))capturedGifSequences.splice(idx,1);retakeCount++;$('retakeCount').innerText=retakeCount;$('nextToFrameBtn').disabled=true;$('shutterBtn').disabled=false;updateGalleryPreviews();renderCaptureReview();updateStatusBadge()}
 /* ============ FRAMES & PREVIEW ============ */
 function builtinCategoryForIndex(i){const cats=['VINTAGE','MODERN','MINIMAL','PASTEL','BOLD'];return cats[Math.floor(i/10)]||'MODERN'}
 function adaptiveBuiltinLayout(count,index){const c=Number(count)||4;if(c<=1)return index%2?'one-alt':'one';if(c===2)return index%2?'two-side':'two';if(c===3)return index%2?'three-alt':'three';if(c===4)return index%2?'four-alt':'four';return index%2?'six-alt':'six'}
@@ -772,8 +805,23 @@ function selectFrame(f){
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function loadImage(src){return new Promise((resolve,reject)=>{if(!src){reject(new Error('empty image'));return}const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('image load failed'));im.src=src})}
 function fitImageInRect(ctx,im,x,y,w,h,mode='cover'){const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;if(!iw||!ih)return;const scale=mode==='contain'?Math.min(w/iw,h/ih):Math.max(w/iw,h/ih);const dw=iw*scale,dh=ih*scale;ctx.drawImage(im,x+(w-dw)/2,y+(h-dh)/2,dw,dh)}
+function fitImageInRectAnimated(ctx,im,x,y,w,h,t,slotIndex,totalFrames){
+  const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;if(!iw||!ih)return;
+  /* GIF SMOOTH MOTION: always start from a cover-fit image. The previous
+     contain-fit animation could reveal the viewport edge when zoom dipped
+     below 1, which made the frame boundary jump into view. */
+  const base=Math.max(w/iw,h/ih);
+  const progress=(Number(t)||0)/Math.max(1,(Number(totalFrames)||1)-1);
+  const phase=progress*Math.PI*2+(Number(slotIndex)||0)*1.17;
+  /* Keep a permanent crop margin, then move only inside that safe margin. */
+  const zoom=1.035+0.025*(0.5-0.5*Math.cos(phase));
+  const driftX=Math.sin(phase)*w*.006;
+  const driftY=Math.cos(phase)*h*.004;
+  const dw=iw*base*zoom,dh=ih*base*zoom;
+  ctx.drawImage(im,x+(w-dw)/2+driftX,y+(h-dh)/2+driftY,dw,dh);
+}
 async function detectTransparentHoles(frameSrc,targetW,targetH,needed){try{const im=await loadImage(frameSrc);const sw=360,sh=Math.max(180,Math.round(sw*(im.naturalHeight/im.naturalWidth||targetH/targetW)));const c=document.createElement('canvas');c.width=sw;c.height=sh;const x=c.getContext('2d',{willReadFrequently:true});x.clearRect(0,0,sw,sh);x.drawImage(im,0,0,sw,sh);const data=x.getImageData(0,0,sw,sh).data,transparent=new Uint8Array(sw*sh),seen=new Uint8Array(sw*sh),components=[];for(let y=0;y<sh;y++)for(let xx=0;xx<sw;xx++){const a=data[(y*sw+xx)*4+3];transparent[y*sw+xx]=a<55?1:0}const qx=new Int32Array(sw*sh),qy=new Int32Array(sw*sh);for(let sy=0;sy<sh;sy++)for(let sx=0;sx<sw;sx++){const si=sy*sw+sx;if(!transparent[si]||seen[si])continue;let head=0,tail=0,minX=sx,maxX=sx,minY=sy,maxY=sy,area=0,touchesEdge=false;qx[tail]=sx;qy[tail++]=sy;seen[si]=1;while(head<tail){const cx=qx[head],cy=qy[head++];area++;if(cx<minX)minX=cx;if(cx>maxX)maxX=cx;if(cy<minY)minY=cy;if(cy>maxY)maxY=cy;if(cx===0||cy===0||cx===sw-1||cy===sh-1)touchesEdge=true;const ns=[[cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]];for(const[nx,ny]of ns){if(nx<0||ny<0||nx>=sw||ny>=sh)continue;const ni=ny*sw+nx;if(transparent[ni]&&!seen[ni]){seen[ni]=1;qx[tail]=nx;qy[tail++]=ny}}}const bw=maxX-minX+1,bh=maxY-minY+1,ratio=(bw*bh)/(sw*sh),fill=area/Math.max(1,bw*bh);if(!touchesEdge&&area>=Math.max(36,sw*sh*0.0015)&&ratio>=0.006&&ratio<=0.72&&fill>=0.55)components.push({area,minX,minY,maxX,maxY})}components.sort((a,b)=>b.area-a.area);const minHoleArea=Math.max(36,sw*sh*0.0015);const candidates=components.filter(r=>r.area>=minHoleArea);if(candidates.length<needed)return null;/* M1.2: prefer the requested number of largest holes, then sort spatially. This prevents decorative transparent areas from stealing photo slots. */const selected=candidates.slice(0,needed).sort((a,b)=>a.minY-b.minY||a.minX-b.minX);const inset=Math.max(0,Math.min(.08,Number(config.frameFit?.safeInset)||0));return selected.map(r=>{let x0=r.minX/sw*targetW,y0=r.minY/sh*targetH,w=(r.maxX-r.minX+1)/sw*targetW,h=(r.maxY-r.minY+1)/sh*targetH;const ix=w*inset,iy=h*inset;return{x:x0+ix,y:y0+iy,w:Math.max(2,w-ix*2),h:Math.max(2,h-iy*2)}})}catch(e){return null}}
-async function drawFrameAwareComposition(canvas,includeFooter=true,photosArg=null,frameSrcArg=null){const photos=Array.isArray(photosArg)?photosArg:framePhotos;const frameSrc=typeof frameSrcArg==='string'?frameSrcArg:selectedFrameSrc;const c=canvas,ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);const appliedFilter=getAppliedFilter();const needed=Math.max(1,photos.length);const pad=c.width*.07,gap=c.width*.012,footer=c.height*.13;const isStrip=selectedLayoutType==='strip',cols=isStrip?1:2,rows=isStrip?Math.max(1,needed):Math.ceil(needed/2),usableH=c.height-pad*2-footer-gap*(rows-1),cellW=(c.width-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);photos.forEach((im,i)=>{if(!im)return;const r=Math.floor(i/cols),col=i%cols,x=pad+col*(cellW+gap),y=pad+r*(cellH+gap);ctx.save();ctx.beginPath();ctx.rect(x,y,cellW,cellH);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;fitImageInRect(ctx,im,x,y,cellW,cellH,'contain');ctx.restore()});ctx.filter='none';if(frameSrc){try{const frame=await loadImage(frameSrc);const holes=await detectTransparentHoles(frameSrc,c.width,c.height,needed);if(holes&&holes.length>=needed){ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);holes.forEach((r,i)=>{if(!photos[i])return;ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;/* M1: keep the entire captured photo inside the detected transparent hole; never crop/zoom into the frame artwork. */fitImageInRect(ctx,photos[i],r.x,r.y,r.w,r.h,'contain');ctx.restore()});ctx.filter='none'}ctx.drawImage(frame,0,0,c.width,c.height)}catch(e){}}if(includeFooter)drawPreviewFooterCanvas(ctx,c.width,c.height);return true}
+async function drawFrameAwareComposition(canvas,includeFooter=true,photosArg=null,frameSrcArg=null,animationTick=0,animationFrameCount=1){const photos=Array.isArray(photosArg)?photosArg:framePhotos;const frameSrc=typeof frameSrcArg==='string'?frameSrcArg:selectedFrameSrc;const c=canvas,ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);const appliedFilter=getAppliedFilter();const needed=Math.max(1,photos.length);const pad=c.width*.07,gap=c.width*.012,footer=c.height*.13;const isStrip=selectedLayoutType==='strip',cols=isStrip?1:2,rows=isStrip?Math.max(1,needed):Math.ceil(needed/2),usableH=c.height-pad*2-footer-gap*(rows-1),cellW=(c.width-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);photos.forEach((im,i)=>{if(!im)return;const r=Math.floor(i/cols),col=i%cols,x=pad+col*(cellW+gap),y=pad+r*(cellH+gap);ctx.save();ctx.beginPath();ctx.rect(x,y,cellW,cellH);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;if(animationFrameCount>1)fitImageInRectAnimated(ctx,im,x,y,cellW,cellH,animationTick,i,animationFrameCount);else fitImageInRect(ctx,im,x,y,cellW,cellH,'contain');ctx.restore()});ctx.filter='none';if(frameSrc){try{const frame=await loadImage(frameSrc);const holes=await detectTransparentHoles(frameSrc,c.width,c.height,needed);if(holes&&holes.length>=needed){ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);holes.forEach((r,i)=>{if(!photos[i])return;ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;/* M2.0 PRECISION FRAME FIT: the detected hole is the authoritative photo viewport. Fill it edge-to-edge so no top/bottom side bars remain. The image keeps its aspect ratio; only the overflow outside the hole is cropped. */if(animationFrameCount>1)fitImageInRectAnimated(ctx,photos[i],r.x,r.y,r.w,r.h,animationTick,i,animationFrameCount);else fitImageInRect(ctx,photos[i],r.x,r.y,r.w,r.h,'cover');ctx.restore()});ctx.filter='none'}ctx.drawImage(frame,0,0,c.width,c.height)}catch(e){}}if(includeFooter)drawPreviewFooterCanvas(ctx,c.width,c.height);return true}
 let framePhotos=[];
 let previewRenderSeq=0;
 function getFooterSettings(){const f=config.footer||{};return{watermark:String(f.watermark??'⚡ BOOTHPRO'),showDate:f.showDate!==false,dateFormat:f.dateFormat||'id-short'}}
@@ -794,23 +842,151 @@ function applyImageFilter(filterValue){
 function applyAdjustments(){adjState.brightness=Number($('adjBrightness').value)||100;adjState.contrast=Number($('adjContrast').value)||100;adjState.saturate=Number($('adjSaturate').value)||100;updateAdjLabels();renderCaptureReview();renderFrameMiniPreview();renderEditor()}
 function updateAdjLabels(){if($('adjBVal'))$('adjBVal').innerText=adjState.brightness;if($('adjCVal'))$('adjCVal').innerText=adjState.contrast;if($('adjSVal'))$('adjSVal').innerText=adjState.saturate}
 function resetAdjustments(){adjState={brightness:100,contrast:100,saturate:100};if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels();renderEditor()}}
-function initStickerPicker(){const p=$('stickerPicker');if(!p)return;p.innerHTML='';STICKER_SET.forEach(e=>{const b=document.createElement('button');b.type='button';b.className='h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-700 text-lg hover:border-indigo-500';b.textContent=e;b.onclick=()=>addSticker(e);p.appendChild(b)})}
-function addSticker(emoji){if(!isPro()){openLicense();return}stickers.push({emoji:emoji,x:50,y:50,size:14});renderStickerOverlay()}
+function initStickerPicker(){const p=$('stickerPicker');if(!p)return;p.innerHTML='';STICKER_SET.forEach(e=>{const b=document.createElement('button');b.type='button';b.className='h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-700 text-lg hover:border-indigo-500';b.textContent=e;b.title='Stiker '+e;b.onclick=()=>addSticker(e);p.appendChild(b)});customStickerGallery.forEach(st=>{const b=document.createElement('button');b.type='button';b.className='h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-700 overflow-hidden hover:border-indigo-500';b.title=st.name||'Stiker custom';b.innerHTML='<img src="'+st.src+'" alt="" class="w-full h-full object-contain">';b.onclick=()=>addSticker(st);p.appendChild(b)})}
+function addSticker(item){if(!isPro()){openLicense();return}const isObj=item&&typeof item==='object';const sticker=isObj?{id:item.id||'',name:item.name||'',src:item.src||'',emoji:item.emoji||'',x:50,y:50,size:14}:{emoji:String(item||''),x:50,y:50,size:14};stickers.push(sticker);finalStickerSnapshot=stickers.map(st=>({...st}));renderStickerOverlay()}
 function removeSticker(idx){if(idx<0||idx>=stickers.length)return;stickers.splice(idx,1);renderStickerOverlay()}
 function removeLastSticker(){if(!stickers.length)return;stickers.pop();renderStickerOverlay()}
 function clearAllStickers(){if(!stickers.length)return;stickers=[];renderStickerOverlay()}
-function renderActiveStickerControls(){const host=$('activeStickerControls');if(!host)return;host.innerHTML='';if(!stickers.length){const empty=document.createElement('span');empty.className='text-[10px] text-zinc-600 self-center';empty.textContent='Belum ada stiker dipilih';host.appendChild(empty);return}const label=document.createElement('span');label.className='text-[10px] text-zinc-500 self-center';label.textContent='Dipakai:';host.appendChild(label);stickers.forEach((st,i)=>{const b=document.createElement('button');b.type='button';b.className='inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-700 text-xs hover:border-red-400';b.title='Hapus stiker ini';b.innerHTML=`<span>${st.emoji}</span><span class="text-zinc-500">×</span>`;b.onclick=()=>removeSticker(i);host.appendChild(b)});const all=document.createElement('button');all.type='button';all.className='px-2 py-1 rounded-lg bg-red-950/50 border border-red-900/60 text-[10px] text-red-300';all.textContent='Hapus semua';all.onclick=clearAllStickers;host.appendChild(all)}
-function renderStickerOverlay(){renderActiveStickerControls();document.querySelectorAll('.text-layer').forEach(layer=>{layer.innerHTML='';stickers.forEach((st,i)=>{const chip=document.createElement('div');chip.className='sticker-chip';chip.innerHTML='<span>'+st.emoji+'</span><button type="button" aria-label="Hapus stiker" title="Hapus stiker">×</button>';chip.style.left=st.x+'%';chip.style.top=st.y+'%';chip.style.fontSize=(st.size/100*layer.clientWidth||st.size*2)+'px';chip.title='Seret untuk pindah · tombol × untuk hapus';const del=chip.querySelector('button');if(del){del.onpointerdown=e=>e.stopPropagation();del.onclick=e=>{e.preventDefault();e.stopPropagation();removeSticker(i)}}chip.oncontextmenu=e=>{e.preventDefault();removeSticker(i)};chip.onpointerdown=e=>{e.preventDefault();chip.setPointerCapture(e.pointerId);const rect=layer.getBoundingClientRect();const move=ev=>{st.x=Math.min(98,Math.max(2,(ev.clientX-rect.left)/rect.width*100));st.y=Math.min(98,Math.max(2,(ev.clientY-rect.top)/rect.height*100));chip.style.left=st.x+'%';chip.style.top=st.y+'%'};const up=()=>{chip.removeEventListener('pointermove',move);chip.removeEventListener('pointerup',up)};chip.addEventListener('pointermove',move);chip.addEventListener('pointerup',up)};layer.appendChild(chip)})})}
+function renderActiveStickerControls(){const host=$('activeStickerControls');if(!host)return;host.innerHTML='';if(!stickers.length){const empty=document.createElement('span');empty.className='text-[10px] text-zinc-600 self-center';empty.textContent='Belum ada stiker dipilih';host.appendChild(empty);return}const label=document.createElement('span');label.className='text-[10px] text-zinc-500 self-center';label.textContent='Stiker:';host.appendChild(label);stickers.forEach((st,i)=>{const wrap=document.createElement('div');wrap.className='inline-flex items-center gap-1 px-1.5 py-1 rounded-lg bg-zinc-900 border border-zinc-700';const b=document.createElement('button');b.type='button';b.className='text-base leading-none';b.title='Pilih stiker ini';b.textContent=st.emoji;b.onclick=()=>{window.__bpActiveStickerIndex=i;renderStickerOverlay()};const minus=document.createElement('button');minus.type='button';minus.className='w-5 h-5 rounded-md bg-zinc-800 text-[11px]';minus.textContent='−';minus.title='Kecilkan';minus.onclick=()=>{st.size=Math.max(8,(Number(st.size)||14)-2);renderStickerOverlay()};const plus=document.createElement('button');plus.type='button';plus.className='w-5 h-5 rounded-md bg-zinc-800 text-[11px]';plus.textContent='+';plus.title='Besarkan';plus.onclick=()=>{st.size=Math.min(40,(Number(st.size)||14)+2);renderStickerOverlay()};const del=document.createElement('button');del.type='button';del.className='w-5 h-5 rounded-md bg-red-950/70 text-red-200 text-[11px]';del.textContent='×';del.title='Hapus stiker ini';del.onclick=()=>removeSticker(i);wrap.append(b,minus,plus,del);host.appendChild(wrap)});const all=document.createElement('button');all.type='button';all.className='px-2 py-1 rounded-lg bg-red-950/50 border border-red-900/60 text-[10px] text-red-300';all.textContent='Hapus semua';all.onclick=clearAllStickers;host.appendChild(all)}
+function renderStickerOverlay(){renderActiveStickerControls();document.querySelectorAll('.text-layer').forEach(layer=>{layer.innerHTML='';stickers.forEach((st,i)=>{const chip=document.createElement('div');chip.className='sticker-chip';chip.innerHTML=(st.src?'<img src="'+st.src+'" alt="" style="width:'+Math.max(18,(Number(st.size)||14)*2)+'px;height:'+Math.max(18,(Number(st.size)||14)*2)+'px;object-fit:contain">':'<span>'+st.emoji+'</span>')+'<button type="button" aria-label="Hapus stiker" title="Hapus stiker">×</button>';chip.style.left=st.x+'%';chip.style.top=st.y+'%';chip.style.fontSize=(st.size/100*layer.clientWidth||st.size*2)+'px';chip.title='Seret untuk pindah · tombol × untuk hapus';const del=chip.querySelector('button');if(del){del.onpointerdown=e=>e.stopPropagation();del.onclick=e=>{e.preventDefault();e.stopPropagation();removeSticker(i)}}chip.oncontextmenu=e=>{e.preventDefault();removeSticker(i)};chip.onpointerdown=e=>{e.preventDefault();chip.setPointerCapture(e.pointerId);const rect=layer.getBoundingClientRect();const move=ev=>{st.x=Math.min(98,Math.max(2,(ev.clientX-rect.left)/rect.width*100));st.y=Math.min(98,Math.max(2,(ev.clientY-rect.top)/rect.height*100));finalStickerSnapshot=stickers.map(s=>({...s}));chip.style.left=st.x+'%';chip.style.top=st.y+'%'};const up=()=>{chip.removeEventListener('pointermove',move);chip.removeEventListener('pointerup',up)};chip.addEventListener('pointermove',move);chip.addEventListener('pointerup',up)};layer.appendChild(chip)})})}
 /* ============ FINAL / COMPOSITE ============ */
-function drawStickersCanvas(ctx,w,h){stickers.forEach(st=>{ctx.save();ctx.font=`${(st.size/100)*w}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(st.emoji,st.x/100*w,st.y/100*h);ctx.restore()})}
-async function finishEditing(){if(sessionTimerId){clearInterval(sessionTimerId);sessionTimerId=null}stopWebcam();finalCompositeDataUrl=await buildCompositeCanvas();goToStep(7)}
+function stickerEmojiCodepoints(emoji){
+  return Array.from(String(emoji||'').trim())
+    .map(ch=>ch.codePointAt(0).toString(16))
+    .filter(cp=>cp!=='fe0e'&&cp!=='fe0f')
+    .join('-');
+}
+async function resolveStickerEmojiDataUrl(emoji){
+  const code=stickerEmojiCodepoints(emoji);
+  if(!code)return '';
+  const cacheKey='boothpro:twemoji:png:'+code;
+  try{const cached=sessionStorage.getItem(cacheKey);if(cached)return cached}catch(e){}
+  const candidates=[
+    'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/'+code+'.png',
+    'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/'+code+'.png'
+  ];
+  for(const url of candidates){
+    try{
+      const res=await fetch(url,{cache:'force-cache'});
+      if(!res.ok)continue;
+      const blob=await res.blob();
+      if(!blob.size)continue;
+      const data=await new Promise((resolve,reject)=>{
+        const rd=new FileReader();
+        rd.onload=()=>resolve(String(rd.result||''));
+        rd.onerror=reject;
+        rd.readAsDataURL(blob);
+      });
+      if(!data)continue;
+      try{sessionStorage.setItem(cacheKey,data)}catch(e){}
+      return data;
+    }catch(e){}
+  }
+  return '';
+}
+async function drawStickerEmoji(ctx,emoji,x,y,fontPx){
+  const text=String(emoji||'').trim();if(!text)return;
+  try{
+    const data=await resolveStickerEmojiDataUrl(text);
+    if(data){
+      const im=await loadImage(data);
+      const target=Math.max(24,fontPx*1.15);
+      const iw=im.naturalWidth||im.width||1,ih=im.naturalHeight||im.height||1;
+      const scale=Math.min(target/iw,target/ih);
+      ctx.drawImage(im,x-iw*scale/2,y-ih*scale/2,iw*scale,ih*scale);
+      return;
+    }
+  }catch(e){}
+  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font=fontPx+"px -apple-system, BlinkMacSystemFont, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
+  ctx.fillText(text,x,y);ctx.restore();
+}
+async function drawStickersCanvas(ctx,w,h,stickerList=stickers){
+  if(!ctx||!Array.isArray(stickerList)||!stickerList.length)return;
+  const snapshot=stickerList.map(st=>({...st}));
+  for(const st of snapshot){
+    try{
+      const size=Math.max(8,Number(st?.size)||14);
+      const x=Math.min(98,Math.max(2,Number(st?.x)||50))/100*w;
+      const y=Math.min(98,Math.max(2,Number(st?.y)||50))/100*h;
+      if(st?.src){
+        const src=await resolveImageSourceDataUrl(st.src);
+        const im=await loadImage(src);
+        const target=Math.max(24,(size/100)*w);
+        const iw=im.naturalWidth||im.width||1,ih=im.naturalHeight||im.height||1;
+        const scale=Math.min(target/iw,target/ih);
+        ctx.drawImage(im,x-iw*scale/2,y-ih*scale/2,iw*scale,ih*scale);
+      }else{
+        const emoji=String(st?.emoji||'').trim();
+        if(!emoji)continue;
+        const fontPx=Math.max(12,(size/100)*w);
+        await drawStickerEmoji(ctx,emoji,x,y,fontPx);
+      }
+    }catch(e){console.warn('Sticker render dilewati:',e)}
+  }
+}
+async function finishEditing(){
+  finalStickerSnapshot=Array.isArray(stickers)?stickers.map(st=>({...st})):[];
+  const btn=$('finishEditingBtn');
+  if(btn){btn.disabled=true;btn.style.pointerEvents='none';btn.textContent='Menyiapkan hasil akhir...'}
+  try{
+    if(sessionTimerId){clearInterval(sessionTimerId);sessionTimerId=null}
+    stopWebcam();
+    finalCompositeDataUrl=await buildCompositeCanvas(true);
+    if(!finalCompositeDataUrl)throw new Error('Hasil akhir belum tersedia.');
+    goToStep(7);
+    renderFinalPreview();
+  }catch(e){
+    console.error('BoothPro finish editing:',e);
+    alert('Hasil edit belum bisa diproses: '+(e?.message||String(e))+'. Foto dan stiker tetap aman, silakan coba tombol Lanjut lagi.');
+  }finally{
+    if(btn){btn.disabled=false;btn.style.pointerEvents='auto';btn.innerHTML='OK, Lanjut Cetak & Soft File <i class="fa-solid fa-arrow-right ml-1"></i>'}
+  }
+}
 async function getFrameNaturalRatio(){if(!selectedFrameSrc)return selectedLayoutType==='strip'?1/3:2/3;try{const im=await loadImage(selectedFrameSrc);const w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;return w&&h?w/h:(selectedLayoutType==='strip'?1/3:2/3)}catch(e){return selectedLayoutType==='strip'?1/3:2/3}}
 function containDrawCanvas(ctx,source,x,y,w,h){const sw=source.width||source.naturalWidth,sh=source.height||source.naturalHeight;if(!sw||!sh)return;const scale=Math.min(w/sw,h/sh),dw=sw*scale,dh=sh*scale;ctx.drawImage(source,x+(w-dw)/2,y+(h-dh)/2,dw,dh)}
-async function buildCompositeCanvas(){const pkg=config.packages.find(p=>p.id===selectedPackageId)||{prints:1};const copies=Math.max(1,Math.min(2,Number(pkg.prints)||1));const size=config.printSize||'4x6';const sheetMap={'4x6':[1200,1800],'2x6':[600,1800],'A4':[1414,2000]};const [sheetW,sheetH]=sheetMap[size]||sheetMap['4x6'];const frameRatio=await getFrameNaturalRatio();const gap=selectedLayoutType==='strip'?Math.max(12,Math.round(sheetW*.025)):0;let panelW,panelH;if(selectedLayoutType==='strip'){panelH=sheetH;const maxPanelW=Math.max(1,(sheetW-gap*(copies-1))/copies);const idealW=Math.max(1,Math.round(panelH*frameRatio));panelW=Math.min(maxPanelW,idealW)}else{panelW=sheetW;panelH=sheetH}
-const makePanel=async()=>{const c=document.createElement('canvas');c.width=panelW;c.height=panelH;const photos=[];for(const src of capturedPhotos){try{photos.push(await loadImage(src))}catch(e){}}await drawFrameAwareComposition(c,true,photos);drawStickersCanvas(c,panelW,panelH);return c};const panel=await makePanel();const out=document.createElement('canvas');out.width=sheetW;out.height=sheetH;const ox=out.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,sheetW,sheetH);if(selectedLayoutType==='strip'){const total=copies*panelW+(copies-1)*gap;const startX=(sheetW-total)/2;for(let i=0;i<copies;i++)containDrawCanvas(ox,panel,startX+i*(panelW+gap),0,panelW,panelH)}else containDrawCanvas(ox,panel,0,0,sheetW,sheetH);return out.toDataURL('image/jpeg',.95)}
-async function prepareFinal(){if(!finalCompositeDataUrl)finalCompositeDataUrl=await buildCompositeCanvas();const pkg=config.packages.find(p=>p.id===selectedPackageId);$('sessionIdDisplay').innerText=sessionId;$('finalSessionText').innerText=`${capturedPhotos.length} foto · ${pkg?.name||''} · soft file + loop/GIF siap.`;$('printCountLabel').innerText=`(${pkg?.prints||1} strip)`;saveHistory({id:sessionId,date:new Date().toISOString(),layout:selectedLayoutType,count:capturedPhotos.length,filter:currentFilter,package:selectedPackageId,packageName:pkg?.name||'',price:pkg?.price||0,method:lastPaymentMethod,prints:pkg?.prints||1,retakes:retakeCount});renderFinalPreview();generateQR();if(config.cloudinary?.cloudName&&config.cloudinary?.uploadPreset)publishSessionCloud()}
+async function buildCompositeCanvas(includeStickers=true){
+ const pkg=config.packages.find(p=>p.id===selectedPackageId)||{prints:1};
+ const copies=Math.max(1,Math.min(2,Number(pkg.prints)||1));
+ const size=config.printSize||'4x6';
+ const sheetMap={'4x6':[1200,1800],'2x6':[600,1800],'A4':[1414,2000]};
+ const [sheetW,sheetH]=sheetMap[size]||sheetMap['4x6'];
+ const frameRatio=await getFrameNaturalRatio();
+ const gap=selectedLayoutType==='strip'?Math.max(12,Math.round(sheetW*.025)):0;
+ let panelW,panelH;
+ if(selectedLayoutType==='strip'){
+   panelH=sheetH;
+   const maxPanelW=Math.max(1,(sheetW-gap*(copies-1))/copies);
+   const idealW=Math.max(1,Math.round(panelH*frameRatio));
+   panelW=Math.min(maxPanelW,idealW);
+ }else{panelW=sheetW;panelH=sheetH}
+ const makePanel=async()=>{
+   const c=document.createElement('canvas');c.width=panelW;c.height=panelH;
+   const photos=[];
+   for(const src of capturedPhotos){try{photos.push(await loadImage(src))}catch(e){}}
+   await drawFrameAwareComposition(c,true,photos);
+   if(includeStickers){const printStickers=(Array.isArray(finalStickerSnapshot)&&finalStickerSnapshot.length?finalStickerSnapshot:stickers);await drawStickersCanvas(c,panelW,panelH,printStickers)}
+   return c;
+ };
+ const panel=await makePanel();
+ const out=document.createElement('canvas');out.width=sheetW;out.height=sheetH;
+ const ox=out.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,sheetW,sheetH);
+ if(selectedLayoutType==='strip'){
+   const total=copies*panelW+(copies-1)*gap;
+   const startX=(sheetW-total)/2;
+   for(let i=0;i<copies;i++)containDrawCanvas(ox,panel,startX+i*(panelW+gap),0,panelW,panelH);
+ }else containDrawCanvas(ox,panel,0,0,sheetW,sheetH);
+ return out.toDataURL('image/jpeg',.95);
+}
+async function prepareFinal(){finalCompositeDataUrl=await buildCompositeCanvas();const pkg=config.packages.find(p=>p.id===selectedPackageId);$('sessionIdDisplay').innerText=sessionId;$('finalSessionText').innerText=`${capturedPhotos.length} foto · ${pkg?.name||''} · 3 soft file via 1 QR: Foto Final + Motion Video + GIF siap.`;$('printCountLabel').innerText=`(${pkg?.prints||1} strip)`;saveHistory({id:sessionId,date:new Date().toISOString(),layout:selectedLayoutType,count:capturedPhotos.length,filter:currentFilter,package:selectedPackageId,packageName:pkg?.name||'',price:pkg?.price||0,method:lastPaymentMethod,prints:pkg?.prints||1,retakes:retakeCount});renderFinalPreview();generateQR();if(config.cloudinary?.cloudName&&config.cloudinary?.uploadPreset)publishSessionCloud()}
 function renderFinalPreview(){const p=$('finalPreview');p.innerHTML='';const im=document.createElement('img');im.src=finalCompositeDataUrl;im.className='max-w-full max-h-[620px] object-contain rounded-xl shadow-2xl';p.appendChild(im)}
-function downloadComposite(){if(!finalCompositeDataUrl)return;const a=document.createElement('a');a.href=finalCompositeDataUrl;a.download=`BoothPro-${sessionId}.jpg`;a.click()}
+async function downloadComposite(){
+ try{
+   const clean=await buildCompositeCanvas(false);
+   if(!clean)return;
+   const a=document.createElement('a');a.href=clean;a.download=`BoothPro-${sessionId}-photo-clean.jpg`;a.click();
+ }catch(e){alert('Soft file foto gagal dibuat: '+(e?.message||String(e)))}
+}
 function applyPrintSize(){const size=config.printSize||'4x6';const map={'4x6':['4in','6in'],'2x6':['2in','6in'],'A4':['210mm','297mm']};const dim=map[size]||map['4x6'];const st=$('printStyle');if(st)st.textContent=`@page{size:${dim[0]} ${dim[1]};margin:0}`}
 async function testHardwareBridge(){
  const url=(config.hardware?.bridgeUrl||'').replace(/\/$/,'');
@@ -867,7 +1043,7 @@ async function printViaHardwareBridge(){
 }
 function savePrintSettings(){config.printSize=$('dashPrintSize').value||'4x6';saveConfig();applyPrintSize();alert('Ukuran cetak disimpan: '+config.printSize)}
 async function printComposite(){
- if(!finalCompositeDataUrl){try{finalCompositeDataUrl=await buildCompositeCanvas()}catch(e){alert('Hasil foto belum siap dicetak.');return}}
+ try{finalCompositeDataUrl=await buildCompositeCanvas()}catch(e){alert('Hasil foto belum siap dicetak: '+(e?.message||String(e)));return}
  if(config.hardware?.autoPrint && config.hardware?.bridgeUrl){
    const ok=await printViaHardwareBridge();
    if(ok)return;
@@ -882,9 +1058,195 @@ async function printComposite(){
  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
  setTimeout(cleanup,10000);
 }
-function generateQR(overrideUrl){const q=$('qrBox');if(!q)return;q.innerHTML='';let payload=overrideUrl||'';const base=(config.softBase||'').trim();const share=(config.shareBase||'').trim();if(!payload&&share){payload=share.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId);$('qrModeBadge').innerText='SHARE';$('qrNote').innerText='QR mengarah ke halaman share/backend.'}else if(!payload&&base){payload=base.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId);$('qrModeBadge').innerText='CLOUD';$('qrNote').innerText='QR memakai endpoint soft file Dashboard.'}else if(!payload){payload=location.href.split('#')[0]+'#session='+encodeURIComponent(sessionId);$('qrModeBadge').innerText='LOCAL';$('qrNote').innerText='Mode lokal. Untuk HP customer aktifkan Cloudinary + Share URL.'}new QRCode(q,{text:payload,width:180,height:180,correctLevel:QRCode.CorrectLevel.M})}
-function generateGifBlob(){return new Promise((resolve,reject)=>{if(!capturedPhotos.length)return reject(new Error('Tidak ada foto'));if(typeof GIF==='undefined')return reject(new Error('Generator GIF belum termuat'));const gif=new GIF({workers:2,quality:12,width:480,height:360,workerScript:'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'});let pending=capturedPhotos.length;let settled=false;const appliedFilter=getAppliedFilter();capturedPhotos.forEach(src=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=480;c.height=360;const x=c.getContext('2d');x.save();x.filter=appliedFilter==='none'?'none':appliedFilter;const scale=Math.max(480/im.width,360/im.height),dw=im.width*scale,dh=im.height*scale;x.drawImage(im,(480-dw)/2,(360-dh)/2,dw,dh);x.restore();const add=()=>{gif.addFrame(c,{delay:500,copy:true});if(--pending===0)gif.render()};if(selectedFrameSrc){const ov=new Image();ov.onload=()=>{x.drawImage(ov,0,0,480,360);add()};ov.onerror=add;ov.src=selectedFrameSrc}else add()};im.onerror=()=>{if(!settled){settled=true;reject(new Error('Gagal membaca foto untuk GIF'))}};im.src=src});gif.on('finished',blob=>{if(!settled){settled=true;resolve(blob)}})})}
-function downloadGif(){if(finalGifDataUrl){const a=document.createElement('a');a.href=finalGifDataUrl;a.download=`BoothPro-${sessionId}-loop.gif`;a.click();return}generateGifBlob().then(blob=>{finalGifDataUrl=URL.createObjectURL(blob);const a=document.createElement('a');a.href=finalGifDataUrl;a.download=`BoothPro-${sessionId}-loop.gif`;a.click()}).catch(e=>alert(e.message||'GIF gagal dibuat.'))}
+function generateQR(overrideUrl){const q=$('qrBox');if(!q)return;q.innerHTML='';let payload=overrideUrl||'';const base=(config.softBase||'').trim();const share=(config.shareBase||'').trim();if(!payload&&share){payload=share.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId);$('qrModeBadge').innerText='SHARE';$('qrNote').innerText='QR mengarah ke halaman 3 soft file.'}else if(!payload&&base){payload=base.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId);$('qrModeBadge').innerText='CLOUD';$('qrNote').innerText='QR memakai endpoint soft file Dashboard.'}else if(!payload){payload=location.href.split('#')[0]+'#session='+encodeURIComponent(sessionId);$('qrModeBadge').innerText='LOCAL';$('qrNote').innerText='Mode lokal. Aktifkan Cloudinary + Share URL untuk 3 soft file.'}new QRCode(q,{text:payload,width:180,height:180,correctLevel:QRCode.CorrectLevel.M})}
+async function resolveImageSourceDataUrl(src){
+  const value=String(src||'').trim();
+  if(!value)return '';
+  if(value.startsWith('data:'))return value;
+  try{
+    const res=await fetch(value,{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const blob=await res.blob();
+    if(!blob.size)throw new Error('asset kosong');
+    return await new Promise((resolve,reject)=>{const rd=new FileReader();rd.onload=()=>resolve(String(rd.result||''));rd.onerror=reject;rd.readAsDataURL(blob)});
+  }catch(e){return value}
+}
+let bpGifWorkerUrl='';
+let bpGifWorkerPromise=null;
+async function getBoothProGifWorkerUrl(){
+  if(bpGifWorkerUrl)return bpGifWorkerUrl;
+  if(bpGifWorkerPromise)return bpGifWorkerPromise;
+  bpGifWorkerPromise=(async()=>{
+    const cdn='https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js';
+    try{
+      const res=await fetch(cdn,{cache:'force-cache'});
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const source=await res.text();
+      if(!source.trim())throw new Error('worker kosong');
+      bpGifWorkerUrl=URL.createObjectURL(new Blob([source],{type:'application/javascript'}));
+      return bpGifWorkerUrl;
+    }catch(e){
+      bpGifWorkerUrl='/gif.worker.js';
+      return bpGifWorkerUrl;
+    }finally{bpGifWorkerPromise=null}
+  })();
+  return bpGifWorkerPromise;
+}
+async function buildPhotoboothGifBlob(){
+ if(!capturedPhotos.length)throw new Error('Tidak ada foto untuk membuat GIF.');
+ if(typeof GIF==='undefined')throw new Error('Generator GIF belum termuat. Muat ulang halaman dan coba lagi.');
+ const workerScript=await getBoothProGifWorkerUrl();
+ const sourcePhotos=capturedPhotos.slice();
+ const gif=new GIF({workers:Math.min(3,Math.max(1,sourcePhotos.length)),quality:6,width:480,height:720,workerScript});
+ let settled=false,timer;
+ return await new Promise(async(resolve,reject)=>{
+   timer=setTimeout(()=>{if(!settled){settled=true;try{gif.abort()}catch(e){}reject(new Error('GIF membutuhkan waktu terlalu lama. Silakan coba lagi.'))}},60000);
+   gif.on('finished',blob=>{clearTimeout(timer);if(!settled){settled=true;resolve(blob)}});
+   gif.on('abort',()=>{clearTimeout(timer);if(!settled){settled=true;reject(new Error('Proses GIF dibatalkan.'))}});
+   try{
+     const photos=[];
+     for(const src of sourcePhotos){try{photos.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){}}
+     if(!photos.length)throw new Error('Foto untuk GIF tidak dapat dimuat.');
+     for(const im of photos){
+       const canvas=document.createElement('canvas');canvas.width=480;canvas.height=720;
+       const ctx=canvas.getContext('2d');ctx.fillStyle='#000';ctx.fillRect(0,0,480,720);
+       fitImageInRect(ctx,im,0,0,480,720,'cover');
+       // IMPORTANT: soft GIF never receives stickers.
+       gif.addFrame(canvas,{delay:250,copy:true});
+     }
+     gif.render();
+   }catch(e){clearTimeout(timer);if(!settled){settled=true;reject(e instanceof Error?e:new Error(String(e||'GIF gagal dibuat.')))}}
+ });
+}
+function generateGifBlob(){return buildPhotoboothGifBlob()}
+async function buildFrameGifBlob(){
+ if(!capturedPhotos.length)throw new Error('Tidak ada foto untuk membuat Frame GIF.');
+ if(typeof GIF==='undefined')throw new Error('Generator GIF belum termuat. Muat ulang halaman dan coba lagi.');
+ const workerScript=await getBoothProGifWorkerUrl();
+ const sequences=Array.isArray(capturedGifSequences)?capturedGifSequences:[];
+ const valid=sequences.filter(seq=>Array.isArray(seq)&&seq.length);
+ if(!valid.length)throw new Error('Burst frame belum tersedia. Ambil foto terlebih dahulu.');
+ const frameCount=Math.max(1,...valid.map(seq=>seq.length));
+ const gif=new GIF({workers:Math.min(3,Math.max(1,valid.length)),quality:6,width:480,height:720,workerScript});
+ let settled=false,timer;
+ return await new Promise(async(resolve,reject)=>{
+   timer=setTimeout(()=>{if(!settled){settled=true;try{gif.abort()}catch(e){}reject(new Error('Frame GIF membutuhkan waktu terlalu lama. Silakan coba lagi.'))}},60000);
+   gif.on('finished',blob=>{clearTimeout(timer);if(!settled){settled=true;resolve(blob)}});
+   gif.on('abort',()=>{clearTimeout(timer);if(!settled){settled=true;reject(new Error('Frame GIF dibatalkan.'))}});
+   try{
+     const frameSrc=selectedFrameSrc;
+     for(let t=0;t<frameCount;t++){
+       const slotPhotos=[];
+       for(let i=0;i<capturedPhotos.length;i++){
+         const seq=Array.isArray(sequences[i])&&sequences[i].length?sequences[i]:[capturedPhotos[i]];
+         const src=seq[t%seq.length];
+         try{slotPhotos.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){slotPhotos.push(null)}
+       }
+       const canvas=document.createElement('canvas');canvas.width=480;canvas.height=720;
+       // Each frame slot uses its own captured burst sequence. The slot index
+       // also offsets the subtle animation phase, so a 4-box frame does not
+       // move all boxes in lockstep.
+       await drawFrameAwareComposition(canvas,true,slotPhotos,frameSrc,t,frameCount);
+       // IMPORTANT: no stickers in either soft GIF.
+       gif.addFrame(canvas,{delay:60,copy:true});
+     }
+     gif.render();
+   }catch(e){clearTimeout(timer);if(!settled){settled=true;reject(e instanceof Error?e:new Error(String(e||'Frame GIF gagal dibuat.')))}}
+ });
+}
+async function getFinalFrameGifBlob(){
+ if(finalFrameGifDataUrl){const res=await fetch(finalFrameGifDataUrl);return await res.blob()}
+ const blob=await buildFrameGifBlob();
+ finalFrameGifDataUrl=URL.createObjectURL(blob);
+ return blob;
+}
+function downloadFrameGif(){
+ getFinalFrameGifBlob().then(blob=>{
+   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+   a.download=`BoothPro-${sessionId}-frame-motion.gif`;a.click();
+   setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+ }).catch(e=>alert(e.message||'Frame GIF gagal dibuat.'));
+}
+function downloadGif(){
+ getFinalGifBlob().then(blob=>{
+   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+   a.download=`BoothPro-${sessionId}-photo-motion.gif`;a.click();
+   setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+ }).catch(e=>alert(e.message||'GIF foto gagal dibuat.'));
+}
+function pickMotionVideoMime(){
+  if(typeof MediaRecorder==='undefined')return '';
+  const candidates=['video/mp4','video/mp4;codecs=avc1.42E01E','video/webm;codecs=vp8','video/webm'];
+  return candidates.find(m=>!MediaRecorder.isTypeSupported||MediaRecorder.isTypeSupported(m))||'';
+}
+async function buildMotionVideoBlob(){
+  if(!capturedPhotos.length)throw new Error('Tidak ada foto untuk membuat video motion.');
+  if(typeof MediaRecorder==='undefined')throw new Error('Browser ini belum mendukung pembuatan video.');
+  const canvas=document.createElement('canvas');canvas.width=480;canvas.height=720;
+  if(typeof canvas.captureStream!=='function')throw new Error('Browser ini belum mendukung video dari canvas.');
+  const mimeType=pickMotionVideoMime();if(!mimeType)throw new Error('Format video tidak didukung browser ini.');
+  const stream=canvas.captureStream(20),chunks=[];let recorder;
+  try{recorder=new MediaRecorder(stream,{mimeType})}catch(err){stream.getTracks().forEach(t=>t.stop());throw new Error('Recorder video tidak dapat dimulai: '+(err?.message||err))}
+  const done=new Promise((resolve,reject)=>{recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};recorder.onerror=e=>reject(e.error||new Error('Perekaman video gagal.'));recorder.onstop=()=>resolve(new Blob(chunks,{type:recorder.mimeType||mimeType}))});
+  const sequences=Array.isArray(capturedGifSequences)?capturedGifSequences:[],frameSrc=selectedFrameSrc,fallbackPhotos=[];
+  for(const src of capturedPhotos)fallbackPhotos.push(await loadImage(await resolveImageSourceDataUrl(src)));
+  const valid=sequences.filter(seq=>Array.isArray(seq)&&seq.length),frameCount=Math.max(1,...valid.map(seq=>seq.length));
+  const loadedSequences=[];
+  for(let slot=0;slot<capturedPhotos.length;slot++){
+    const seq=Array.isArray(sequences[slot])&&sequences[slot].length?sequences[slot]:[capturedPhotos[slot]],loaded=[];
+    for(const src of seq){try{loaded.push(await loadImage(await resolveImageSourceDataUrl(src)))}catch(e){}}
+    loadedSequences.push(loaded.length?loaded:[fallbackPhotos[slot]]);
+  }
+  const renderFrame=async(t)=>{const slotPhotos=loadedSequences.map(seq=>seq[t%seq.length]);await drawFrameAwareComposition(canvas,true,slotPhotos,frameSrc,t,frameCount)};
+  try{
+    await renderFrame(0);await new Promise(r=>setTimeout(r,120));recorder.start();
+    for(let t=1;t<frameCount;t++){await renderFrame(t);await new Promise(r=>setTimeout(r,70))}
+    await new Promise(r=>setTimeout(r,220));if(typeof recorder.requestData==='function'){try{recorder.requestData()}catch(e){}}await new Promise(r=>setTimeout(r,80));
+  }catch(err){try{if(recorder.state!=='inactive')recorder.stop()}catch(_){}stream.getTracks().forEach(t=>t.stop());throw err}
+  if(recorder.state!=='inactive')recorder.stop();
+  const blob=await done;stream.getTracks().forEach(t=>t.stop());
+  if(!blob||!blob.size)throw new Error('Video motion kosong. Browser tidak mengeluarkan data video.');
+  return blob;
+}
+async function getFinalMotionVideoBlob(){
+  if(finalMotionVideoDataUrl){const res=await fetch(finalMotionVideoDataUrl);return await res.blob()}
+  const blob=await buildMotionVideoBlob();
+  finalMotionVideoDataUrl=URL.createObjectURL(blob);
+  finalMotionVideoMime=blob.type||'video/mp4';
+  return blob;
+}
+function downloadMotionVideo(){
+  getFinalMotionVideoBlob().then(blob=>{
+    const ext=(blob.type||'').includes('webm')?'webm':'mp4';
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=`BoothPro-${sessionId}-frame-motion.${ext}`;a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  }).catch(e=>alert(e.message||'Video motion gagal dibuat.'));
+}
+async function saveSessionToFiles(){
+  try{
+    const files=[];
+    const photoBlob=await (await fetch(finalCompositeDataUrl)).blob();
+    files.push(new File([photoBlob],`BoothPro-${sessionId}-final.jpg`,{type:'image/jpeg'}));
+    const gif=await getFinalGifBlob();
+    files.push(new File([gif],`BoothPro-${sessionId}-motion.gif`,{type:'image/gif'}));
+    const video=await getFinalMotionVideoBlob();
+    const ext=(video.type||'').includes('webm')?'webm':'mp4';
+    files.push(new File([video],`BoothPro-${sessionId}-frame-motion.${ext}`,{type:video.type||'video/mp4'}));
+    if(navigator.share&&navigator.canShare?.({files})){
+      await navigator.share({title:'BoothPro Soft File',text:'3 soft file BoothPro: Foto Final + Motion Video + GIF.',files});
+      return;
+    }
+    for(const file of files){
+      const url=URL.createObjectURL(file);
+      const a=document.createElement('a');a.href=url;a.download=file.name;a.rel='noopener';a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),3000);
+    }
+  }catch(e){
+    if(e?.name==='AbortError')return;
+    alert('Gagal menyiapkan 3 soft file: '+(e?.message||String(e)));
+  }
+}
 function downloadSessionReport(){const p=config.packages.find(x=>x.id===selectedPackageId)||{};const report={app:'BoothPro',version:'3.0',session_id:sessionId,started_at:sessionStartedAt,completed_at:new Date().toISOString(),package:p.name||'',price:p.price||0,payment_method:lastPaymentMethod,photos:capturedPhotos.length,prints:p.prints||1,retakes:retakeCount,filter:currentFilter,frame:selectedFrameId,stickers:stickers.map(s=>s.emoji)};const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`BoothPro-${sessionId}-report.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 /* ============ HISTORY ============ */
 function saveHistory(e){try{const h=getHistory().filter(x=>x.id!==e.id);h.unshift(e);localStorage.setItem(HISTORY_KEY,JSON.stringify(h.slice(0,100)))}catch(err){}}
@@ -893,8 +1255,60 @@ function openHistory(){$('historyModal').classList.remove('hidden');renderHistor
 function renderHistory(){const h=getHistory();$('historyStats').innerText=h.length+' sesi tersimpan di perangkat ini';const l=$('historyList');l.innerHTML=h.length?h.map(x=>`<div class="p-3 rounded-xl bg-zinc-900 border border-zinc-800"><div class="font-mono text-xs text-indigo-300">${x.id}</div><div class="text-xs text-zinc-500 mt-1">${new Date(x.date).toLocaleString('id-ID')} · ${x.packageName||x.package||'-'} · ${x.count} foto · ${x.prints||1} strip · retake ${x.retakes||0} · ${x.method||'-'}</div></div>`).join(''):'<div class="text-sm text-zinc-500 py-6 text-center">Belum ada sesi.</div>'}
 function clearHistory(){if(confirm('Hapus seluruh riwayat lokal?')){localStorage.removeItem(HISTORY_KEY);renderHistory()}}
 /* ============ CLOUDINARY / UPLOADS ============ */
-async function uploadDataUrlToCloudinary(dataUrl,resourceType='image'){const c=config.cloudinary||{};if(!c.cloudName||!c.uploadPreset)throw new Error('Cloudinary belum dikonfigurasi');const endpoint='https://api.cloudinary.com/v1_1/'+encodeURIComponent(c.cloudName)+'/'+resourceType+'/upload';const fd=new FormData();fd.append('file',dataUrl);fd.append('upload_preset',c.uploadPreset);fd.append('folder','boothpro/'+sessionId);const res=await fetch(endpoint,{method:'POST',body:fd});if(!res.ok)throw new Error('Upload Cloudinary gagal: '+res.status);return await res.json()}
-async function publishSessionCloud(){const status=$('cloudUploadStatus');if(status)status.innerText='Mengunggah soft file...';try{const result={sessionId,photoUrl:null,gifUrl:null};if(finalCompositeDataUrl){const up=await uploadDataUrlToCloudinary(finalCompositeDataUrl,'image');result.photoUrl=up.secure_url||up.url}try{const gifBlob=await generateGifBlob();const gifData=await new Promise((resolve,reject)=>{const rr=new FileReader();rr.onload=()=>resolve(rr.result);rr.onerror=reject;rr.readAsDataURL(gifBlob)});const gu=await uploadDataUrlToCloudinary(gifData,'image');result.gifUrl=gu.secure_url||gu.url;finalGifDataUrl=URL.createObjectURL(gifBlob)}catch(gifErr){console.warn('GIF Cloudinary gagal',gifErr)}if(config.shareBase){try{const r=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});if(r.ok){const j=await r.json();result.shareUrl=j.shareUrl||null}}catch(e){console.warn('Share API tidak tersedia',e)}}localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));if(result.shareUrl||result.photoUrl){generateQR(result.shareUrl||result.photoUrl);if(status)status.innerText='Soft file online. QR siap dipindai.'}else if(status)status.innerText='Upload selesai; Share URL belum dikonfigurasi.';return result}catch(e){console.warn(e);if(status)status.innerText='Cloud belum aktif: '+e.message;return null}}
+async function uploadDataUrlToCloudinary(dataUrl,resourceType='image'){const c=config.cloudinary||{};if(!c.cloudName||!c.uploadPreset)throw new Error('Cloudinary belum dikonfigurasi. Buka Dashboard → Cloudinary Soft File lalu isi Cloud Name + Unsigned Upload Preset.');const endpoint='https://api.cloudinary.com/v1_1/'+encodeURIComponent(c.cloudName)+'/'+resourceType+'/upload';const fd=new FormData();fd.append('file',dataUrl);fd.append('upload_preset',c.uploadPreset);fd.append('folder','boothpro/'+sessionId);const res=await fetch(endpoint,{method:'POST',body:fd});let body=null;try{body=await res.json()}catch(e){}if(!res.ok)throw new Error('Upload Cloudinary gagal: '+(body?.error?.message||('HTTP '+res.status)));return body||{}}
+async function publishSessionCloud(){
+ const status=$('cloudUploadStatus');
+ if(status)status.innerText='Menyiapkan 3 soft file untuk 1 QR...';
+ try{
+   const result={sessionId,photoUrl:null,gifUrl:null,videoUrl:null};
+   if(finalCompositeDataUrl){
+     if(status)status.innerText='1/3 · Mengunggah foto final (termasuk sticker)...';
+     const up=await uploadDataUrlToCloudinary(finalCompositeDataUrl,'image');
+     result.photoUrl=up.secure_url||up.url||null;
+   }
+   if(status)status.innerText='2/3 · Membuat & mengunggah GIF bersih...';
+   try{
+     const gifBlob=await getFinalGifBlob();
+     const gifData=await new Promise((resolve,reject)=>{const rr=new FileReader();rr.onload=()=>resolve(rr.result);rr.onerror=reject;rr.readAsDataURL(gifBlob)});
+     const gu=await uploadDataUrlToCloudinary(gifData,'image');
+     result.gifUrl=gu.secure_url||gu.url||null;
+     finalGifDataUrl=URL.createObjectURL(gifBlob);
+   }catch(gifErr){console.warn('GIF Cloudinary gagal',gifErr)}
+   if(status)status.innerText='3/3 · Membuat & mengunggah video motion multi-slot...';
+   try{
+     const videoBlob=await getFinalMotionVideoBlob();
+     const videoData=await new Promise((resolve,reject)=>{const rr=new FileReader();rr.onload=()=>resolve(rr.result);rr.onerror=reject;rr.readAsDataURL(videoBlob)});
+     const vu=await uploadDataUrlToCloudinary(videoData,'video');
+     result.videoUrl=vu.secure_url||vu.url||null;
+   }catch(videoErr){console.warn('Video motion Cloudinary gagal',videoErr)}
+   if(config.shareBase){
+     try{
+       const r=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{
+         method:'POST',
+         headers:{'Content-Type':'application/json'},
+         body:JSON.stringify({...result,photoLabel:'Foto Final',gifLabel:'Motion GIF',videoLabel:'Motion Video'})
+       });
+       if(r.ok){const j=await r.json();result.shareUrl=j.shareUrl||j.url||null}
+     }catch(e){console.warn('Share API tidak tersedia',e)}
+   }
+   localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
+   const qrUrl=result.shareUrl||(
+     config.shareBase ? config.shareBase.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId) :
+     config.softBase ? config.softBase.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId) : ''
+   );
+   if(qrUrl){
+     generateQR(qrUrl);
+     $('qrModeBadge').innerText='CLOUD';
+     $('qrNote').innerText='1 QR · 3 soft file: Foto Final + Motion Video + GIF';
+     if(status)status.innerText='3 soft file online. 1 QR siap dipindai.';
+   }else if(status)status.innerText='File dibuat, tetapi Share Base belum dikonfigurasi.';
+   return result;
+ }catch(e){
+   console.warn(e);
+   if(status)status.innerText='Cloud belum aktif: '+e.message;
+   return null;
+ }
+}
 function handleQrisUpload(e){const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{config.qris=r.result;saveConfig();$('dashQrisPreview').src=r.result;$('dashQrisPreview').classList.remove('hidden')};r.readAsDataURL(f)}
 /* ============ AUTO FRAME TRANSPARENCY (UPLOAD ONLY) ============ */
 function loadFrameImage(url){
@@ -1686,7 +2100,7 @@ function openDashboardUnlocked(){
  run('basic settings',()=>{
   if($('dashDuration'))$('dashDuration').value=Math.max(7,config.duration||7);
   if($('dashCountdown'))$('dashCountdown').value=Number(config.countdown)||3;
-  if($('dashVouchers'))$('dashVouchers').value=Object.entries(config.vouchers||{}).map(([k,v])=>k+'|'+v).join('\n');
+  if($('dashVouchers'))$('dashVouchers').value=Object.entries(config.vouchers||{}).map(([k,v])=>k+'|'+v).join('\\n');
   if($('dashSoftBase'))$('dashSoftBase').value=config.softBase||'';
   if($('dashShareBase'))$('dashShareBase').value=config.shareBase||'';
   if($('dashDashBg'))$('dashDashBg').value=config.dashboardTheme?.bg||'#0b0b10';
@@ -1761,7 +2175,7 @@ async function verifyCurrentDashboardPassword(p){const a=getAuth();return !!p&&a
 function randomBackupCode(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const a=new Uint8Array(12);crypto.getRandomValues(a);let out='';for(let i=0;i<a.length;i++)out+=chars[a[i]%chars.length];return out.slice(0,4)+'-'+out.slice(4,8)+'-'+out.slice(8,12)}
 async function generateDashboardBackupCodes(){
  const codes=Array.from({length:10},randomBackupCode),a=getAuth();a.backupHashes=[];for(const c of codes)a.backupHashes.push(await sha256(c));saveConfig();
- const text=codes.join('\n');navigator.clipboard?.writeText(text).catch(()=>{});alert('Recovery codes baru dibuat. Simpan sekarang di password manager/print aman. Kode lama tidak berlaku lagi.');
+ const text=codes.join('\\n');navigator.clipboard?.writeText(text).catch(()=>{});alert('Recovery codes baru dibuat. Simpan sekarang di password manager/print aman. Kode lama tidak berlaku lagi.');
 }
 async function resetDashboardPassword(){
  const a=getAuth(),email=($('authRecoveryEmail').value||'').trim().toLowerCase(),code=($('authRecoveryCode').value||'').trim().toUpperCase(),p=$('authRecoveryPassword').value||'',p2=$('authRecoveryPassword2').value||'',err=$('authRecoveryError');
@@ -1781,7 +2195,7 @@ async function enableDashboard2FA(){
  $('authTotpSecret').innerText='Secret: '+secret;$('authTotpQr').innerHTML='';try{new QRCode($('authTotpQr'),{text:uri,width:180,height:180,correctLevel:QRCode.CorrectLevel.M})}catch(e){$('authTotpQr').innerText=uri}
  const codes=Array.from({length:10},randomBackupCode);a.totpSecret=secret;a._pendingTotp=true;
  a.backupHashes=[];for(const c of codes)a.backupHashes.push(await sha256(c));saveConfig();
- $('authBackupCodes').innerText='Recovery codes (simpan sekarang):\n\n'+codes.join('\n');
+ $('authBackupCodes').innerText='Recovery codes (simpan sekarang):\\n\\n'+codes.join('\\n');
  ['authLoginBox','authRecoveryBox','authSetupBox'].forEach(id=>$(id)?.classList.add('hidden'));$('auth2faBox').classList.remove('hidden');$('authTitle').innerText='Aktifkan 2 Langkah';$('authSubtitle').innerText='Scan QR, lalu masukkan kode di login berikutnya.';
 }
 function finishDashboard2FA(){const a=getAuth();a.totpEnabled=true;delete a._pendingTotp;saveConfig();closeDashboardAuth();if($('dashboardModal').classList.contains('hidden'))openDashboardUnlocked();else{$('dashAuthStatus').innerText='Akun terlindungi password + Authenticator 2 langkah.'}alert('2 langkah aktif.')}
@@ -1791,6 +2205,20 @@ function setDefaultFrame(id){config.frameLibrary=config.frameLibrary||{defaultFr
 function toggleBuiltinFrame(id,enabled){config.frameLibrary=config.frameLibrary||{defaultFrameId:'builtin-01',disabledBuiltins:[]};const arr=new Set(config.frameLibrary.disabledBuiltins||[]);if(enabled)arr.delete(id);else arr.add(id);config.frameLibrary.disabledBuiltins=[...arr];if(config.frameLibrary.defaultFrameId===id&&!enabled)config.frameLibrary.defaultFrameId='builtin-01';saveConfig();renderDashFrameManager();renderFrameGallery();renderPreFrames();renderCaptureReview();renderEditorFrameQuickGrid()}
 async function deleteUploadedFrame(id){if(!confirm('Hapus frame ini?'))return;frameGallery=frameGallery.filter(f=>f.id!==id);await frameDBDelete(id);try{await deleteFrameFromCloud(id)}catch(e){console.warn('Cloud frame delete:',e)}saveFrameMetadata();if(selectedFrameId===id){const f=getFrameChoices()[0];if(f){selectedFrameId=f.id;selectedFrameSrc=f.src||''}}renderDashFrameManager();renderFrameGallery();renderPreFrames();renderCaptureReview();renderEditorFrameQuickGrid()}
 function changeUploadedFrameCategory(id,category){const f=frameGallery.find(x=>x.id===id);if(!f)return;f.category=category||'CUSTOM';saveFrameMetadata();renderDashFrameManager();renderFrameGallery()}
+async function handleStickerUpload(event){
+  const files=Array.from(event?.target?.files||[]);if(!files.length)return;let added=0;
+  for(const file of files){try{if(!/^image\/(png|webp|jpeg|jpg)$/.test(file.type)||file.size>2.5*1024*1024)continue;const src=await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(file)});const item={id:'sticker-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name:file.name.replace(/\.[^.]+$/,''),src:String(src),type:'image',updatedAt:Date.now()};if(await stickerDBPut(item)){customStickerGallery.push(item);added++}}catch(e){console.warn('Sticker upload:',e)}}
+  if(event?.target)event.target.value='';renderDashboardStickerManager();initStickerPicker();showBoothProSavedToast(added?('✓ '+added+' sticker tersimpan'):'Tidak ada sticker yang tersimpan');
+}
+async function removeCustomSticker(id){
+  if(!id)return;const item=customStickerGallery.find(x=>x.id===id);if(item&&!confirm('Hapus sticker "'+(item.name||'custom')+'" dari gallery?'))return;
+  if(await stickerDBDelete(id)){customStickerGallery=customStickerGallery.filter(x=>x.id!==id);renderDashboardStickerManager();initStickerPicker();showBoothProSavedToast('✓ Sticker dihapus')}
+}
+function renderDashboardStickerManager(){
+  const host=$('dashStickerManager'),count=$('dashStickerCount');if(!host)return;if(count)count.textContent=customStickerGallery.length+' sticker custom tersimpan';host.innerHTML='';
+  if(!customStickerGallery.length){host.innerHTML='<div class="col-span-full text-[10px] text-zinc-600 py-3 text-center">Belum ada sticker custom. Upload PNG/WebP transparan untuk branding.</div>';return}
+  customStickerGallery.forEach(st=>{const wrap=document.createElement('div');wrap.className='relative rounded-xl bg-zinc-950 border border-zinc-800 p-2';const img=document.createElement('img');img.src=st.src;img.alt=st.name||'Sticker';img.className='w-full aspect-square object-contain rounded-lg';const name=document.createElement('div');name.className='text-[9px] text-zinc-400 truncate mt-1';name.textContent=st.name||'Sticker';const del=document.createElement('button');del.type='button';del.className='absolute top-1 right-1 h-6 w-6 rounded-full bg-red-600/90 text-white text-xs';del.textContent='×';del.title='Hapus sticker';del.onclick=()=>removeCustomSticker(st.id);wrap.append(img,name,del);host.appendChild(wrap)})
+}
 function renderDashFrameManager(){const host=$('dashFrameManager');if(!host)return;const disabled=new Set(config.frameLibrary?.disabledBuiltins||[]),defId=config.frameLibrary?.defaultFrameId||'builtin-01';host.innerHTML='';const head=document.createElement('div');head.className='flex items-center justify-between gap-2 mb-2';head.innerHTML='<span class="text-[10px] text-zinc-500">50 bawaan · 10 frame per kategori. Pilih default di sini.</span><select id="dashDefaultFrame" class="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-[10px]"></select>';host.appendChild(head);const ds=head.querySelector('#dashDefaultFrame');getFrameChoices().forEach(f=>{const o=document.createElement('option');o.value=f.id;o.textContent=(f.category||'CUSTOM')+' · '+f.name;ds.appendChild(o)});ds.value=getFrameChoices().some(f=>f.id===defId)?defId:(getFrameChoices()[0]?.id||'');ds.onchange=()=>setDefaultFrame(ds.value);const groups={VINTAGE:[],MODERN:[],MINIMAL:[],PASTEL:[],BOLD:[],CUSTOM:[]};BUILTIN_FRAME_DEFS.forEach((d,i)=>groups[builtinCategoryForIndex(i)].push({...d,category:builtinCategoryForIndex(i),builtin:true}));frameGallery.forEach(f=>groups.CUSTOM.push(f));Object.entries(groups).forEach(([cat,items])=>{if(!items.length)return;const title=document.createElement('div');title.className='text-[10px] font-black uppercase tracking-widest text-indigo-300 mt-3 mb-1';title.textContent=cat+' · '+items.length+' frame';host.appendChild(title);items.forEach(f=>{const row=document.createElement('div');row.className='flex items-center gap-2 p-2 rounded-lg bg-zinc-900 border border-zinc-800';if(f.builtin){const src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(builtinFrameSvg(f));row.innerHTML=`<div class="w-8 h-10 rounded bg-zinc-950 overflow-hidden shrink-0"><img src="${src}" class="w-full h-full object-cover"></div><div class="min-w-0 flex-1"><div class="text-[11px] font-bold truncate">${f.name}</div><div class="text-[9px] text-zinc-500">${f.photos} foto · ${f.category}</div></div><label class="text-[9px] text-zinc-400 flex items-center gap-1"><input type="checkbox" ${disabled.has(f.id)?'':'checked'} onchange="toggleBuiltinFrame('${f.id}',this.checked)"> Aktif</label>`}else{row.innerHTML=`<div class="w-8 h-10 rounded bg-zinc-950 overflow-hidden shrink-0">${f.src?`<img src="${f.src}" class="w-full h-full object-cover">`:''}</div><div class="min-w-0 flex-1"><div class="text-[11px] font-bold truncate">${f.name}</div><div class="text-[9px] text-zinc-500">Frame upload</div></div><select class="bg-zinc-950 border border-zinc-800 rounded px-1.5 py-1 text-[9px]" onchange="changeUploadedFrameCategory('${f.id}',this.value)"><option value="CUSTOM" ${f.category==='CUSTOM'?'selected':''}>CUSTOM</option><option value="VINTAGE" ${f.category==='VINTAGE'?'selected':''}>VINTAGE</option><option value="MODERN" ${f.category==='MODERN'?'selected':''}>MODERN</option><option value="MINIMAL" ${f.category==='MINIMAL'?'selected':''}>MINIMAL</option><option value="PASTEL" ${f.category==='PASTEL'?'selected':''}>PASTEL</option><option value="BOLD" ${f.category==='BOLD'?'selected':''}>BOLD</option></select><button onclick="deleteUploadedFrame('${f.id}')" class="h-8 w-8 rounded-lg bg-red-600/20 text-red-300" title="Hapus"><i class="fa-solid fa-trash text-[10px]"></i></button>`}host.appendChild(row)})})}
 function renderDashStats(){const h=getHistory();const today=new Date().toDateString();const t=h.filter(x=>new Date(x.date).toDateString()===today);const rev=t.reduce((a,x)=>a+(Number(x.price)||0),0);const el=$('dashStats');el.innerHTML=`<div class="p-3 rounded-xl bg-zinc-950"><div class="text-xl font-black text-indigo-300">${t.length}</div><div class="text-[10px] text-zinc-500 uppercase">Sesi Hari Ini</div></div><div class="p-3 rounded-xl bg-zinc-950"><div class="text-xl font-black text-emerald-400">${fmt(rev)}</div><div class="text-[10px] text-zinc-500 uppercase">Omzet Hari Ini</div></div>`}
 function formatFooterDate(d=new Date()){const f=getFooterSettings();if(f.dateFormat==='iso')return d.toISOString().slice(0,10);if(f.dateFormat==='datetime')return d.toLocaleString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});if(f.dateFormat==='id-long')return d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});return d.toLocaleDateString('id-ID')}
@@ -1807,18 +2235,34 @@ function renderExtraPrintPayment(){extraPrintQty=Math.max(1,Math.min(Number(conf
 function confirmExtraPrintPayment(){if(!config.qris){alert('QRIS belum diatur. Upload QRIS merchant di Dashboard terlebih dahulu.');return}if(!$('extraPrintPaidCheck').checked){alert('Centang konfirmasi bahwa pembayaran sudah dilakukan terlebih dahulu.');return}extraPrintPaid=true;closeExtraPrint();printExtraCopies(extraPrintQty)}
 function printExtraCopies(qty){if(!finalCompositeDataUrl)return;const n=Math.max(1,Math.min(10,Number(qty)||1));if(config.hardware?.autoPrint&&config.hardware?.bridgeUrl){(async()=>{for(let j=0;j<n;j++){const ok=await printViaHardwareBridge();if(!ok){alert('Hardware bridge gagal. Cetak tambahan dibatalkan.');return}}})();return}let i=0;const next=()=>{if(i>=n)return;i++;$('printImage').src=finalCompositeDataUrl;$('printRoot').style.display='flex';setTimeout(()=>window.print(),180);setTimeout(()=>{$('printRoot').style.display='none';setTimeout(next,350)},1800)};next()}
 function saveDashboardDuration(){config.duration=Math.max(7,Math.min(60,Number($('dashDuration').value)||7));config.countdown=Math.max(1,Math.min(10,Number($('dashCountdown').value)||3));saveConfig();alert('Durasi '+config.duration+' menit · countdown '+config.countdown+' detik.')}
-function saveVouchers(){const obj={};($('dashVouchers').value||'').split(/\n+/).forEach(line=>{const[code,val]=line.split('|');if(code?.trim())obj[code.trim().toUpperCase()]=Math.max(0,Number(val)||0)});config.vouchers=obj;saveConfig();alert('Voucher disimpan.')}
+function saveVouchers(){const obj={};($('dashVouchers').value||'').split(/\\n+/).forEach(line=>{const[code,val]=line.split('|');if(code?.trim())obj[code.trim().toUpperCase()]=Math.max(0,Number(val)||0)});config.vouchers=obj;saveConfig();alert('Voucher disimpan.')}
 function saveSoftBase(){config.softBase=$('dashSoftBase').value.trim();saveConfig();alert('Link soft file disimpan.')}
 function saveShareBase(){config.shareBase=($('dashShareBase').value||'').trim();saveConfig();alert('Share URL disimpan.')}
 function saveDashboardThemeSettings(){config.dashboardTheme={bg:$('dashDashBg').value||'#0b0b10',accent:$('dashDashAccent').value||'#818cf8',style:$('dashDashStyle').value||'gradient'};config.shareTools=config.shareTools||{};config.shareTools.message=($('dashShareMessage')?.value||config.shareTools.message||'Halo! Berikut soft file foto dari BoothPro:').trim();config.shareTools.defaultEmail=($('dashShareEmail')?.value||'').trim();config.shareTools.defaultPhone=($('dashSharePhone')?.value||'').trim();saveConfig();applyDashboardTheme();alert('Tampilan Dashboard disimpan.')}
 function applyDashboardTheme(){const t=config.dashboardTheme||{};document.documentElement.style.setProperty('--bp-dash-bg',t.bg||'#0b0b10');document.documentElement.style.setProperty('--bp-dash-accent',t.accent||'#818cf8');const panel=t.style==='gradient'?`linear-gradient(145deg, ${t.bg||'#0b0b10'} 0%, #171326 55%, ${t.bg||'#0b0b10'} 100%)`:(t.bg||'#0b0b10');document.documentElement.style.setProperty('--bp-dash-panel',panel)}
 function latestShareData(){const sid=sessionId||getHistory()[0]?.id||'';let data=null;if(sid){try{data=JSON.parse(localStorage.getItem('boothpro_cloud_'+sid)||'null')}catch(e){}}let url=data?.shareUrl||data?.photoUrl||'';if(!url&&config.shareBase&&sid)url=config.shareBase.replace(/\/$/,'')+'/'+encodeURIComponent(sid);if(!url&&config.softBase&&sid)url=config.softBase.replace(/\/$/,'')+'/'+encodeURIComponent(sid);return{sessionId:sid,url,message:(config.shareTools?.message||'Halo! Berikut soft file foto dari BoothPro:').trim()}}
 function normalizeWhatsAppNumber(v){let n=String(v||'').replace(/\D/g,'');if(n.startsWith('0'))n='62'+n.slice(1);return n}
-function shareLatestWhatsApp(){const d=latestShareData();const phone=normalizeWhatsAppNumber($('dashSharePhone')?.value||config.shareTools?.defaultPhone||'');if(!phone){alert('Masukkan nomor WhatsApp pelanggan terlebih dahulu.');return}if(!d.url){alert('Belum ada link soft file. Upload ke Cloud/atur Share URL terlebih dahulu.');return}const text=encodeURIComponent(`${d.message}\n\n${d.url}\nID Sesi: ${d.sessionId||'-'}`);window.open('https://wa.me/'+phone+'?text='+text,'_blank','noopener');if($('dashShareStatus'))$('dashShareStatus').innerText='WhatsApp dibuka dengan pesan siap kirim.'}
-function shareLatestEmail(){const d=latestShareData();const email=($('dashShareEmail')?.value||config.shareTools?.defaultEmail||'').trim();if(!email){alert('Masukkan email pelanggan terlebih dahulu.');return}if(!d.url){alert('Belum ada link soft file. Upload ke Cloud/atur Share URL terlebih dahulu.');return}const subject=encodeURIComponent('Soft File Foto BoothPro '+(d.sessionId||''));const body=encodeURIComponent(`${d.message}\n\n${d.url}\nID Sesi: ${d.sessionId||'-'}`);window.location.href=`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;if($('dashShareStatus'))$('dashShareStatus').innerText='Aplikasi email dibuka dengan pesan siap kirim.'}
+function shareLatestWhatsApp(){const d=latestShareData();const phone=normalizeWhatsAppNumber($('dashSharePhone')?.value||config.shareTools?.defaultPhone||'');if(!phone){alert('Masukkan nomor WhatsApp pelanggan terlebih dahulu.');return}if(!d.url){alert('Belum ada link soft file. Upload ke Cloud/atur Share URL terlebih dahulu.');return}const text=encodeURIComponent(`${d.message}
+
+${d.url}
+ID Sesi: ${d.sessionId||'-'}`);window.open('https://wa.me/'+phone+'?text='+text,'_blank','noopener');if($('dashShareStatus'))$('dashShareStatus').innerText='WhatsApp dibuka dengan pesan siap kirim.'}
+function shareLatestEmail(){const d=latestShareData();const email=($('dashShareEmail')?.value||config.shareTools?.defaultEmail||'').trim();if(!email){alert('Masukkan email pelanggan terlebih dahulu.');return}if(!d.url){alert('Belum ada link soft file. Upload ke Cloud/atur Share URL terlebih dahulu.');return}const subject=encodeURIComponent('Soft File Foto BoothPro '+(d.sessionId||''));const body=encodeURIComponent(`${d.message}
+
+${d.url}
+ID Sesi: ${d.sessionId||'-'}`);window.location.href=`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;if($('dashShareStatus'))$('dashShareStatus').innerText='Aplikasi email dibuka dengan pesan siap kirim.'}
 async function copyLatestShareLink(){const d=latestShareData();if(!d.url){alert('Belum ada link soft file. Upload ke Cloud/atur Share URL terlebih dahulu.');return}try{await navigator.clipboard.writeText(d.url);if($('dashShareStatus'))$('dashShareStatus').innerText='Link soft file berhasil disalin.'}catch(e){prompt('Salin link soft file berikut:',d.url)}}
 function saveCameraSettings(){config.camera={facingMode:$('dashCameraFacing').value||'user',deviceId:$('dashCameraSelect').value||'',resolution:$('dashCameraRes').value||'1280x720'};saveConfig();alert('Preferensi kamera disimpan untuk sesi berikutnya.')}
-function saveCloudinarySettings(){config.cloudinary={cloudName:($('dashCloudName').value||'').trim(),uploadPreset:($('dashCloudPreset').value||'').trim()};saveConfig();if($('cloudStatus'))$('cloudStatus').innerText=config.cloudinary.cloudName&&config.cloudinary.uploadPreset?'Konfigurasi tersimpan.':'Belum lengkap.'}
+async function testCloudinarySettings(){
+ const status=$('cloudStatus'),c=config.cloudinary||{};
+ if(!c.cloudName||!c.uploadPreset){if(status)status.innerText='Belum lengkap: isi Cloud Name dan Unsigned Upload Preset.';return false}
+ if(status)status.innerText='Menguji koneksi Cloudinary...';
+ try{
+   const probe='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+   await uploadDataUrlToCloudinary(probe,'image');
+   if(status)status.innerText='✓ Cloudinary terhubung dan upload preset valid.';return true;
+ }catch(e){if(status)status.innerText='✕ Cloudinary gagal: '+(e?.message||String(e));return false}
+}
+async function saveCloudinarySettings(){config.cloudinary={cloudName:($('dashCloudName').value||'').trim(),uploadPreset:($('dashCloudPreset').value||'').trim()};saveConfig();await testCloudinarySettings()}
 function handleBackgroundUpload(e){const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');const max=1600,scale=Math.min(1,max/Math.max(im.width,im.height));c.width=Math.max(1,Math.round(im.width*scale));c.height=Math.max(1,Math.round(im.height*scale));c.getContext('2d').drawImage(im,0,0,c.width,c.height);config.theme=config.theme||{};config.theme.backgroundImage=c.toDataURL('image/jpeg',.78);saveConfig();applyTheme()};im.src=r.result};r.readAsDataURL(f);e.target.value=''}
 function saveThemeSettings(){config.theme=config.theme||{};config.theme.bg=$('dashBgColor').value||'#09090b';config.theme.accent=$('dashAccentColor').value||'#818cf8';config.theme.style=$('dashBgStyle').value||'solid';saveConfig();applyTheme();alert('Tampilan kiosk disimpan.')}
 function applyTheme(){const t=config.theme||{};document.documentElement.style.setProperty('--bp-bg',t.bg||'#09090b');document.documentElement.style.setProperty('--bp-accent',t.accent||'#818cf8');let bg='none';if(t.backgroundImage)bg='url("'+t.backgroundImage+'")';else if(t.style==='gradient')bg='linear-gradient(135deg, '+(t.bg||'#09090b')+', #1e1b4b 55%, #09090b)';document.documentElement.style.setProperty('--bp-bg-image',bg)}
@@ -3511,5 +3955,9 @@ window.BoothProM36={addDashboardEntry,hydrateGallery};
 .m3912-back{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:10px;background:#27272a;color:#fff;font-size:11px;font-weight:800;cursor:pointer;touch-action:manipulation}
 @media(max-width:640px){.m3912-category-grid,.m3912-frame-grid{gap:8px}.m3912-category{min-height:106px}}
 </style>
-\n
-</body>\n</html>
+
+
+</body>
+</html>
+<!-- QA trigger: verify latest fixed kiosk script on PR head. -->
+<!-- QA guard refresh: no runtime feature change. -->

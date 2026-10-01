@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09090b">
+<title>BoothPro · Soft File</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#09090b;color:#f4f4f5}
+main{width:min(92vw,760px);margin:0 auto;padding:28px 0 48px}
+.card{background:#111113;border:1px solid #27272a;border-radius:22px;padding:18px;margin:14px 0;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+h1{font-size:26px;margin:0 0 6px}
+.sub{color:#a1a1aa;font-size:13px;margin:0 0 20px}
+.preview{width:100%;max-height:62vh;object-fit:contain;border-radius:14px;background:#050505}
+video{width:100%;max-height:62vh;border-radius:14px;background:#050505}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.label{font-weight:800;font-size:15px}
+.meta{color:#71717a;font-size:11px;margin-top:4px}
+a.btn{display:block;text-align:center;text-decoration:none;background:#fff;color:#09090b;font-weight:800;padding:13px 15px;border-radius:12px;margin-top:12px}
+a.btn.secondary{background:#27272a;color:#fafafa}
+.bad{display:inline-block;font-size:10px;padding:5px 8px;border-radius:999px;background:#27272a;color:#d4d4d8}
+.error{color:#fca5a5;background:#450a0a;border:1px solid #7f1d1d;padding:14px;border-radius:14px}
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <span class="bad">BOOTHPRO SOFT FILE</span>
+    <h1>3 Soft File Anda</h1>
+    <p class="sub" id="sessionText">Scan QR berhasil. Pilih file yang ingin disimpan.</p>
+  </div>
+
+  <section class="card">
+    <div class="row"><div><div class="label">📸 Foto Final</div><div class="meta">Sama seperti hasil print · frame + sticker</div></div></div>
+    <img id="photo" class="preview" alt="Foto final BoothPro">
+    <a id="photoBtn" class="btn" target="_blank" rel="noopener">Buka / Simpan Foto</a>
+  </section>
+
+  <section class="card">
+    <div class="row"><div><div class="label">🎬 Video Motion</div><div class="meta">Gerakan forward · tanpa sticker</div></div></div>
+    <video id="video" controls playsinline preload="metadata"></video>
+    <a id="videoBtn" class="btn" target="_blank" rel="noopener">Buka / Simpan Video</a>
+  </section>
+
+  <section class="card">
+    <div class="row"><div><div class="label">🌀 GIF Animated Frame</div><div class="meta">Setiap slot bergerak sendiri · tanpa sticker</div></div></div>
+    <img id="gif" class="preview" alt="GIF animated frame BoothPro">
+    <a id="gifBtn" class="btn" target="_blank" rel="noopener">Buka / Simpan GIF</a>
+  </section>
+
+  <div id="error" class="error" hidden>Link soft file tidak lengkap atau sudah rusak.</div>
+</main>
+<script>
+(function(){
+  const q=new URLSearchParams(location.search);
+  const session=q.get('session')||'';
+  const photo=q.get('photo')||'';
+  const video=q.get('video')||'';
+  const gif=q.get('gif')||'';
+  const ok=photo&&video&&gif;
+  const $=id=>document.getElementById(id);
+  if(session)$('sessionText').textContent='Sesi '+session+' · 3 file siap disimpan.';
+  if(!ok){$('error').hidden=false;return}
+  $('photo').src=photo;$('photoBtn').href=photo;
+  $('video').src=video;$('videoBtn').href=video;
+  $('gif').src=gif;$('gifBtn').href=gif;
+})();
+</script>
+</body>
+</html>

@@ -1204,13 +1204,20 @@ function renderHistory(){const h=getHistory();$('historyStats').innerText=h.leng
 function clearHistory(){if(confirm('Hapus seluruh riwayat lokal?')){localStorage.removeItem(HISTORY_KEY);renderHistory()}}
 /* ============ CLOUDINARY / UPLOADS ============ */
 async function uploadDataUrlToCloudinary(dataUrl,resourceType='image'){const c=config.cloudinary||{};if(!c.cloudName||!c.uploadPreset)throw new Error('Cloudinary belum dikonfigurasi. Buka Dashboard → Cloudinary Soft File lalu isi Cloud Name + Unsigned Upload Preset.');const endpoint='https://api.cloudinary.com/v1_1/'+encodeURIComponent(c.cloudName)+'/'+resourceType+'/upload';const fd=new FormData();fd.append('file',dataUrl);fd.append('upload_preset',c.uploadPreset);fd.append('folder','boothpro/'+sessionId);const res=await fetch(endpoint,{method:'POST',body:fd});let body=null;try{body=await res.json()}catch(e){}if(!res.ok)throw new Error('Upload Cloudinary gagal: '+(body?.error?.message||('HTTP '+res.status)));return body||{}}
-async function publishSessionCloud(){const status=$('cloudUploadStatus');if(status)status.innerText='Mengunggah soft file...';try{const result={sessionId,photoUrl:null,gifUrl:null,boomerangUrl:null};if(finalCompositeDataUrl){const up=await uploadDataUrlToCloudinary(finalCompositeDataUrl,'image');result.photoUrl=up.secure_url||up.url}try{const gifBlob=await generateGifBlob();const gifData=await new Promise((resolve,reject)=>{const rr=new FileReader();rr.onload=()=>resolve(rr.result);rr.onerror=reject;rr.readAsDataURL(gifBlob)});const gu=await uploadDataUrlToCloudinary(gifData,'image');result.gifUrl=gu.secure_url||gu.url;finalGifDataUrl=URL.createObjectURL(gifBlob)}catch(gifErr){console.warn('GIF Cloudinary gagal',gifErr)}try{
-  const boom=await getFinalBoomerangBlob();
-  const boomData=await new Promise((resolve,reject)=>{const rr=new FileReader();rr.onload=()=>resolve(rr.result);rr.onerror=reject;rr.readAsDataURL(boom)});
-  const bu=await uploadDataUrlToCloudinary(boomData,'video');
-  result.boomerangUrl=bu.secure_url||bu.url;
-}catch(boomErr){console.warn('Boomerang Cloudinary gagal',boomErr)}
-if(config.shareBase){try{const r=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});if(r.ok){const j=await r.json();result.shareUrl=j.shareUrl||null}}catch(e){console.warn('Share API tidak tersedia',e)}}localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));if(result.shareUrl||result.photoUrl){generateQR(result.shareUrl||result.photoUrl);if(status)status.innerText='Soft file online. QR siap dipindai.'}else if(status)status.innerText='Upload selesai; Share URL belum dikonfigurasi.';return result}catch(e){console.warn(e);if(status)status.innerText='Cloud belum aktif: '+e.message;return null}}
+async function publishSessionCloud(){
+ const status=$('cloudUploadStatus');if(status)status.innerText='Mengunggah soft file...';
+ try{
+  const result={sessionId,photoUrl:null,gifUrl:null,frameGifUrl:null};
+  const cleanPhoto=cleanSoftCompositeDataUrl||await buildCompositeCanvas(false);
+  if(cleanPhoto){const up=await uploadDataUrlToCloudinary(cleanPhoto,'image');result.photoUrl=up.secure_url||up.url}
+  try{const gifBlob=await getFinalGifBlob();const gifData=await new Promise((resolve,reject)=>{const rr=new FileReader();rr.onload=()=>resolve(rr.result);rr.onerror=reject;rr.readAsDataURL(gifBlob)});const gu=await uploadDataUrlToCloudinary(gifData,'image');result.gifUrl=gu.secure_url||gu.url}catch(gifErr){console.warn('GIF Foto Cloudinary gagal',gifErr)}
+  try{const frameGif=await getFinalFrameGifBlob();const frameData=await new Promise((resolve,reject)=>{const rr=new FileReader();rr.onload=()=>resolve(rr.result);rr.onerror=reject;rr.readAsDataURL(frameGif)});const fu=await uploadDataUrlToCloudinary(frameData,'image');result.frameGifUrl=fu.secure_url||fu.url}catch(frameErr){console.warn('GIF Frame Cloudinary gagal',frameErr)}
+  if(config.shareBase){try{const r=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});if(r.ok){const j=await r.json();result.shareUrl=j.shareUrl||null}}catch(e){console.warn('Share API tidak tersedia',e)}}
+  localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
+  if(result.shareUrl||result.photoUrl){generateQR(result.shareUrl||result.photoUrl);if(status)status.innerText='Soft file online. QR siap dipindai.'}else if(status)status.innerText='Upload selesai; Share URL belum dikonfigurasi.';
+  return result;
+ }catch(e){console.warn(e);if(status)status.innerText='Cloud belum aktif: '+e.message;return null}
+}
 function handleQrisUpload(e){const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{config.qris=r.result;saveConfig();$('dashQrisPreview').src=r.result;$('dashQrisPreview').classList.remove('hidden')};r.readAsDataURL(f)}
 /* ============ AUTO FRAME TRANSPARENCY (UPLOAD ONLY) ============ */
 function loadFrameImage(url){

@@ -11,8 +11,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 jobs:
   audit:
@@ -52,6 +50,7 @@ jobs:
         run: node tools/boothpro_browser_audit.mjs
 
       - name: Release guard
+        id: release_guard
         run: python3 tools/boothpro_guard.py
 
       - name: Upload QA evidence
@@ -72,39 +71,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Automatic failure ticket
-        if: steps.release_guard.outcome == 'failure'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const title = 'BoothPro QA Guard failure - ' + context.ref;
-            const q = 'repo:' + context.repo.owner + '/' + context.repo.repo + ' is:issue is:open in:title "BoothPro QA Guard failure"';
-            const found = await github.rest.search.issuesAndPullRequests({q});
-            if (!found.data.items.length) {
-              await github.rest.issues.create({
-                owner: context.repo.owner, repo: context.repo.repo, title,
-                body: 'Automated QA Guard failure.
-
-Run: ' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + '
-Commit: ' + context.sha + '
-Ref: ' + context.ref + '
-
-Review the uploaded QA artifacts and fix the failing gate before release.'
-              });
-            }
-
-      - name: PR failure comment
-        if: steps.release_guard.outcome == 'failure' && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number,
-              body: '⛔ BoothPro QA Guard blocked this PR. Review the workflow artifacts and failing checks before merge.
-
-Run: ' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId
-            });
-
       - name: Job summary
         if: always()
         run: |
@@ -118,4 +84,3 @@ Run: ' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo 
           if [ -f boothpro-browser-report.json ]; then
             python3 -c 'import json; d=json.load(open("boothpro-browser-report.json")); print("- Browser:",d.get("status")); [print("  -",c["name"],c["pass"]) for c in d.get("checks",[])]' >> "$GITHUB_STEP_SUMMARY"
           fi
-

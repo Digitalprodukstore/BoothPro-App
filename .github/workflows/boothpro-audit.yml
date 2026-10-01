@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
   audit:
@@ -46,7 +48,7 @@ jobs:
       - name: Browser interaction audit
         run: node tools/boothpro_browser_audit.mjs
 
-      - name: Upload QA evidence
+      - name: Release guard\n        run: python3 tools/boothpro_guard.py\n\n      - name: Upload QA evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -58,6 +60,8 @@ jobs:
             deep-audit-console.txt
             boothpro-browser-report.json
             boothpro-browser-failure.png
+            boothpro-browser.png
+            boothpro-guard-result.json
             /tmp/boothpro-http.log
           if-no-files-found: ignore
           retention-days: 14
@@ -75,3 +79,4 @@ jobs:
           if [ -f boothpro-browser-report.json ]; then
             python3 -c 'import json; d=json.load(open("boothpro-browser-report.json")); print("- Browser:",d.get("status")); [print("  -",c["name"],c["pass"]) for c in d.get("checks",[])]' >> "$GITHUB_STEP_SUMMARY"
           fi
+

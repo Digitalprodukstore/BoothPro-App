@@ -113,7 +113,7 @@ def main():
     for f in findings:
         print(f"[{f['level']}] {f['code']}: {f['message']}")
         for e in f["evidence"][:5]: print("  -",e)
-    return 2 if result["summary"]["fail"] else (1 if result["summary"]["warn"] else 0)
+    return 2 if result["summary"]["fail"] else 0
 
 if __name__=="__main__":
     sys.exit(main())

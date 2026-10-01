@@ -14,15 +14,18 @@ permissions:
 
 jobs:
   audit:
-    name: Static + Browser + Production Audit
+    name: Static + Deep + Browser + Production Audit
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Static audit
         run: python3 tools/boothpro_audit.py | tee audit-console.txt
+
+      - name: Deep structural audit
+        run: python3 tools/boothpro_deep_audit.py | tee deep-audit-console.txt
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -51,8 +54,11 @@ jobs:
           path: |
             audit-report.json
             audit-console.txt
+            deep-audit-report.json
+            deep-audit-console.txt
             boothpro-browser-report.json
             boothpro-browser-failure.png
+            /tmp/boothpro-http.log
           if-no-files-found: ignore
           retention-days: 14
 
@@ -62,6 +68,9 @@ jobs:
           echo "## BoothPro Audit & Guard" >> "$GITHUB_STEP_SUMMARY"
           if [ -f audit-report.json ]; then
             python3 -c 'import json; d=json.load(open("audit-report.json")); s=d["summary"]; print("- Static FAIL:",s["fail"]); print("- Static WARN:",s["warn"]); print("- Static PASS:",s["pass"])' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f deep-audit-report.json ]; then
+            python3 -c 'import json; d=json.load(open("deep-audit-report.json")); s=d["summary"]; print("- Deep FAIL:",s["fail"]); print("- Deep WARN:",s["warn"]); print("- Deep metrics:",len(d.get("metrics",{})))' >> "$GITHUB_STEP_SUMMARY"
           fi
           if [ -f boothpro-browser-report.json ]; then
             python3 -c 'import json; d=json.load(open("boothpro-browser-report.json")); print("- Browser:",d.get("status")); [print("  -",c["name"],c["pass"]) for c in d.get("checks",[])]' >> "$GITHUB_STEP_SUMMARY"

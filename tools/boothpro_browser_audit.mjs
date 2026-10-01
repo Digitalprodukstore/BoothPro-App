@@ -59,6 +59,7 @@ try {
     check("frame-click-produces-selection",/selected|dipilih|frame/i.test(frameState.text+frameState.summary),JSON.stringify(frameState));
   }
   await page.screenshot({path:"boothpro-browser.png",fullPage:true});
+  result.checks.push({name:"browser-runtime-errors",pass:errors.length===0,evidence:errors.join(" | ")});
   if(errors.length) throw new Error("Browser console/page errors detected: "+errors.join(" | "));
   result.status="PASS";
 } catch(e){

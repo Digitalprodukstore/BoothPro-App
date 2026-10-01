@@ -1175,7 +1175,7 @@ function downloadGif(){
 }
 function pickMotionVideoMime(){
   if(typeof MediaRecorder==='undefined')return '';
-  const candidates=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp8','video/webm'];
+  const candidates=['video/mp4','video/mp4;codecs=avc1.42E01E','video/webm;codecs=vp8','video/webm'];
   return candidates.find(m=>!MediaRecorder.isTypeSupported||MediaRecorder.isTypeSupported(m))||'';
 }
 async function buildMotionVideoBlob(){

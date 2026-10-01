@@ -842,7 +842,7 @@ function applyAdjustments(){adjState.brightness=Number($('adjBrightness').value)
 function updateAdjLabels(){if($('adjBVal'))$('adjBVal').innerText=adjState.brightness;if($('adjCVal'))$('adjCVal').innerText=adjState.contrast;if($('adjSVal'))$('adjSVal').innerText=adjState.saturate}
 function resetAdjustments(){adjState={brightness:100,contrast:100,saturate:100};if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels();renderEditor()}}
 function initStickerPicker(){const p=$('stickerPicker');if(!p)return;p.innerHTML='';STICKER_SET.forEach(e=>{const b=document.createElement('button');b.type='button';b.className='h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-700 text-lg hover:border-indigo-500';b.textContent=e;b.title='Stiker '+e;b.onclick=()=>addSticker(e);p.appendChild(b)});customStickerGallery.forEach(st=>{const b=document.createElement('button');b.type='button';b.className='h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-700 overflow-hidden hover:border-indigo-500';b.title=st.name||'Stiker custom';b.innerHTML='<img src="'+st.src+'" alt="" class="w-full h-full object-contain">';b.onclick=()=>addSticker(st);p.appendChild(b)})}
-function addSticker(item){if(!isPro()){openLicense();return}const isObj=item&&typeof item==='object';stickers.push(isObj?{id:item.id||'',name:item.name||'',src:item.src||'',emoji:item.emoji||'',x:50,y:50,size:14}:{emoji:String(item||''),x:50,y:50,size:14});renderStickerOverlay()}
+function addSticker(item){if(!isPro()){openLicense();return}const isObj=item&&typeof item==='object';const st=isObj?{id:item.id||'',name:item.name||'',src:item.src||'',emoji:item.emoji||'',x:50,y:50,size:14}:{emoji:String(item||''),x:50,y:50,size:14};stickers.push(st);renderStickerOverlay();if(!st.src&&st.emoji){hydrateStickerRaster(st).then(()=>renderStickerOverlay()).catch(()=>{})}}
 function removeSticker(idx){if(idx<0||idx>=stickers.length)return;stickers.splice(idx,1);renderStickerOverlay()}
 function removeLastSticker(){if(!stickers.length)return;stickers.pop();renderStickerOverlay()}
 function clearAllStickers(){if(!stickers.length)return;stickers=[];renderStickerOverlay()}
@@ -900,30 +900,35 @@ async function drawStickerEmoji(ctx,emoji,x,y,fontPx){
   ctx.font=fontPx+"px -apple-system, BlinkMacSystemFont, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
   ctx.fillText(text,x,y);ctx.restore();
 }
+async function hydrateStickerRaster(st){
+  if(!st||st.src||st.rasterSrc||!st.emoji)return st;
+  try{const data=await resolveStickerEmojiDataUrl(st.emoji);if(data)st.rasterSrc=data}catch(e){}
+  return st;
+}
+async function ensureStickerRasters(){if(!Array.isArray(stickers)||!stickers.length)return;await Promise.all(stickers.map(st=>hydrateStickerRaster(st)))}
 async function drawStickersCanvas(ctx,w,h){
   if(!ctx||!Array.isArray(stickers)||!stickers.length)return;
+  await ensureStickerRasters();
   const snapshot=stickers.map(st=>({...st}));
+  ctx.save();ctx.filter='none';ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   for(const st of snapshot){
+    const size=Math.max(8,Number(st?.size)||14);
+    const x=Math.min(98,Math.max(2,Number(st?.x)||50))/100*w;
+    const y=Math.min(98,Math.max(2,Number(st?.y)||50))/100*h;
     try{
-      const size=Math.max(8,Number(st?.size)||14);
-      const x=Math.min(98,Math.max(2,Number(st?.x)||50))/100*w;
-      const y=Math.min(98,Math.max(2,Number(st?.y)||50))/100*h;
-      if(st?.src){
-        const src=await resolveImageSourceDataUrl(st.src);
-        const im=await loadImage(src);
-        const target=Math.max(24,(size/100)*w);
-        const iw=im.naturalWidth||im.width||1,ih=im.naturalHeight||im.height||1;
-        const scale=Math.min(target/iw,target/ih);
-        ctx.drawImage(im,x-iw*scale/2,y-ih*scale/2,iw*scale,ih*scale);
-      }else{
-        const emoji=String(st?.emoji||'').trim();
-        if(!emoji)continue;
-        const fontPx=Math.max(12,(size/100)*w);
-        await drawStickerEmoji(ctx,emoji,x,y,fontPx);
-      }
-    }catch(e){console.warn('Sticker render dilewati:',e)}
+      const raster=st?.rasterSrc||st?.src||'';
+      if(raster){
+        const src=await resolveImageSourceDataUrl(raster),im=await loadImage(src);
+        const target=Math.max(24,(size/100)*w),iw=im.naturalWidth||im.width||1,ih=im.naturalHeight||im.height||1;
+        const scale=Math.min(target/iw,target/ih);ctx.drawImage(im,x-iw*scale/2,y-ih*scale/2,iw*scale,ih*scale);
+      }else if(st?.emoji){await drawStickerEmoji(ctx,st.emoji,x,y,Math.max(12,(size/100)*w))}
+    }catch(e){
+      try{if(st?.emoji){ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=Math.max(12,(size/100)*w)+"px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";ctx.fillText(String(st.emoji),x,y);ctx.restore()}}catch(_){}
+    }
   }
+  ctx.restore();
 }
+
 async function finishEditing(){
   const btn=$('finishEditingBtn');
   if(btn){btn.disabled=true;btn.style.pointerEvents='none';btn.textContent='Menyiapkan hasil akhir...'}
@@ -944,7 +949,7 @@ async function finishEditing(){
 async function getFrameNaturalRatio(){if(!selectedFrameSrc)return selectedLayoutType==='strip'?1/3:2/3;try{const im=await loadImage(selectedFrameSrc);const w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;return w&&h?w/h:(selectedLayoutType==='strip'?1/3:2/3)}catch(e){return selectedLayoutType==='strip'?1/3:2/3}}
 function containDrawCanvas(ctx,source,x,y,w,h){const sw=source.width||source.naturalWidth,sh=source.height||source.naturalHeight;if(!sw||!sh)return;const scale=Math.min(w/sw,h/sh),dw=sw*scale,dh=sh*scale;ctx.drawImage(source,x+(w-dw)/2,y+(h-dh)/2,dw,dh)}
 async function buildCompositeCanvas(){const pkg=config.packages.find(p=>p.id===selectedPackageId)||{prints:1};const copies=Math.max(1,Math.min(2,Number(pkg.prints)||1));const size=config.printSize||'4x6';const sheetMap={'4x6':[1200,1800],'2x6':[600,1800],'A4':[1414,2000]};const [sheetW,sheetH]=sheetMap[size]||sheetMap['4x6'];const frameRatio=await getFrameNaturalRatio();const gap=selectedLayoutType==='strip'?Math.max(12,Math.round(sheetW*.025)):0;let panelW,panelH;if(selectedLayoutType==='strip'){panelH=sheetH;const maxPanelW=Math.max(1,(sheetW-gap*(copies-1))/copies);const idealW=Math.max(1,Math.round(panelH*frameRatio));panelW=Math.min(maxPanelW,idealW)}else{panelW=sheetW;panelH=sheetH}
-const makePanel=async()=>{const c=document.createElement('canvas');c.width=panelW;c.height=panelH;const photos=[];for(const src of capturedPhotos){try{photos.push(await loadImage(src))}catch(e){}}await drawFrameAwareComposition(c,true,photos);await drawStickersCanvas(c,panelW,panelH);return c};const panel=await makePanel();const out=document.createElement('canvas');out.width=sheetW;out.height=sheetH;const ox=out.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,sheetW,sheetH);if(selectedLayoutType==='strip'){const total=copies*panelW+(copies-1)*gap;const startX=(sheetW-total)/2;for(let i=0;i<copies;i++)containDrawCanvas(ox,panel,startX+i*(panelW+gap),0,panelW,panelH)}else containDrawCanvas(ox,panel,0,0,sheetW,sheetH);return out.toDataURL('image/jpeg',.95)}
+const makePanel=async()=>{const c=document.createElement('canvas');c.width=panelW;c.height=panelH;const photos=[];for(const src of capturedPhotos){try{photos.push(await loadImage(src))}catch(e){}}await drawFrameAwareComposition(c,true,photos);await ensureStickerRasters();await drawStickersCanvas(c,panelW,panelH);return c};const panel=await makePanel();const out=document.createElement('canvas');out.width=sheetW;out.height=sheetH;const ox=out.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,sheetW,sheetH);if(selectedLayoutType==='strip'){const total=copies*panelW+(copies-1)*gap;const startX=(sheetW-total)/2;for(let i=0;i<copies;i++)containDrawCanvas(ox,panel,startX+i*(panelW+gap),0,panelW,panelH)}else containDrawCanvas(ox,panel,0,0,sheetW,sheetH);return out.toDataURL('image/jpeg',.95)}
 async function prepareFinal(){finalCompositeDataUrl=await buildCompositeCanvas();const pkg=config.packages.find(p=>p.id===selectedPackageId);$('sessionIdDisplay').innerText=sessionId;$('finalSessionText').innerText=`${capturedPhotos.length} foto · ${pkg?.name||''} · 2 soft file: Burst GIF + Boomerang Video siap.`;$('printCountLabel').innerText=`(${pkg?.prints||1} strip)`;saveHistory({id:sessionId,date:new Date().toISOString(),layout:selectedLayoutType,count:capturedPhotos.length,filter:currentFilter,package:selectedPackageId,packageName:pkg?.name||'',price:pkg?.price||0,method:lastPaymentMethod,prints:pkg?.prints||1,retakes:retakeCount});renderFinalPreview();generateQR();if(config.cloudinary?.cloudName&&config.cloudinary?.uploadPreset)publishSessionCloud()}
 function renderFinalPreview(){const p=$('finalPreview');p.innerHTML='';const im=document.createElement('img');im.src=finalCompositeDataUrl;im.className='max-w-full max-h-[620px] object-contain rounded-xl shadow-2xl';p.appendChild(im)}
 function downloadComposite(){if(!finalCompositeDataUrl)return;const a=document.createElement('a');a.href=finalCompositeDataUrl;a.download=`BoothPro-${sessionId}.jpg`;a.click()}

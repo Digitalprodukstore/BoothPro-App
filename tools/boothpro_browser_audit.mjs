@@ -45,18 +45,45 @@ try {
   check("package-click-changes-summary",
     after.price!==before.price || after.summary!==before.summary,
     JSON.stringify({before,after}));
+  check("package-price-populated",after.price!=="" && after.price!=="Rp0",JSON.stringify(after));
+  check("package-summary-populated",after.summary!=="" && !/Belum dipilih/i.test(after.summary),JSON.stringify(after));
 
-  const frameCount=await page.locator("#preFrameGrid button").count();
+  const categoryCount=await page.locator("#preFrameGrid button.pre-frame-category-card").count();
+  check("frame-category-buttons-render",categoryCount>=1,String(categoryCount));
+  if(categoryCount>=1){
+    await page.locator("#preFrameGrid button.pre-frame-category-card").first().click({timeout:10000});
+    await page.waitForTimeout(250);
+  }
+  const frameCount=await page.locator("#preFrameGrid button[data-frame-id]").count();
   check("frame-buttons-render",frameCount>=1,String(frameCount));
   if(frameCount>=1){
-    await page.locator("#preFrameGrid button").first().click({timeout:10000});
+    const firstFrame=page.locator("#preFrameGrid button[data-frame-id]").first();
+    const frameName=(await firstFrame.innerText()).trim();
+    await firstFrame.click({timeout:10000});
     await page.waitForTimeout(250);
     const frameState=await page.evaluate(()=>({
       text:document.getElementById("preFrameGrid")?.innerText||"",
       summary:document.getElementById("selectedPackageSummary")?.textContent||"",
-      buttonDisabled:document.getElementById("toPaymentBtn")?.disabled ?? null
+      buttonDisabled:document.getElementById("toPaymentBtn")?.disabled ?? null,
+      selectedFrameId:typeof window.selectedFrameId!=="undefined"?window.selectedFrameId:null,
+      frameSelectionConfirmed:typeof window.frameSelectionConfirmed!=="undefined"?window.frameSelectionConfirmed:null
     }));
-    check("frame-click-produces-selection",/selected|dipilih|frame/i.test(frameState.text+frameState.summary),JSON.stringify(frameState));
+    check("frame-click-produces-selection",
+      !!frameState.selectedFrameId && frameState.frameSelectionConfirmed===true,
+      JSON.stringify(frameState));
+    check("selected-frame-name-visible",
+      frameName && (frameState.summary.includes(frameName) || frameState.text.includes(frameName)),
+      JSON.stringify({frameName,frameState}));
+    check("payment-button-enabled",
+      frameState.buttonDisabled===false,
+      JSON.stringify(frameState));
+    await page.locator("#toPaymentBtn").click({timeout:10000});
+    await page.waitForTimeout(300);
+    const paymentVisible=await page.evaluate(()=>{
+      const el=document.getElementById("step-payment");
+      return !!el && !el.classList.contains("hidden");
+    });
+    check("payment-step-opens",paymentVisible);
   }
   await page.screenshot({path:"boothpro-browser.png",fullPage:true});
   result.checks.push({name:"browser-runtime-errors",pass:errors.length===0,evidence:errors.join(" | ")});

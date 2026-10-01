@@ -50,6 +50,18 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
 
+      - name: JavaScript syntax audit
+        run: |
+          python3 - <<'PY'
+          import re, pathlib
+          html=pathlib.Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script[^>]*>([\\s\\S]*?)</script>', html, flags=re.I)
+          pathlib.Path('/tmp/boothpro-js').mkdir(exist_ok=True)
+          for i,src in enumerate(scripts,1): pathlib.Path(f'/tmp/boothpro-js/{i}.js').write_text(src,encoding='utf-8')
+          print('Extracted',len(scripts),'script blocks')
+          PY
+          for f in /tmp/boothpro-js/*.js; do node --check "$f" || exit 1; done
+
       - name: Start local kiosk
         run: |
           nohup python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/boothpro-http.log 2>&1 &

@@ -35,6 +35,10 @@ jobs:
         continue-on-error: true
         run: python3 tools/boothpro_deep_audit.py | tee deep-audit-console.txt
 
+      - name: Dashboard to Kiosk cloud sync audit
+        continue-on-error: true
+        run: python3 tools/boothpro_cloud_sync_audit.py | tee cloud-sync-console.txt
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -104,6 +108,8 @@ jobs:
             audit-console.txt
             deep-audit-report.json
             deep-audit-console.txt
+            boothpro-cloud-sync-report.json
+            cloud-sync-console.txt
             boothpro-browser-report.json
             boothpro-browser-failure.png
             boothpro-browser.png
@@ -121,6 +127,9 @@ jobs:
           fi
           if [ -f deep-audit-report.json ]; then
             python3 -c 'import json; d=json.load(open("deep-audit-report.json")); s=d["summary"]; print("- Deep FAIL:",s["fail"]); print("- Deep WARN:",s["warn"]); print("- Deep metrics:",len(d.get("metrics",{})))' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f boothpro-cloud-sync-report.json ]; then
+            python3 -c 'import json; d=json.load(open("boothpro-cloud-sync-report.json")); s=d["summary"]; print("- Cloud Sync FAIL:",s["fail"]); print("- Cloud Sync PASS:",s["pass"])' >> "$GITHUB_STEP_SUMMARY"
           fi
           if [ -f boothpro-browser-report.json ]; then
             python3 -c 'import json; d=json.load(open("boothpro-browser-report.json")); print("- Browser:",d.get("status")); [print("  -",c["name"],c["pass"]) for c in d.get("checks",[])]' >> "$GITHUB_STEP_SUMMARY"

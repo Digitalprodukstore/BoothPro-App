@@ -184,7 +184,7 @@ main{width:100%!important;max-width:100vw!important;min-width:0!important;overfl
 <div id="qrisBox"><div class="text-sm font-bold mb-2">Scan QRIS Merchant</div><div class="bg-white rounded-2xl p-3 mx-auto w-fit min-h-[230px] flex items-center justify-center"><img id="qrisImage" class="max-w-[240px] max-h-[240px] object-contain hidden"><div id="qrisEmpty" class="text-zinc-500 text-xs text-center px-8">QRIS belum diatur.<br>Upload QRIS di Dashboard.</div></div><button onclick="confirmPayment('qris')" class="mt-4 w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold"><i class="fa-solid fa-circle-check mr-2"></i>Saya Sudah Bayar</button></div>
 <div id="voucherBox" class="hidden"><label class="text-xs text-zinc-500">Kode voucher</label><input id="voucherInput" class="mt-2 w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 outline-none focus:border-indigo-500" placeholder="Masukkan kode voucher"><button onclick="confirmVoucher()" class="mt-3 w-full py-3.5 bg-emerald-600 rounded-xl font-bold">Gunakan Voucher</button><p id="voucherMsg" class="text-xs mt-3 text-zinc-500"></p></div><button onclick="goToStep(2)" class="mt-3 w-full py-3 text-zinc-400 hover:text-white text-sm">← Kembali pilih paket</button></div></div></section>
 <!-- 4 CAMERA -->
-<section id="step-capture" class="hidden w-full max-w-6xl animate-fadeIn"><div class="flex flex-wrap justify-between items-center gap-3 mb-4"><div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 03</span><h2 class="text-2xl font-extrabold mt-1">Sesi Take Foto</h2><p class="text-zinc-400 text-sm mt-1">Ambil semua foto sesuai paket. Frame pilihan awal akan menjadi referensi preview, lalu Anda masih bisa menyesuaikannya setelah sesi selesai.</p></div><div id="sessionTimer" class="px-4 py-2 rounded-full bg-zinc-950 border border-zinc-800 font-mono font-bold">07:00</div></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 flex flex-col gap-4"><div class="relative bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden aspect-[4/3] flex items-center justify-center shadow-2xl"><video id="webcam" class="w-full h-full object-cover scale-x-[-1]" autoplay playsinline muted></video><div id="cameraPlaceholder" class="absolute inset-0 bg-zinc-900 flex flex-col items-center justify-center space-y-3 z-10"><div class="h-14 w-14 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 animate-pulse"><i class="fa-solid fa-video-slash text-xl"></i></div><p id="cameraMessage" class="text-zinc-400 text-sm font-medium">Membuka akses kamera...</p><button onclick="startWebcam(true)" class="mt-2 text-xs text-indigo-400 underline">Gunakan Kamera Simulasi jika gagal</button></div><div id="countdownOverlay" class="hidden absolute inset-0 bg-black/40 flex items-center justify-center z-20"><span id="countdownText" class="text-8xl md:text-9xl font-black">3</span></div><div class="absolute top-4 left-4 z-20 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs"><i class="fa-solid fa-circle text-red-500 text-[10px] animate-pulse mr-1"></i> LIVE VIEW</div></div><div class="bg-zinc-950 border border-zinc-800 p-4 rounded-2xl flex flex-wrap justify-between items-center gap-3"><div class="text-xs md:text-sm text-zinc-400">Foto: <span id="capturedCount" class="font-bold text-white">0</span> / <span id="maxPhotosCount">4</span> · Retake: <span id="retakeCount">0</span>/3</div><div class="flex items-center gap-3 flex-wrap"><div id="zoomWrap" class="hidden items-center gap-2"><i class="fa-solid fa-magnifying-glass text-xs text-zinc-500"></i><input id="zoomRange" type="range" min="1" max="3" step="0.1" value="1" class="w-24"></div><button onclick="toggleMirror()" title="Mirror" class="px-3 py-3 rounded-xl bg-zinc-800 text-zinc-300 hover:text-white text-sm"><i class="fa-solid fa-arrows-left-right"></i></button><button id="shutterBtn" onclick="takePhoto()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2 text-sm disabled:opacity-40 disabled:pointer-events-none"><i class="fa-solid fa-circle-dot"></i> Ambil Gambar</button></div></div></div><div class="bg-zinc-950 border border-zinc-800 p-5 rounded-3xl flex flex-col"><h3 class="font-bold text-white text-lg mb-3"><i class="fa-solid fa-film text-indigo-400 mr-2"></i>Hasil Jepretan</h3><div id="filmStripGallery" class="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1"></div><div class="mt-4 pt-4 border-t border-zinc-800"><div class="text-xs uppercase tracking-widest text-indigo-400 font-bold mb-2">Live Review + Frame</div><div id="captureReviewPreview" class="capture-review-shell mx-auto"></div><p class="text-[11px] text-zinc-500 text-center mt-2">Frame yang dipilih sudah langsung diterapkan ke preview hasil.</p></div><button id="nextToFrameBtn" disabled onclick="goToStep(5)" class="mt-4 w-full py-3.5 bg-zinc-800 text-zinc-500 font-bold rounded-xl disabled:opacity-50 disabled:pointer-events-none"><i class="fa-solid fa-images mr-2"></i>Lanjut ke Edit Foto</button></div></div></section>
+<section id="step-capture" class="hidden w-full max-w-6xl animate-fadeIn"><div class="flex flex-wrap justify-between items-center gap-3 mb-4"><div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 03</span><h2 class="text-2xl font-extrabold mt-1">Sesi Take Foto</h2><p class="text-zinc-400 text-sm mt-1">Ambil semua foto sesuai paket. Setelah setiap foto masuk, hasil langsung tampil di Live Review dan bisa disentuh untuk mengatur posisi/zoom di dalam frame.</p></div><div id="sessionTimer" class="px-4 py-2 rounded-full bg-zinc-950 border border-zinc-800 font-mono font-bold">07:00</div></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 flex flex-col gap-4"><div class="relative bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden aspect-[4/3] flex items-center justify-center shadow-2xl"><video id="webcam" class="w-full h-full object-cover scale-x-[-1]" autoplay playsinline muted></video><div id="cameraPlaceholder" class="absolute inset-0 bg-zinc-900 flex flex-col items-center justify-center space-y-3 z-10"><div class="h-14 w-14 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 animate-pulse"><i class="fa-solid fa-video-slash text-xl"></i></div><p id="cameraMessage" class="text-zinc-400 text-sm font-medium">Membuka akses kamera...</p><button onclick="startWebcam(true)" class="mt-2 text-xs text-indigo-400 underline">Gunakan Kamera Simulasi jika gagal</button></div><div id="countdownOverlay" class="hidden absolute inset-0 bg-black/40 flex items-center justify-center z-20"><span id="countdownText" class="text-8xl md:text-9xl font-black">3</span></div><div class="absolute top-4 left-4 z-20 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs"><i class="fa-solid fa-circle text-red-500 text-[10px] animate-pulse mr-1"></i> LIVE VIEW</div></div><div class="bg-zinc-950 border border-zinc-800 p-4 rounded-2xl flex flex-wrap justify-between items-center gap-3"><div class="text-xs md:text-sm text-zinc-400">Foto: <span id="capturedCount" class="font-bold text-white">0</span> / <span id="maxPhotosCount">4</span> · Retake: <span id="retakeCount">0</span>/3</div><div class="flex items-center gap-3 flex-wrap"><div id="zoomWrap" class="hidden items-center gap-2"><i class="fa-solid fa-magnifying-glass text-xs text-zinc-500"></i><input id="zoomRange" type="range" min="1" max="3" step="0.1" value="1" class="w-24"></div><button onclick="toggleMirror()" title="Mirror" class="px-3 py-3 rounded-xl bg-zinc-800 text-zinc-300 hover:text-white text-sm"><i class="fa-solid fa-arrows-left-right"></i></button><button id="shutterBtn" onclick="takePhoto()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2 text-sm disabled:opacity-40 disabled:pointer-events-none"><i class="fa-solid fa-circle-dot"></i> Ambil Gambar</button></div></div></div><div class="bg-zinc-950 border border-zinc-800 p-5 rounded-3xl flex flex-col"><h3 class="font-bold text-white text-lg mb-3"><i class="fa-solid fa-film text-indigo-400 mr-2"></i>Hasil Jepretan</h3><div id="filmStripGallery" class="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1"></div><div class="mt-4 pt-4 border-t border-zinc-800"><div class="text-xs uppercase tracking-widest text-indigo-400 font-bold mb-2">Live Review + Frame</div><div id="captureReviewPreview" class="capture-review-shell mx-auto"></div><p class="text-[11px] text-zinc-500 text-center mt-2">Frame yang dipilih sudah langsung diterapkan ke preview hasil.</p></div><button id="nextToFrameBtn" disabled onclick="goToStep(5)" class="mt-4 w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold rounded-xl disabled:opacity-50 disabled:pointer-events-none"><i class="fa-solid fa-sliders mr-2"></i>Selesai Penyesuaian — Lanjut Edit Foto</button></div></div></section>
 <!-- 5 FRAME GALLERY -->
 <section id="step-frame" class="hidden w-full max-w-6xl animate-fadeIn"><div class="flex justify-between items-end mb-5"><div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 04</span><h2 class="text-3xl font-extrabold mt-2">Menyesuaikan Foto & Frame</h2><p class="text-zinc-400 text-sm mt-1">Di halaman ini Anda melihat hasil foto dengan frame pilihan awal. Jika kurang cocok, Anda masih bisa mengganti frame sekarang sebelum lanjut ke edit dan print.</p></div><label class="cursor-pointer px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-sm"><i class="fa-solid fa-upload mr-2"></i>Upload Frame<input id="frameUpload" type="file" accept="image/png,image/jpeg,image/webp" multiple class="hidden" onchange="handleFrameUpload(event)"></label></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 min-w-0 overflow-hidden"><div class="mb-2"><div class="frame-swipe-hint m-0 justify-start"><i class="fa-solid fa-hand-pointer"></i> Pilih kategori untuk membuka grid frame</div><p class="text-[11px] text-zinc-500 mt-1">Ini adalah <b class="text-zinc-300">penyesuaian frame final</b>. Frame yang dipilih di Langkah 1 sudah dipasang otomatis. Jika kurang cocok, pilih frame lain di kategori mana pun sebelum lanjut ke Edit.</p></div><div id="frameGallery" class="min-w-0"></div></div><div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5"><div id="frameMiniPreview" class="preview-shell mx-auto"></div><button onclick="goToStep(6)" class="mt-5 w-full py-4 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl font-bold">Frame Sudah Sesuai — Lanjut Edit <i class="fa-solid fa-arrow-right ml-1"></i></button><p class="text-[11px] text-zinc-500 text-center mt-2">Belum cocok? Pilih frame lain di galeri di sebelah kiri. Perubahan langsung diterapkan ke hasil foto.</p></div></div></section>
 <!-- 6 EDITOR -->
@@ -517,7 +517,7 @@ function saveConfig(opts={}){
 }
 function fmt(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n)}
 /* ============ STEPS ============ */
-function goToStep(n){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));const map={1:'step-welcome',2:'step-package',3:'step-payment',4:'step-capture',5:'step-frame',6:'step-editor',7:'step-final'};$(map[n]).classList.remove('hidden');currentStep=n;updateStatusBadge();resetIdleTimer();if(n===2)renderPackageStep();if(n===3)renderPayment();if(n===4)startCaptureSession();if(n===5){stopWebcam();renderFrameGallery();renderCaptureReview()}if(n===6){renderEditor();renderEditorFrameQuickGrid()}if(n===7)prepareFinal()}
+function goToStep(n){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));const map={1:'step-welcome',2:'step-package',3:'step-payment',4:'step-capture',5:'step-final',6:'step-final',7:'step-final'};const target=map[n]||'step-welcome';$(target).classList.remove('hidden');currentStep=n;updateStatusBadge();resetIdleTimer();if(n===2)renderPackageStep();if(n===3)renderPayment();if(n===4)startCaptureSession();if(n===5||n===6||n===7){stopWebcam();prepareFinal()}}
 function updateStatusBadge(){const b=$('statusBadge'),t=$('statusText');b.classList.remove('hidden');if(currentStep===1)b.classList.add('hidden');else if(currentStep===2)t.innerText='Pilih Paket';else if(currentStep===3)t.innerText='Menunggu Pembayaran';else if(currentStep===4)t.innerText=`Take ${capturedPhotos.length}/${requiredPhotosCount}`;else if(currentStep===5)t.innerText='Sesuaikan Frame';else if(currentStep===6)t.innerText='Edit';else t.innerText='Selesai'}
 function resetToHome(){stopWebcam();stopMidtransPoll();if(sessionTimerId)clearInterval(sessionTimerId);if(countdownTimer)clearInterval(countdownTimer);sessionTimerId=null;countdownTimer=null;capturedPhotos=[];retakeCount=0;paymentConfirmed=false;finalCompositeDataUrl='';finalGifDataUrl='';extraPrintPaid=false;selectedPackageId=null;frameSelectionConfirmed=false;preFrameCategoryOpen='';sessionId='';sessionStartedAt=null;selectedFrameId='plain-white';selectedFrameSrc='';currentFilter='none';frameBg='#ffffff';frameFg='#18181b';adjState={brightness:100,contrast:100,saturate:100};stickers=[];if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels()}goToStep(1)}
 /* ============ PACKAGES ============ */
@@ -4951,7 +4951,140 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 
 <style id="bp-c9-output-sync-20261002">#finalPreview,#finalPreview *{pointer-events:auto!important}.bp-final-filterbar{position:relative;z-index:200;pointer-events:auto!important;touch-action:manipulation}.bp-final-filter-btn{position:relative;z-index:201;pointer-events:auto!important;touch-action:manipulation;cursor:pointer}</style><script id="bp-c9-output-sync-20261002">(function(){'use strict';function s(id){id=String(id||'none');try{window.currentFilter=id}catch(e){}try{if(typeof currentFilter!=='undefined')currentFilter=id}catch(e){}try{if(window.BoothProComposerState)window.BoothProComposerState.filter=id}catch(e){}}function f(){const id=String(window.currentFilter||'none');if(typeof window.bpApplyFinalFilter==='function'&&window.finalCompositeDataUrl){try{window.bpApplyFinalFilter(id)}catch(e){}}}const oa=window.applyImageFilter;if(typeof oa==='function'&&!oa.__bpC9){const w=function(id){s(id);const r=oa.apply(this,arguments);setTimeout(()=>{if(window.finalCompositeDataUrl)f()},0);return r};w.__bpC9=true;window.applyImageFilter=w}const of=window.bpApplyFinalFilter;if(typeof of==='function'&&!of.__bpC9){const w=async function(id){s(id);const r=await of.apply(this,arguments);try{if(window.BoothProComposerState)window.BoothProComposerState.filter=String(id||'none')}catch(e){}return r};w.__bpC9=true;window.bpApplyFinalFilter=w}function b(){document.querySelectorAll('.bp-final-filter-btn').forEach(x=>{if(x.dataset.bpC9)return;x.dataset.bpC9='1';x.addEventListener('click',()=>setTimeout(()=>s(window.currentFilter||'none'),0),{passive:true})})}function boot(){b();setTimeout(b,250);setTimeout(b,800)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();window.__bpC9OutputSyncReady=true})();</script>
-</html>
+<style id="bp-vnext-flow-review-20261002">
+/* UX vNext review build: capture + live review + frame transform in one workspace. */
+#step-capture .bp-capture-adjust-wrap{margin-top:14px}
+#step-capture .bp-capture-adjust-wrap #bpRightFrameEditor{margin:0!important}
+#step-capture .bp-capture-adjust-wrap .bp-right-frame-stage{max-width:460px}
+#step-frame,#step-editor{display:none!important}
+.bp-flow-frame-mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.bp-flow-frame-mode button{min-height:48px;border-radius:12px;border:1px solid #3f3f46;background:#18181b;color:#e4e4e7;font-size:11px;font-weight:900;touch-action:manipulation}
+.bp-flow-frame-mode button.active{border-color:#818cf8;background:#312e81;color:#fff;box-shadow:0 0 0 2px rgba(129,140,248,.16)}
+.bp-digital-hub{margin-top:18px;padding:16px;border:1px solid #27272a;border-radius:20px;background:#09090b}
+.bp-digital-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}
+.bp-digital-card{min-height:62px;padding:10px;border-radius:13px;border:1px solid #27272a;background:#18181b;text-align:left;touch-action:manipulation}
+.bp-digital-card b{display:block;font-size:11px;color:#fff}.bp-digital-card span{display:block;font-size:9px;color:#71717a;margin-top:3px}
+@media(max-width:700px){.bp-digital-grid{grid-template-columns:1fr}.bp-flow-frame-mode{grid-template-columns:1fr 1fr}}
+</style>
+<script id="bp-vnext-flow-review-20261002">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+let bpFrameMode='frame';
+
+function ensureCaptureWorkspace(){
+  const capture=$('step-capture'), review=$('captureReviewPreview');
+  if(!capture||!review)return;
+  let wrap=$('bpCaptureAdjustWrap');
+  if(!wrap){
+    wrap=document.createElement('div');
+    wrap.id='bpCaptureAdjustWrap';
+    wrap.className='bp-capture-adjust-wrap';
+    wrap.innerHTML='<div class="mb-2"><div class="text-xs font-black uppercase tracking-widest text-indigo-300">Penyesuaian Live Review</div><p class="text-[10px] text-zinc-500 mt-1">Ketuk slot foto lalu geser untuk posisi. Pinch dua jari untuk zoom + putar. Frame tetap.</p></div><div id="bpCaptureAdjustHost"></div>';
+    const parent=review.parentElement;
+    parent.insertBefore(wrap,review.nextSibling);
+  }
+  const source=$('bpRightFrameEditor');
+  const host=$('bpCaptureAdjustHost');
+  if(source&&host&&source.parentElement!==host){
+    host.appendChild(source);
+    source.classList.remove('mb-5');
+    source.classList.add('p-3','rounded-2xl','border','border-zinc-800','bg-zinc-950');
+  }
+  const editorTitle=source?.querySelector('.text-xs.font-black');
+  if(editorTitle)editorTitle.textContent='Atur Foto di Dalam Frame';
+}
+
+function ensureFinalControls(){
+  const final=$('step-final');
+  if(!final)return;
+  const panel=final.querySelector('.bg-zinc-950.border.border-zinc-800.rounded-3xl.p-5');
+  if(!panel)return;
+  if(!$('bpFinalFrameMode')){
+    const box=document.createElement('div');
+    box.id='bpFinalFrameMode';
+    box.className='mt-5 border-t border-zinc-800 pt-5';
+    box.innerHTML='<div class="text-xs font-black uppercase tracking-wide text-zinc-400">Versi Hasil</div><p class="text-[10px] text-zinc-500 mt-1">Pilih apakah hasil akhir memakai frame yang dipilih atau foto original tanpa frame.</p><div class="bp-flow-frame-mode"><button type="button" data-mode="frame" class="active">✓ Pakai Frame</button><button type="button" data-mode="original">Original / Tanpa Frame</button></div>';
+    const firstAction=panel.querySelector('.grid.grid-cols-2');
+    if(firstAction)panel.insertBefore(box,firstAction);
+    box.querySelectorAll('button[data-mode]').forEach(btn=>btn.addEventListener('click',()=>bpSetFrameMode(btn.dataset.mode)));
+  }
+  if(!$('bpDigitalHub')){
+    const hub=document.createElement('div');
+    hub.id='bpDigitalHub';
+    hub.className='bp-digital-hub';
+    hub.innerHTML='<div class="flex items-center justify-between gap-3"><div><div class="font-black text-sm">Barcode / Digital Delivery</div><p class="text-[10px] text-zinc-500 mt-1">Satu area untuk hasil digital sesi.</p></div><span class="text-[9px] px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">BUNDLING</span></div><div class="bp-digital-grid"><button type="button" class="bp-digital-card" data-digital="bundle"><b>Bundling</b><span>Semua hasil sesi</span></button><button type="button" class="bp-digital-card" data-digital="photo"><b>Foto</b><span>Foto final</span></button><button type="button" class="bp-digital-card" data-digital="video"><b>Video Live Photo</b><span>Video pengambilan sesi</span></button><button type="button" class="bp-digital-card" data-digital="gif"><b>GIF</b><span>GIF / looping</span></button></div><div id="bpDigitalStatus" class="text-[10px] text-zinc-500 text-center mt-3">Pilih jenis barcode untuk menyiapkan QR.</div>';
+    const cloud=panel.querySelector('#cloudUploadStatus');
+    if(cloud?.parentElement)cloud.parentElement.after(hub);else panel.appendChild(hub);
+    hub.querySelectorAll('[data-digital]').forEach(btn=>btn.addEventListener('click',()=>bpSelectDigital(btn.dataset.digital)));
+  }
+}
+
+window.bpSetFrameMode=async function(mode){
+  bpFrameMode=mode==='original'?'original':'frame';
+  document.querySelectorAll('#bpFinalFrameMode button[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===bpFrameMode));
+  window.bpUseFrame=bpFrameMode==='frame';
+  try{window.finalCompositeDataUrl='';await window.prepareFinal()}catch(e){console.warn('frame mode render',e)}
+};
+
+window.bpSelectDigital=function(kind){
+  const status=$('bpDigitalStatus');
+  if(!status)return;
+  const labels={bundle:'Bundling',photo:'Foto',video:'Video Live Photo',gif:'GIF'};
+  const base=(window.location.href.split('#')[0]||'');
+  status.textContent=labels[kind]+' dipilih. QR akan memakai endpoint Cloud/Share jika tersedia; jika belum, mode lokal sesi digunakan.';
+  try{
+    if(typeof window.generateQR==='function'){
+      const cloud=window.finalCompositeDataUrl||'';
+      const payload=(kind==='photo'&&cloud)?cloud:(base+'#session='+encodeURIComponent(window.sessionId||''));
+      window.generateQR(payload);
+    }
+  }catch(e){}
+};
+
+function installBuildBridge(){
+  if(window.__bpFlowBuildBridge)return;
+  const original=window.buildCompositeCanvas;
+  if(typeof original!=='function')return;
+  const wrapped=async function(){
+    const prev=window.selectedFrameSrc;
+    if(window.bpUseFrame===false)window.selectedFrameSrc='';
+    try{return await original.apply(this,arguments)}finally{window.selectedFrameSrc=prev}
+  };
+  wrapped.__bpFlowBuildBridge=true;
+  window.buildCompositeCanvas=wrapped;
+  window.__bpFlowBuildBridge=true;
+}
+
+function showFinal(){
+  ensureFinalControls();
+  installBuildBridge();
+}
+
+const legacyGo=window.goToStep;
+window.goToStep=function(n){
+  /* 5/6 remain legacy aliases, but both now land on the final edit/output screen. */
+  const target=(n===5||n===6)?7:n;
+  const r=legacyGo.apply(this,[target]);
+  if(target===7)setTimeout(()=>{showFinal();},80);
+  if(target===4)setTimeout(()=>{ensureCaptureWorkspace();},120);
+  return r;
+};
+
+const legacyRenderEditor=window.renderEditor;
+window.renderEditor=async function(){
+  try{if(typeof legacyRenderEditor==='function')await legacyRenderEditor.apply(this,arguments)}catch(e){}
+  setTimeout(ensureCaptureWorkspace,60);
+};
+
+function boot(){
+  document.querySelectorAll('#step-frame,#step-editor').forEach(x=>x.classList.add('hidden'));
+  setTimeout(ensureCaptureWorkspace,300);
+  setTimeout(ensureFinalControls,500);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script></html>
 
 <style id="bp-c8-state-bridge-20261002">
 /* Keep legacy lexical kiosk state and vNext/window integrations synchronized. */

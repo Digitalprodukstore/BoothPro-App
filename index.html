@@ -1358,7 +1358,7 @@ async async function ensureStickerRasterAssets(){
     try{st._resolvedDataUrl=await resolveStickerEmojiDataUrl(emoji)}catch(e){st._resolvedDataUrl=''}
   }
 }
-async async function finishEditing(){
+async function finishEditing(){
   const btn=$('finishEditingBtn');
   if(btn){btn.disabled=true;btn.style.pointerEvents='none';btn.textContent='Menyiapkan hasil akhir...'}
   try{

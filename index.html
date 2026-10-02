@@ -830,12 +830,18 @@ async function buildCompositeCanvas(){
       and print use the exact same photo transforms.
     */
     const unified=window.BPUnifiedComposer;
-    const unifiedPhotos=Array.isArray(unified?.slotPhotos)?unified.slotPhotos.filter(Boolean):[];
+    /*
+      C9 slot-index integrity:
+      BPUnifiedComposer.slotPhotos is positional state. Do NOT filter empty
+      slots here, otherwise Slot 3 can become Slot 2 in the final output.
+    */
+    const unifiedPhotos=Array.isArray(unified?.slotPhotos)?unified.slotPhotos.slice():[];
+    const hasUnifiedPhotos=unifiedPhotos.some(Boolean);
     const unifiedTransforms=Array.isArray(unified?.transforms)?unified.transforms:[];
-    const selectedSources=unifiedPhotos.length?unifiedPhotos:
+    const selectedSources=hasUnifiedPhotos?unifiedPhotos:
       (Array.isArray(window.BPUnifiedComposer?.slotPhotos)&&window.BPUnifiedComposer.slotPhotos.some(Boolean)
-        ?window.BPUnifiedComposer.slotPhotos
-        :capturedPhotos).filter(Boolean);
+        ?window.BPUnifiedComposer.slotPhotos.slice()
+        :capturedPhotos.slice());
 
     if(Array.isArray(unifiedTransforms)&&unifiedTransforms.length){
       try{
@@ -853,7 +859,11 @@ async function buildCompositeCanvas(){
       const c=document.createElement('canvas');
       c.width=panelW;c.height=panelH;
       const photos=[];
-      for(const src of selectedSources){try{photos.push(await loadImage(src))}catch(e){}}
+      for(const src of selectedSources){
+        if(!src){photos.push(null);continue}
+        try{photos.push(await loadImage(src))}
+        catch(e){photos.push(null)}
+      }
       await (window.drawFrameAwareComposition||drawFrameAwareComposition)(c,true,photos,selectedFrameSrc);
       drawStickersCanvas(c,panelW,panelH);
       return c

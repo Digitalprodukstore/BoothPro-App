@@ -3668,4 +3668,116 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+<style id="bp-vnext-composer-20261002">
+.bp-photo-select{display:grid;grid-template-columns:180px minmax(0,1fr);gap:18px}
+.bp-photo-thumbs{display:flex;flex-direction:column;gap:9px;max-height:62vh;overflow:auto}
+.bp-photo-thumb{position:relative;border:2px solid #27272a;border-radius:14px;overflow:hidden;background:#09090b;cursor:pointer}
+.bp-photo-thumb.active{border-color:#818cf8;box-shadow:0 0 0 3px rgba(129,140,248,.12)}
+.bp-photo-thumb img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+.bp-photo-thumb span{position:absolute;left:7px;top:7px;padding:3px 7px;border-radius:99px;background:rgba(0,0,0,.72);font-size:9px;font-weight:900}
+.bp-photo-main{min-width:0;background:#09090b;border:1px solid #27272a;border-radius:22px;padding:18px;display:flex;align-items:center;justify-content:center;min-height:480px}
+.bp-photo-main img{max-width:100%;max-height:58vh;object-fit:contain;border-radius:14px}
+.bp-composer{display:grid;grid-template-columns:120px minmax(0,1fr) 240px;gap:14px}
+.bp-composer-assets{display:flex;flex-direction:column;gap:8px;max-height:68vh;overflow:auto}
+.bp-composer-asset{border:2px solid #27272a;border-radius:12px;overflow:hidden;background:#09090b;cursor:pointer}
+.bp-composer-asset.active{border-color:#818cf8}
+.bp-composer-asset img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+.bp-composer-stage{background:#09090b;border:1px solid #27272a;border-radius:22px;padding:14px;display:flex;align-items:center;justify-content:center;min-height:560px;overflow:hidden}
+.bp-composer-stage .editor-frame{width:min(100%,360px)!important}
+.bp-composer-controls{background:#09090b;border:1px solid #27272a;border-radius:22px;padding:15px;align-self:stretch}
+.bp-composer-controls label{font-size:10px;color:#a1a1aa;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.bp-composer-controls input[type=range]{width:100%;margin-top:8px}
+.bp-composer-control-value{font-size:11px;color:#e4e4e7;font-weight:900}
+.bp-composer-hint{font-size:9px;color:#71717a;line-height:1.45}
+.bp-composer-toolbar{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.bp-composer-toolbar button{padding:9px 10px;border-radius:11px;background:#18181b;border:1px solid #27272a;color:#e4e4e7;font-size:10px;font-weight:900}
+@media(max-width:900px){.bp-photo-select{grid-template-columns:110px minmax(0,1fr)}.bp-composer{grid-template-columns:90px minmax(0,1fr)}.bp-composer-controls{grid-column:1/-1}.bp-composer-assets{max-height:55vh}}
+@media(max-width:640px){.bp-photo-select{grid-template-columns:88px minmax(0,1fr)}.bp-photo-main{min-height:360px;padding:10px}.bp-composer{grid-template-columns:1fr}.bp-composer-assets{flex-direction:row;max-height:none;overflow-x:auto}.bp-composer-asset{min-width:72px}.bp-composer-stage{min-height:420px}}
+</style>
+<script id="bp-vnext-composer-20261002">
+(function(){
+'use strict';
+function byId(id){return document.getElementById(id)}
+let selectedPhotoIndex=0;
+let composerTransforms=[];
+function initTransforms(){composerTransforms=capturedPhotos.map((_,i)=>composerTransforms[i]||{scale:1,x:0,y:0});if(composerTransforms.length!==capturedPhotos.length)composerTransforms=capturedPhotos.map(()=>({scale:1,x:0,y:0}))}
+function photoDataUrl(src){return typeof src==='string'?src:(src?.src||'')}
+function makePhotoSelection(){
+  if(byId('bpVNextPhotoSelection'))return;
+  const s=document.createElement('section');s.id='bpVNextPhotoSelection';s.className='hidden w-full max-w-6xl animate-fadeIn';
+  s.innerHTML='<div class="mb-5"><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 04</span><h2 class="text-3xl font-extrabold mt-2">Pilih Foto</h2><p class="text-zinc-400 text-sm mt-1">Pilih thumbnail untuk melihat foto besar. Foto tetap tersimpan untuk komposisi frame.</p></div><div class="bp-photo-select"><div id="bpPhotoThumbs" class="bp-photo-thumbs"></div><div class="bp-photo-main"><img id="bpPhotoLarge" alt="Preview foto terpilih"></div></div><div class="flex gap-3 mt-4"><button type="button" id="bpPhotoBack" class="flex-1 py-3 rounded-xl bg-zinc-900 border border-zinc-800 font-bold">← Kembali</button><button type="button" id="bpPhotoNext" class="flex-1 py-3 rounded-xl bg-indigo-600 font-bold">Lanjut ke Frame Composer →</button></div>';
+  document.querySelector('main').appendChild(s);
+  byId('bpPhotoBack').onclick=()=>window.goToStep(4);
+  byId('bpPhotoNext').onclick=()=>{initTransforms();window.goToStep(6)};
+}
+function renderPhotoSelection(){
+  makePhotoSelection();const g=byId('bpPhotoThumbs'),large=byId('bpPhotoLarge');if(!g||!large)return;
+  g.innerHTML='';
+  capturedPhotos.forEach((src,i)=>{const b=document.createElement('button');b.type='button';b.className='bp-photo-thumb'+(i===selectedPhotoIndex?' active':'');b.innerHTML='<span>FOTO '+(i+1)+'</span><img src="'+photoDataUrl(src)+'" alt="Foto '+(i+1)+'">';b.onclick=()=>{selectedPhotoIndex=i;renderPhotoSelection()};g.appendChild(b)});
+  if(capturedPhotos[selectedPhotoIndex])large.src=photoDataUrl(capturedPhotos[selectedPhotoIndex]);
+}
+function injectComposer(){
+  const frame=byId('step-frame');if(!frame||byId('bpComposerRoot'))return;
+  const root=document.createElement('div');root.id='bpComposerRoot';
+  root.innerHTML='<div class="mb-4"><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 05</span><h2 class="text-3xl font-extrabold mt-2">Frame Composer</h2><p class="text-zinc-400 text-sm mt-1">Pilih foto di kiri, lalu atur zoom dan posisi foto di dalam frame.</p></div><div class="bp-composer"><div id="bpComposerAssets" class="bp-composer-assets"></div><div id="bpComposerStage" class="bp-composer-stage"></div><div class="bp-composer-controls"><div class="text-xs font-black uppercase tracking-widest text-indigo-400">Foto <span id="bpComposerPhotoNo">1</span></div><div class="mt-4"><label>Zoom <span id="bpComposerZoomVal" class="bp-composer-control-value float-right">100%</span></label><input id="bpComposerZoom" type="range" min="100" max="250" value="100"></div><div class="mt-5"><label>Geser Horizontal <span id="bpComposerXVal" class="bp-composer-control-value float-right">0%</span></label><input id="bpComposerX" type="range" min="-50" max="50" value="0"></div><div class="mt-5"><label>Geser Vertikal <span id="bpComposerYVal" class="bp-composer-control-value float-right">0%</span></label><input id="bpComposerY" type="range" min="-50" max="50" value="0"></div><div class="bp-composer-toolbar"><button type="button" id="bpComposerReset">↺ Reset Foto</button><button type="button" id="bpComposerFit">Fit 100%</button><button type="button" id="bpComposerChangeFrame">Ganti Frame</button></div><p class="bp-composer-hint mt-4">Perubahan ini diterapkan ke preview komposisi dan akan ikut ke hasil final/print. Drag langsung di canvas akan kita aktifkan sebagai gesture lanjutan.</p></div>';
+  frame.innerHTML='';frame.appendChild(root);
+  byId('bpComposerChangeFrame').onclick=()=>{const old=byId('frameGallery');if(old){old.classList.toggle('hidden');if(!old.classList.contains('hidden'))renderFrameGallery()}};
+  ['bpComposerZoom','bpComposerX','bpComposerY'].forEach(id=>byId(id).addEventListener('input',()=>updateComposerTransform()));
+  byId('bpComposerReset').onclick=()=>{composerTransforms[selectedPhotoIndex]={scale:1,x:0,y:0};syncComposerControls();renderComposer()};
+  byId('bpComposerFit').onclick=()=>{composerTransforms[selectedPhotoIndex]={scale:1,x:0,y:0};syncComposerControls();renderComposer()};
+  const gallery=document.createElement('div');gallery.id='bpComposerFrameGallery';gallery.className='hidden mt-4';gallery.innerHTML='<div class="text-xs font-bold text-zinc-400 mb-2">Pilih frame lain</div><div id="bpComposerLegacyGallery"></div>';frame.appendChild(gallery);
+  const legacy=byId('frameGallery');if(legacy){legacy.classList.add('hidden');byId('bpComposerLegacyGallery').appendChild(legacy)}
+  const nav=document.createElement('button');nav.type='button';nav.className='mt-4 w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 font-bold';nav.innerHTML='Frame & Foto Sudah Sesuai — Lanjut Edit →';nav.onclick=()=>window.goToStep(7);root.appendChild(nav);
+}
+function updateComposerTransform(){
+  const z=Number(byId('bpComposerZoom').value)||100,x=Number(byId('bpComposerX').value)||0,y=Number(byId('bpComposerY').value)||0;
+  composerTransforms[selectedPhotoIndex]={scale:z/100,x,y};syncComposerControls();renderComposer();
+}
+function syncComposerControls(){
+  const t=composerTransforms[selectedPhotoIndex]||{scale:1,x:0,y:0};
+  byId('bpComposerZoom').value=Math.round(t.scale*100);byId('bpComposerX').value=Math.round(t.x);byId('bpComposerY').value=Math.round(t.y);
+  byId('bpComposerZoomVal').textContent=Math.round(t.scale*100)+'%';byId('bpComposerXVal').textContent=Math.round(t.x)+'%';byId('bpComposerYVal').textContent=Math.round(t.y)+'%';byId('bpComposerPhotoNo').textContent=String(selectedPhotoIndex+1);
+}
+function renderComposer(){
+  initTransforms();const assets=byId('bpComposerAssets');if(!assets)return;assets.innerHTML='';
+  capturedPhotos.forEach((src,i)=>{const b=document.createElement('button');b.type='button';b.className='bp-composer-asset'+(i===selectedPhotoIndex?' active':'');b.innerHTML='<img src="'+photoDataUrl(src)+'" alt="Foto '+(i+1)+'">';b.onclick=()=>{selectedPhotoIndex=i;syncComposerControls();renderComposer()};assets.appendChild(b)});
+  const stage=byId('bpComposerStage');if(!stage)return;stage.innerHTML='';const wrap=buildPreviewHTML('composer');wrap.style.width='min(100%,360px)';stage.appendChild(wrap);renderFrameAwarePreview(wrap,'composer');syncComposerControls();
+}
+const originalDraw=window.drawFrameAwareComposition;
+window.drawFrameAwareComposition=async function(canvas,includeFooter=true,photosArg=null,frameSrcArg=null){
+  const photos=Array.isArray(photosArg)?photosArg:framePhotos;const frameSrc=typeof frameSrcArg==='string'?frameSrcArg:selectedFrameSrc;
+  const c=canvas,ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
+  const photosToDraw=photos||[];const needed=Math.max(1,photosToDraw.length);const appliedFilter=getAppliedFilter();
+  const pad=c.width*.07,gap=c.width*.012,footer=c.height*.13,isStrip=selectedLayoutType==='strip',cols=isStrip?1:2,rows=isStrip?Math.max(1,needed):Math.ceil(needed/2),usableH=c.height-pad*2-footer-gap*(rows-1),cellW=(c.width-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;
+  ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);
+  let holes=null;if(frameSrc){try{holes=await detectTransparentHoles(frameSrc,c.width,c.height,needed)}catch(e){}}
+  const drawOne=(im,x,y,w,h,i)=>{if(!im)return;const t=composerTransforms[i]||{scale:1,x:0,y:0};ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;if(iw&&ih){const base=Math.min(w/iw,h/ih),dw=iw*base*t.scale,dh=ih*base*t.scale;const ox=x+(w-dw)/2+(t.x/100)*w,oy=y+(h-dh)/2+(t.y/100)*h;ctx.drawImage(im,ox,oy,dw,dh)}ctx.restore()};
+  photosToDraw.forEach((im,i)=>{if(holes&&holes[i])drawOne(im,holes[i].x,holes[i].y,holes[i].w,holes[i].h,i);else drawOne(im,pad+(i%cols)*(cellW+gap),pad+Math.floor(i/cols)*(cellH+gap),cellW,cellH,i)});
+  ctx.filter='none';
+  if(frameSrc){try{const fr=await loadImage(frameSrc);ctx.drawImage(fr,0,0,c.width,c.height)}catch(e){}}
+  if(includeFooter)drawPreviewFooterCanvas(ctx,c.width,c.height);
+};
+const oldRender=window.renderFrameAwarePreview;
+window.renderFrameAwarePreview=async function(wrap,id){const renderId=++previewRenderSeq;const photoSources=capturedPhotos.slice();const frameSrcSnapshot=selectedFrameSrc;let naturalW=600,naturalH=900;if(frameSrcSnapshot){try{const fi=await loadImage(frameSrcSnapshot);naturalW=600;naturalH=Math.max(300,Math.round(naturalW*((fi.naturalHeight||900)/(fi.naturalWidth||600))));if(naturalH>1200){naturalH=1200;naturalW=Math.max(300,Math.round(naturalH*((fi.naturalWidth||600)/(fi.naturalHeight||900))))}}catch(e){}}if(renderId!==previewRenderSeq)return;wrap.style.aspectRatio=`${naturalW}/${naturalH}`;const canvas=document.createElement('canvas');canvas.width=naturalW;canvas.height=naturalH;canvas.className='w-full h-full block rounded-[10px]';canvas.setAttribute('aria-label','Preview seluruh lembar foto dengan frame');canvas.style.filter='none';wrap.innerHTML='';wrap.appendChild(canvas);const photos=[];for(const src of photoSources){try{photos.push(await loadImage(src))}catch(e){}}if(renderId!==previewRenderSeq)return;await window.drawFrameAwareComposition(canvas,true,photos,frameSrcSnapshot);if(renderId!==previewRenderSeq)return;canvas.style.filter=getAppliedFilter()==='none'?'none':getAppliedFilter();const layer=document.createElement('div');layer.className='text-layer';layer.id=id==='editor'?'textLayerEditor':id==='mini'?'textLayerMini':id==='capture'?'textLayerCapture':'textLayerComposer';wrap.appendChild(layer);renderStickerOverlay()};
+const originalVNextGo=window.goToStep;
+window.goToStep=function(n){
+  const photoSec=byId('bpVNextPhotoSelection'),frame=byId('step-frame');
+  if(n===5){if(photoSec){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));photoSec.classList.remove('hidden');renderPhotoSelection();currentStep=5;updateStatusBadge();resetIdleTimer();}return}
+  if(n===6){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));frame.classList.remove('hidden');currentStep=6;initTransforms();injectComposer();renderComposer();resetIdleTimer();return}
+  if(n===7){return originalVNextGo(6)}
+  if(n===8){return originalVNextGo(7)}
+  return originalVNextGo(n);
+};
+const originalFinish=window.finishEditing;
+window.finishEditing=async function(){if(sessionTimerId){clearInterval(sessionTimerId);sessionTimerId=null}stopWebcam();finalCompositeDataUrl=await buildCompositeCanvas();window.goToStep(8)};
+function init(){
+  makePhotoSelection();
+  if(typeof originalDraw==='function'){} 
+  const next=byId('nextToFrameBtn');if(next)next.onclick=function(e){e.preventDefault();window.goToStep(5)};
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else setTimeout(init,50);
+})();
+</script>
+
 </body>\n</html>

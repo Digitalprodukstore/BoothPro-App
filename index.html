@@ -3780,4 +3780,37 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+<style id="bp-vnext-package-cta-fix-20261002">
+#step-package .bp-vnext-package-summary-panel{display:block!important}
+#step-package .bp-vnext-package-summary-panel #preFrameGrid,
+#step-package .bp-vnext-package-summary-panel>h3,
+#step-package .bp-vnext-package-summary-panel>p{display:none!important}
+#toPaymentBtn{display:block!important;visibility:visible!important;opacity:1!important;min-height:56px!important;position:relative!important;z-index:50!important;pointer-events:auto!important;touch-action:manipulation!important}
+#toPaymentBtn:disabled{opacity:.55!important}
+</style>
+<script id="bp-vnext-package-cta-fix-20261002">
+(function(){
+function fixPackageCTA(){
+ const p=document.getElementById('step-package');
+ if(!p)return;
+ const btn=document.getElementById('toPaymentBtn');
+ if(!btn)return;
+ const panel=btn.closest('.bg-zinc-950');
+ if(panel){
+   panel.classList.remove('hidden');
+   panel.classList.add('bp-vnext-package-summary-panel');
+   const h=panel.querySelector(':scope > h3'); if(h)h.style.display='none';
+   const d=panel.querySelector(':scope > p'); if(d)d.style.display='none';
+   const grid=panel.querySelector(':scope > #preFrameGrid'); if(grid)grid.style.display='none';
+ }
+ btn.disabled=false;
+ btn.style.display='block';btn.style.visibility='visible';btn.style.pointerEvents='auto';btn.style.opacity='1';
+ btn.onclick=function(e){e.preventDefault();e.stopPropagation();if(typeof window.goToStep==='function')window.goToStep(3)};
+ const label=document.getElementById('toPaymentLabel');
+ if(label)label.textContent='Lanjut ke Pembayaran';
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(fixPackageCTA,80));
+else setTimeout(fixPackageCTA,80);
+})();
+</script>
 </body>\n</html>

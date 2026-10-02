@@ -3701,7 +3701,22 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 function byId(id){return document.getElementById(id)}
 let selectedPhotoIndex=0;
 let composerTransforms=[];
-function initTransforms(){composerTransforms=capturedPhotos.map((_,i)=>composerTransforms[i]||{scale:1,x:0,y:0});if(composerTransforms.length!==capturedPhotos.length)composerTransforms=capturedPhotos.map(()=>({scale:1,x:0,y:0}))}
+window.BoothProComposerState={
+  get selectedPhotoIndex(){return selectedPhotoIndex},
+  set selectedPhotoIndex(v){selectedPhotoIndex=Math.max(0,Number(v)||0)},
+  get transforms(){return composerTransforms},
+  set transforms(v){composerTransforms=Array.isArray(v)?v:[]},
+  activeTransform:function(){
+    composerTransforms[selectedPhotoIndex]=composerTransforms[selectedPhotoIndex]||{scale:1,x:0,y:0,rotation:0};
+    const t=composerTransforms[selectedPhotoIndex];
+    if(!Number.isFinite(Number(t.scale)))t.scale=1;
+    if(!Number.isFinite(Number(t.x)))t.x=0;
+    if(!Number.isFinite(Number(t.y)))t.y=0;
+    if(!Number.isFinite(Number(t.rotation)))t.rotation=0;
+    return t;
+  }
+};
+function initTransforms(){composerTransforms=capturedPhotos.map((_,i)=>{const t=composerTransforms[i]||{scale:1,x:0,y:0,rotation:0};return {scale:Number(t.scale)||1,x:Number(t.x)||0,y:Number(t.y)||0,rotation:Number(t.rotation)||0}});if(composerTransforms.length!==capturedPhotos.length)composerTransforms=capturedPhotos.map(()=>({scale:1,x:0,y:0,rotation:0}))}
 function photoDataUrl(src){return typeof src==='string'?src:(src?.src||'')}
 function makePhotoSelection(){
   if(byId('bpVNextPhotoSelection'))return;
@@ -3752,7 +3767,7 @@ window.drawFrameAwareComposition=async function(canvas,includeFooter=true,photos
   const pad=c.width*.07,gap=c.width*.012,footer=c.height*.13,isStrip=selectedLayoutType==='strip',cols=isStrip?1:2,rows=isStrip?Math.max(1,needed):Math.ceil(needed/2),usableH=c.height-pad*2-footer-gap*(rows-1),cellW=(c.width-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;
   ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);
   let holes=null;if(frameSrc){try{holes=await detectTransparentHoles(frameSrc,c.width,c.height,needed)}catch(e){}}
-  const drawOne=(im,x,y,w,h,i)=>{if(!im)return;const t=composerTransforms[i]||{scale:1,x:0,y:0};ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;if(iw&&ih){const base=Math.min(w/iw,h/ih),dw=iw*base*t.scale,dh=ih*base*t.scale;const ox=x+(w-dw)/2+(t.x/100)*w,oy=y+(h-dh)/2+(t.y/100)*h;ctx.drawImage(im,ox,oy,dw,dh)}ctx.restore()};
+  const drawOne=(im,x,y,w,h,i)=>{if(!im)return;const t=composerTransforms[i]||{scale:1,x:0,y:0,rotation:0};ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;if(iw&&ih){const base=Math.min(w/iw,h/ih),dw=iw*base*(Number(t.scale)||1),dh=ih*base*(Number(t.scale)||1);const cx=x+w/2+(Number(t.x)||0)/100*w,cy=y+h/2+(Number(t.y)||0)/100*h;ctx.translate(cx,cy);ctx.rotate(Number(t.rotation)||0);ctx.drawImage(im,-dw/2,-dh/2,dw,dh)}ctx.restore()};
   photosToDraw.forEach((im,i)=>{if(holes&&holes[i])drawOne(im,holes[i].x,holes[i].y,holes[i].w,holes[i].h,i);else drawOne(im,pad+(i%cols)*(cellW+gap),pad+Math.floor(i/cols)*(cellH+gap),cellW,cellH,i)});
   ctx.filter='none';
   if(frameSrc){try{const fr=await loadImage(frameSrc);ctx.drawImage(fr,0,0,c.width,c.height)}catch(e){}}
@@ -3837,83 +3852,198 @@ else setTimeout(fixPackageCTA,80);
 })();
 </script>
 </body>\n<style id="bp-vnext-direct-manipulation-20261002">
-#bpComposerStage{touch-action:none!important;user-select:none;-webkit-user-select:none}
-#bpComposerStage canvas{touch-action:none!important;cursor:grab}
+#bpComposerStage{touch-action:none!important;user-select:none;-webkit-user-select:none;overscroll-behavior:none;position:relative}
+#bpComposerStage canvas{touch-action:none!important;cursor:grab;display:block}
 #bpComposerStage.bp-dragging canvas{cursor:grabbing}
-.bp-direct-badge{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:999px;background:rgba(99,102,241,.12);border:1px solid rgba(129,140,248,.22);font-size:9px;font-weight:800;color:#c4b5fd}
+.bp-composer-hit-layer{position:absolute;inset:0;z-index:6;touch-action:none!important;pointer-events:none}
+.bp-composer-hit{position:absolute;border:1px solid transparent;background:transparent;border-radius:8px;touch-action:none!important;pointer-events:auto}
+.bp-composer-hit.active{border-color:rgba(129,140,248,.38);box-shadow:0 0 0 2px rgba(129,140,248,.12) inset}
+.bp-composer-gesture-help{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:10px}
+.bp-composer-gesture-help span{padding:7px 9px;border-radius:999px;background:#18181b;border:1px solid #27272a;color:#a1a1aa;font-size:9px;font-weight:800}
+.bp-composer-gesture-help strong{color:#e4e4e7}
+.bp-composer-rotation{display:none!important}
+.bp-direct-badge{display:none!important}
 .bp-slot-action{display:flex;gap:7px;align-items:center;margin-top:10px}
 .bp-slot-action select{flex:1;min-width:0;padding:9px;border-radius:10px;background:#18181b;border:1px solid #27272a;color:#e4e4e7;font-size:10px;font-weight:800}
 .bp-slot-action button{padding:9px 10px;border-radius:10px;background:#27272a;border:1px solid #3f3f46;color:#fff;font-size:10px;font-weight:900;white-space:nowrap}
+@media(max-width:640px){.bp-composer-hit{border-color:transparent}.bp-composer-gesture-help{margin-top:8px}}
 </style>
 <script id="bp-vnext-direct-manipulation-20261002">
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
-let pointers=new Map(),gestureStart=null,raf=0;
+const S=()=>window.BoothProComposerState;
+let pointers=new Map();
+let gesture=null;
+let raf=0;
+
 function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
-function activeTransform(){
- if(typeof composerTransforms==='undefined')return null;
- composerTransforms[selectedPhotoIndex]=composerTransforms[selectedPhotoIndex]||{scale:1,x:0,y:0};
- return composerTransforms[selectedPhotoIndex];
+function state(){return S&&S()}
+function active(){const s=state();return s?s.activeTransform():null}
+function stage(){return $('bpComposerStage')}
+function photoCount(){return Array.isArray(window.capturedPhotos)?capturedPhotos.length:0}
+function layoutRects(){
+  const st=stage(), n=photoCount(); if(!st||!n)return [];
+  const w=st.clientWidth,h=st.clientHeight,pad=w*.07,gap=w*.012,footer=h*.13;
+  const isStrip=String(window.selectedLayoutType||'')==='strip',cols=isStrip?1:2,rows=isStrip?Math.max(1,n):Math.ceil(n/2);
+  const usableH=h-pad*2-footer-gap*(rows-1),cellW=(w-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;
+  const out=[];
+  for(let i=0;i<n;i++){
+    const col=isStrip?0:i%2,row=isStrip?i:Math.floor(i/2);
+    out.push({x:pad+col*(cellW+gap),y:pad+row*(cellH+gap),w:cellW,h:cellH});
+  }
+  return out;
 }
-function scheduleRender(){
- if(raf)return;
- raf=requestAnimationFrame(()=>{raf=0;if(typeof syncComposerControls==='function')syncComposerControls();if(typeof renderComposer==='function')renderComposer()});
+function pointIndex(clientX,clientY){
+  const st=stage();const rect=st?.getBoundingClientRect();if(!rect)return 0;
+  const x=clientX-rect.left,y=clientY-rect.top,rs=layoutRects();
+  for(let i=rs.length-1;i>=0;i--){const r=rs[i];if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return i}
+  let best=0,bestD=Infinity;rs.forEach((r,i)=>{const d=Math.hypot(x-(r.x+r.w/2),y-(r.y+r.h/2));if(d<bestD){bestD=d;best=i}});return best;
 }
-function distance(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
-function installComposerGesture(){
- const stage=$('bpComposerStage');if(!stage||stage.__bpGesture)return;
- stage.__bpGesture=true;
- stage.addEventListener('pointerdown',e=>{
-  if(e.pointerType==='mouse'&&e.button!==0)return;
-  const canvas=e.target.closest&&e.target.closest('canvas');if(!canvas)return;
-  stage.setPointerCapture?.(e.pointerId);pointers.set(e.pointerId,e);
-  const t=activeTransform();if(!t)return;
-  if(pointers.size===1)gestureStart={mode:'drag',x:e.clientX,y:e.clientY,tx:t.x,ty:t.y};
-  else if(pointers.size===2){const ps=[...pointers.values()];gestureStart={mode:'pinch',distance:distance(ps[0],ps[1]),scale:t.scale}}
-  stage.classList.add('bp-dragging');e.preventDefault();
- },{passive:false});
- stage.addEventListener('pointermove',e=>{
-  if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,e);
-  const t=activeTransform();if(!t||!gestureStart)return;
-  const rect=stage.getBoundingClientRect();
-  if(pointers.size>=2){const ps=[...pointers.values()].slice(0,2),d=Math.max(1,distance(ps[0],ps[1]));t.scale=clamp(gestureStart.scale*(d/Math.max(1,gestureStart.distance)),1,2.5)}
-  else{const dx=e.clientX-gestureStart.x,dy=e.clientY-gestureStart.y,basis=Math.max(1,Math.min(rect.width,rect.height));t.x=clamp(gestureStart.tx+(dx/basis)*100,-50,50);t.y=clamp(gestureStart.ty+(dy/basis)*100,-50,50)}
-  scheduleRender();e.preventDefault();
- },{passive:false});
- const end=e=>{
-  pointers.delete(e.pointerId);
-  if(!pointers.size){gestureStart=null;stage.classList.remove('bp-dragging')}
-  else if(pointers.size===1){const p=[...pointers.values()][0],t=activeTransform();gestureStart={mode:'drag',x:p.clientX,y:p.clientY,tx:t.x,ty:t.y}}
-  e.preventDefault();
- };
- stage.addEventListener('pointerup',end,{passive:false});stage.addEventListener('pointercancel',end,{passive:false});
- stage.addEventListener('lostpointercapture',e=>{pointers.delete(e.pointerId);if(!pointers.size){gestureStart=null;stage.classList.remove('bp-dragging')}});
+function syncThumbSelection(){
+  const s=state();if(!s)return;
+  const idx=s.selectedPhotoIndex;
+  document.querySelectorAll('.bp-composer-asset').forEach((el,i)=>el.classList.toggle('active',i===idx));
+  const no=$('bpComposerPhotoNo');if(no)no.textContent=String(idx+1);
+  const z=$('bpComposerZoomVal'),x=$('bpComposerXVal'),y=$('bpComposerYVal');
+  const t=active()||{scale:1,x:0,y:0,rotation:0};
+  if(z)z.textContent=Math.round(t.scale*100)+'%';
+  if(x)x.textContent=Math.round(t.x)+'%';
+  if(y)y.textContent=Math.round(t.y)+'%';
 }
-function injectSwapControl(){
- const controls=document.querySelector('.bp-composer-controls');if(!controls||$('bpComposerSwapTarget'))return;
- const wrap=document.createElement('div');wrap.className='bp-slot-action';
- wrap.innerHTML='<select id="bpComposerSwapTarget" aria-label="Pilih foto untuk ditukar"></select><button type="button" id="bpComposerSwapBtn">↔ Tukar Foto</button>';
- controls.appendChild(wrap);
- const hint=document.createElement('div');hint.className='bp-direct-badge';hint.textContent='✋ Drag foto • 🤏 Pinch zoom • ↔ Tukar slot';controls.appendChild(hint);
- const sync=()=>{const s=$('bpComposerSwapTarget');if(!s)return;s.innerHTML='';capturedPhotos.forEach((_,i)=>{if(i!==selectedPhotoIndex){const o=document.createElement('option');o.value=i;o.textContent='Tukar dengan Foto '+(i+1);s.appendChild(o)}});if(!s.options.length)s.disabled=true};
- $('bpComposerSwapBtn').onclick=()=>{
-  const s=$('bpComposerSwapTarget'),j=Number(s?.value);if(!Number.isInteger(j)||j<0||j>=capturedPhotos.length||j===selectedPhotoIndex)return;
-  const a=selectedPhotoIndex,[p1,p2]=[capturedPhotos[a],capturedPhotos[j]];capturedPhotos[a]=p2;capturedPhotos[j]=p1;
-  const t1=composerTransforms[a]||{scale:1,x:0,y:0},t2=composerTransforms[j]||{scale:1,x:0,y:0};composerTransforms[a]=t2;composerTransforms[j]=t1;
-  sync();renderComposer();
- };
- sync();
+function rebuildHitLayer(){
+  const st=stage();const s=state();if(!st||!s)return;
+  const old=st.querySelector('.bp-composer-hit-layer');if(old)old.remove();
+  const layer=document.createElement('div');layer.className='bp-composer-hit-layer';
+  const rs=layoutRects(),n=photoCount();
+  rs.forEach((r,i)=>{
+    const hit=document.createElement('div');hit.className='bp-composer-hit'+(i===s.selectedPhotoIndex?' active':'');
+    hit.style.left=(r.x/st.clientWidth*100)+'%';hit.style.top=(r.y/st.clientHeight*100)+'%';
+    hit.style.width=(r.w/st.clientWidth*100)+'%';hit.style.height=(r.h/st.clientHeight*100)+'%';
+    hit.dataset.photoIndex=String(i);
+    layer.appendChild(hit);
+  });
+  st.appendChild(layer);
+}
+function schedule(){
+  if(raf)return;
+  raf=requestAnimationFrame(()=>{raf=0;syncThumbSelection();if(typeof window.renderComposer==='function')window.renderComposer();});
+}
+function renderOnly(){
+  syncThumbSelection();
+  if(typeof window.renderComposer==='function')window.renderComposer();
+}
+function pointerDistance(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
+function pointerAngle(a,b){return Math.atan2(b.clientY-a.clientY,b.clientX-a.clientX)}
+function normalizeAngle(a){while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return a}
+function install(){
+  const st=stage();if(!st||st.__bpDirectV2)return false;
+  st.__bpDirectV2=true;
+  st.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    const target=e.target.closest?.('.bp-composer-hit');
+    const idx=target?Number(target.dataset.photoIndex):pointIndex(e.clientX,e.clientY);
+    const s=state();if(!s)return;
+    if(Number.isInteger(idx)&&idx>=0&&idx<photoCount())s.selectedPhotoIndex=idx;
+    syncThumbSelection();rebuildHitLayer();
+    try{st.setPointerCapture(e.pointerId)}catch(_){}
+    pointers.set(e.pointerId,{clientX:e.clientX,clientY:e.clientY});
+    const t=active();if(!t)return;
+    if(pointers.size===1){
+      gesture={mode:'drag',startX:e.clientX,startY:e.clientY,tx:Number(t.x)||0,ty:Number(t.y)||0,moved:false};
+    }else if(pointers.size===2){
+      const ps=[...pointers.values()].slice(0,2);
+      gesture={mode:'multi',startDistance:Math.max(1,pointerDistance(ps[0],ps[1])),startAngle:pointerAngle(ps[0],ps[1]),scale:Number(t.scale)||1,rotation:Number(t.rotation)||0,moved:false};
+    }
+    st.classList.add('bp-dragging');e.preventDefault();
+  },{passive:false});
+  st.addEventListener('pointermove',e=>{
+    if(!pointers.has(e.pointerId))return;
+    pointers.set(e.pointerId,{clientX:e.clientX,clientY:e.clientY});
+    const t=active();if(!t||!gesture)return;
+    if(pointers.size>=2){
+      const ps=[...pointers.values()].slice(0,2);
+      const d=Math.max(1,pointerDistance(ps[0],ps[1]));
+      const a=pointerAngle(ps[0],ps[1]);
+      t.scale=clamp(gesture.scale*(d/gesture.startDistance),0.65,3.5);
+      t.rotation=normalizeAngle(gesture.rotation+(a-gesture.startAngle));
+      gesture.moved=true;
+    }else{
+      const dx=e.clientX-gesture.startX,dy=e.clientY-gesture.startY;
+      const basis=Math.max(1,Math.min(st.clientWidth,st.clientHeight));
+      t.x=clamp(gesture.tx+(dx/basis)*100,-100,100);
+      t.y=clamp(gesture.ty+(dy/basis)*100,-100,100);
+      if(Math.abs(dx)+Math.abs(dy)>3)gesture.moved=true;
+    }
+    syncThumbSelection();
+    if(raf)cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(()=>{raf=0;renderOnly();});
+    e.preventDefault();
+  },{passive:false});
+  const end=e=>{
+    pointers.delete(e.pointerId);
+    if(pointers.size===0){gesture=null;st.classList.remove('bp-dragging');rebuildHitLayer();}
+    else if(pointers.size===1){
+      const p=[...pointers.values()][0],t=active();
+      gesture={mode:'drag',startX:p.clientX,startY:p.clientY,tx:Number(t?.x)||0,ty:Number(t?.y)||0,moved:false};
+    }
+    e.preventDefault();
+  };
+  st.addEventListener('pointerup',end,{passive:false});
+  st.addEventListener('pointercancel',end,{passive:false});
+  st.addEventListener('lostpointercapture',e=>{pointers.delete(e.pointerId);if(!pointers.size){gesture=null;st.classList.remove('bp-dragging')}});
+  return true;
+}
+function addGestureHelp(){
+  const controls=document.querySelector('.bp-composer-controls');if(!controls||controls.querySelector('.bp-composer-gesture-help'))return;
+  const help=document.createElement('div');help.className='bp-composer-gesture-help';
+  help.innerHTML='<span>👆 <strong>Sentuh foto</strong> pilih</span><span>✋ <strong>Geser</strong> posisi</span><span>🤏 <strong>Pinch</strong> zoom</span><span>↻ <strong>Putar 2 jari</strong></span>';
+  controls.appendChild(help);
+}
+function hidePrimarySliders(){
+  ['bpComposerZoom','bpComposerX','bpComposerY'].forEach(id=>{
+    const el=$(id);if(el)el.closest('.mt-4,.mt-5')?.classList.add('hidden');
+  });
+  const hint=document.querySelector('.bp-composer-hint');if(hint)hint.textContent='Edit langsung di preview: sentuh foto → geser • pinch untuk zoom • dua jari untuk memutar. Hasil ikut preview, final, dan print.';
+}
+function addResetAndSwapOnly(){
+  const controls=document.querySelector('.bp-composer-controls');if(!controls||$('bpComposerDirectActions'))return;
+  const box=document.createElement('div');box.id='bpComposerDirectActions';box.className='bp-composer-toolbar';
+  box.innerHTML='<button type="button" id="bpComposerDirectReset">↺ Reset Foto</button><button type="button" id="bpComposerDirectFit">Fit</button><button type="button" id="bpComposerDirectSwap">↔ Tukar Foto</button>';
+  controls.appendChild(box);
+  $('bpComposerDirectReset').onclick=()=>{const t=active();if(t){t.scale=1;t.x=0;t.y=0;t.rotation=0}renderOnly();};
+  $('bpComposerDirectFit').onclick=()=>{const t=active();if(t){t.scale=1;t.x=0;t.y=0;t.rotation=0}renderOnly();};
+  $('bpComposerDirectSwap').onclick=()=>document.getElementById('bpComposerSwapBtn')?.click();
+}
+function injectSwap(){
+  const controls=document.querySelector('.bp-composer-controls');if(!controls||$('bpComposerSwapTarget'))return;
+  const wrap=document.createElement('div');wrap.className='bp-slot-action';
+  wrap.innerHTML='<select id="bpComposerSwapTarget" aria-label="Pilih foto untuk ditukar"></select><button type="button" id="bpComposerSwapBtn">↔ Tukar Foto</button>';
+  controls.appendChild(wrap);
+  const sync=()=>{const s=$('bpComposerSwapTarget');const st=state();if(!s||!st)return;s.innerHTML='';capturedPhotos.forEach((_,i)=>{if(i!==st.selectedPhotoIndex){const o=document.createElement('option');o.value=i;o.textContent='Tukar dengan Foto '+(i+1);s.appendChild(o)}});s.disabled=!s.options.length};
+  $('bpComposerSwapBtn').onclick=()=>{
+    const s=$('bpComposerSwapTarget'),j=Number(s?.value),st=state();if(!st||!Number.isInteger(j)||j<0||j>=capturedPhotos.length||j===st.selectedPhotoIndex)return;
+    const a=st.selectedPhotoIndex,[p1,p2]=[capturedPhotos[a],capturedPhotos[j]];capturedPhotos[a]=p2;capturedPhotos[j]=p1;
+    const ts=st.transforms||[];const t1=ts[a]||{scale:1,x:0,y:0,rotation:0},t2=ts[j]||{scale:1,x:0,y:0,rotation:0};ts[a]=t2;ts[j]=t1;
+    st.transforms=ts;sync();renderOnly();
+  };
+  sync();
+}
+function decorate(){
+  install();addGestureHelp();hidePrimarySliders();addResetAndSwapOnly();injectSwap();rebuildHitLayer();
+}
+const oldRender=window.renderComposer;
+if(typeof oldRender==='function'&&!oldRender.__bpDirectV2){
+  window.renderComposer=function(){const r=oldRender.apply(this,arguments);setTimeout(decorate,0);return r};
+  window.renderComposer.__bpDirectV2=true;
 }
 const oldInject=window.injectComposer;
-window.injectComposer=function(){const r=oldInject?oldInject.apply(this,arguments):undefined;setTimeout(()=>{installComposerGesture();injectSwapControl()},0);return r};
-const oldRenderComposer=window.renderComposer;
-if(typeof oldRenderComposer==='function'&&!oldRenderComposer.__bpGestureWrap){
- window.renderComposer=function(){const r=oldRenderComposer.apply(this,arguments);setTimeout(()=>{installComposerGesture();injectSwapControl()},0);return r};
- window.renderComposer.__bpGestureWrap=true;
+if(typeof oldInject==='function'&&!oldInject.__bpDirectV2){
+  window.injectComposer=function(){const r=oldInject.apply(this,arguments);setTimeout(decorate,0);return r};
+  window.injectComposer.__bpDirectV2=true;
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{installComposerGesture();injectSwapControl()},120));
-else setTimeout(()=>{installComposerGesture();injectSwapControl()},120);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(decorate,120));
+else setTimeout(decorate,120);
 })();
 </script>
 

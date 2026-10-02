@@ -4339,4 +4339,184 @@ function sync(){
 window.BPFlowSync={sync};
 })();
 </script>
+
+<style id="bp-vnext-review-final-polish-20261002">
+/* Live Review: make the actual framed result the hero preview */
+#captureReviewPreview{min-height:320px!important;padding:10px!important}
+#captureReviewPreview .bp-live-review-canvas-wrap{width:min(100%,520px);margin:0 auto;display:flex;justify-content:center;align-items:center}
+#captureReviewPreview .bp-live-review-canvas-wrap canvas{display:block;width:100%;height:auto;max-height:62vh;object-fit:contain;border-radius:16px;box-shadow:0 18px 55px rgba(0,0,0,.42);background:#111}
+#editorPreview{min-height:340px!important}
+#editorPreview .bp-editor-frame-confirm{position:relative;width:min(100%,520px);margin:0 auto;display:flex;justify-content:center;align-items:center}
+#editorPreview .bp-editor-frame-confirm canvas{display:block;width:100%;height:auto;max-height:62vh;object-fit:contain;border-radius:16px;box-shadow:0 18px 55px rgba(0,0,0,.42)}
+#editorPreview .bp-editor-frame-confirm .bp-frame-label{position:absolute;left:12px;bottom:12px;padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.72);color:#fff;font-size:9px;font-weight:900;letter-spacing:.04em;backdrop-filter:blur(8px)}
+.bp-final-preview-shell{width:min(100%,680px);margin:0 auto}
+.bp-final-preview-stage{position:relative;padding:14px;border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.1);box-shadow:0 20px 70px rgba(0,0,0,.32)}
+.bp-final-preview-stage img{display:block;width:100%;max-height:62vh;object-fit:contain;border-radius:14px;background:#111}
+.bp-final-filterbar{display:flex;gap:8px;overflow-x:auto;padding:10px 2px 3px;scrollbar-width:none}
+.bp-final-filterbar::-webkit-scrollbar{display:none}
+.bp-final-filter-btn{flex:0 0 auto;min-height:42px;padding:9px 13px;border-radius:12px;border:1px solid #3f3f46;background:#18181b;color:#e4e4e7;font-size:10px;font-weight:900;touch-action:manipulation}
+.bp-final-filter-btn.active{border-color:#818cf8;background:#312e81;color:#fff;box-shadow:0 0 0 2px rgba(129,140,248,.18)}
+.bp-final-caption{margin-top:9px;text-align:center;color:#a1a1aa;font-size:10px;font-weight:700}
+.bp-frame-source-note{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin:8px 0 2px}
+.bp-frame-source-pill{padding:6px 10px;border-radius:999px;background:#18181b;border:1px solid #3f3f46;color:#d4d4d8;font-size:9px;font-weight:900}
+.bp-frame-source-pill.active{background:#312e81;border-color:#818cf8;color:#fff}
+</style>
+<script id="bp-vnext-review-final-polish-20261002">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+function bpFrameSource(){
+  return String(window.selectedFrameSrc||'').trim();
+}
+function bpFrameName(){
+  const id=String(window.selectedFrameId||'');
+  const f=(Array.isArray(window.frameGallery)?window.frameGallery:[]).find(x=>x&&String(x.id)===id);
+  return String(f?.name||'Frame terpilih');
+}
+function bpPhotos(){
+  const c=Array.isArray(window.capturedPhotos)?window.capturedPhotos:[];
+  const unified=window.BPUnifiedComposer?.slotPhotos;
+  if(Array.isArray(unified)&&unified.some(Boolean)) return unified.filter(Boolean);
+  return c.filter(Boolean);
+}
+async function bpCanvasPreview(){
+  const frame=bpFrameSource(),photos=bpPhotos();
+  const c=document.createElement('canvas'); c.width=600; c.height=900;
+  try{
+    if(frame&&typeof window.loadImage==='function'){
+      const im=await window.loadImage(frame);
+      const ratio=(im.naturalHeight||im.height||900)/Math.max(1,(im.naturalWidth||im.width||600));
+      c.height=Math.max(420,Math.round(c.width*ratio));
+    }
+  }catch(e){}
+  try{
+    if(typeof window.drawFrameAwareComposition==='function'){
+      const imgs=[];
+      for(const src of photos){try{imgs.push(await window.loadImage(src))}catch(e){}}
+      await window.drawFrameAwareComposition(c,true,imgs,frame);
+    }
+  }catch(e){
+    const ctx=c.getContext('2d');ctx.fillStyle='#111';ctx.fillRect(0,0,c.width,c.height);
+    if(photos[0]){try{const im=await window.loadImage(photos[0]);window.containDrawCanvas(ctx,im,0,0,c.width,c.height)}catch(_){}}
+    if(frame){try{const fr=await window.loadImage(frame);ctx.drawImage(fr,0,0,c.width,c.height)}catch(_){}}
+  }
+  return c;
+}
+
+async function bpRenderCaptureReview(){
+  const host=$('captureReviewPreview'); if(!host)return;
+  host.innerHTML='';
+  const photos=bpPhotos();
+  if(!photos.length){
+    host.innerHTML='<div class="text-xs text-zinc-500 text-center p-8">Belum ada foto untuk ditampilkan.</div>';
+    return;
+  }
+  const shell=document.createElement('div');shell.className='bp-live-review-canvas-wrap';
+  const canvas=await bpCanvasPreview();
+  shell.appendChild(canvas);host.appendChild(shell);
+}
+window.renderCaptureReview=bpRenderCaptureReview;
+
+async function bpEnsureEditorFrame(){
+  const host=$('editorPreview'); if(!host)return;
+  const frame=bpFrameSource(); if(!frame)return;
+  const existing=host.querySelector('.frame-overlay,.bp-editor-frame-confirm img');
+  if(existing)return;
+  const canvas=await bpCanvasPreview();
+  host.innerHTML='';
+  const wrap=document.createElement('div');wrap.className='bp-editor-frame-confirm';
+  wrap.appendChild(canvas);
+  const label=document.createElement('div');label.className='bp-frame-label';label.textContent=bpFrameName();
+  wrap.appendChild(label);host.appendChild(wrap);
+  try{if(typeof window.renderStickerOverlay==='function')window.renderStickerOverlay()}catch(e){}
+}
+const originalRenderEditor=window.renderEditor;
+window.renderEditor=async function(){
+  try{if(typeof originalRenderEditor==='function')originalRenderEditor.apply(this,arguments)}catch(e){}
+  await wait(30);
+  try{await bpEnsureEditorFrame()}catch(e){console.warn('Editor frame preview',e)}
+};
+
+const FINAL_FILTERS=[
+  {id:'none',name:'Original',css:'none'},
+  {id:'vivid',name:'Vivid',css:'saturate(1.22) contrast(1.06)'},
+  {id:'warm',name:'Warm',css:'sepia(.16) saturate(1.08) contrast(1.02)'},
+  {id:'cool',name:'Cool',css:'saturate(.94) hue-rotate(10deg) contrast(1.03)'},
+  {id:'mono',name:'B&W',css:'grayscale(1) contrast(1.06)'},
+  {id:'sepia',name:'Sepia',css:'sepia(.78) contrast(1.03)'},
+  {id:'soft',name:'Soft',css:'brightness(1.04) saturate(.88) contrast(.96)'}
+];
+let bpFinalBase='';
+let bpFinalFilter='none';
+
+async function bpApplyFinalFilter(id){
+  const f=FINAL_FILTERS.find(x=>x.id===id)||FINAL_FILTERS[0];
+  bpFinalFilter=f.id; window.currentFilter=f.id;
+  if(!bpFinalBase)bpFinalBase=String(window.finalCompositeDataUrl||'');
+  if(!bpFinalBase)return;
+  try{
+    const im=await window.loadImage(bpFinalBase);
+    const c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;
+    const ctx=c.getContext('2d');ctx.filter=f.css;ctx.drawImage(im,0,0,c.width,c.height);
+    window.finalCompositeDataUrl=c.toDataURL('image/jpeg',.95);
+  }catch(e){window.finalCompositeDataUrl=bpFinalBase}
+  bpRenderFinalPreview();
+}
+function bpRenderFinalPreview(){
+  const host=$('finalPreview');if(!host)return;
+  host.innerHTML='';
+  const shell=document.createElement('div');shell.className='bp-final-preview-shell';
+  const stage=document.createElement('div');stage.className='bp-final-preview-stage';
+  const im=document.createElement('img');im.src=String(window.finalCompositeDataUrl||'');im.alt='Preview hasil akhir';
+  im.draggable=false;stage.appendChild(im);shell.appendChild(stage);
+  const bar=document.createElement('div');bar.className='bp-final-filterbar';
+  FINAL_FILTERS.forEach(f=>{
+    const b=document.createElement('button');b.type='button';b.className='bp-final-filter-btn'+(f.id===bpFinalFilter?' active':'');b.textContent=f.name;
+    b.onclick=()=>bpApplyFinalFilter(f.id);bar.appendChild(b);
+  });
+  shell.appendChild(bar);
+  const cap=document.createElement('div');cap.className='bp-final-caption';cap.textContent='Preview final — frame, foto, dan filter ini yang akan digunakan untuk output.';shell.appendChild(cap);
+  host.appendChild(shell);
+}
+window.renderFinalPreview=bpRenderFinalPreview;
+
+const originalPrepareFinal=window.prepareFinal;
+window.prepareFinal=async function(){
+  bpFinalBase='';
+  bpFinalFilter='none';
+  try{
+    if(typeof originalPrepareFinal==='function')await originalPrepareFinal.apply(this,arguments);
+  }catch(e){console.warn('prepareFinal legacy',e)}
+  bpFinalBase=String(window.finalCompositeDataUrl||'');
+  bpRenderFinalPreview();
+};
+
+const originalGo=window.goToStep;
+window.goToStep=function(n){
+  const r=originalGo.apply(this,arguments);
+  if(n===7||n===8){
+    setTimeout(async()=>{
+      try{
+        if(typeof window.prepareFinal==='function')await window.prepareFinal();
+        else bpRenderFinalPreview();
+      }catch(e){}
+    },80);
+  }
+  return r;
+};
+
+function addFrameSourceNote(){
+  const host=$('preFrameGrid');if(!host||host.dataset.bpSourceNote)return;
+  host.dataset.bpSourceNote='1';
+  const note=document.createElement('div');note.className='bp-frame-source-note';
+  note.innerHTML='<span class="bp-frame-source-pill active">DEFAULT • Template Frame</span><span class="bp-frame-source-pill">CUSTOM • Upload Owner</span>';
+  host.parentNode.insertBefore(note,host);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(addFrameSourceNote,250));
+else setTimeout(addFrameSourceNote,250);
+})();
+</script>
+
 </html>

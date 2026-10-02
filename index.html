@@ -4104,4 +4104,205 @@ else setTimeout(install,120);
 })();
 </script>
 
+
+<style id="bp-unified-photo-frame-composer-20261002">
+.bp-unified-shell{width:100%;max-width:1180px;margin:0 auto}
+.bp-unified-layout{display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;align-items:stretch}
+.bp-unified-assets{background:#09090b;border:1px solid #27272a;border-radius:20px;padding:12px;max-height:72vh;overflow:auto}
+.bp-unified-assets-title{font-size:11px;font-weight:900;color:#e4e4e7;margin-bottom:9px;text-transform:uppercase;letter-spacing:.06em}
+.bp-unified-asset{position:relative;width:100%;border:2px solid #27272a;border-radius:12px;overflow:hidden;background:#111113;margin-bottom:8px;padding:0;cursor:pointer;touch-action:manipulation}
+.bp-unified-asset.active{border-color:#818cf8;box-shadow:0 0 0 3px rgba(129,140,248,.13)}
+.bp-unified-asset img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+.bp-unified-asset .bp-used{position:absolute;left:6px;right:6px;bottom:6px;padding:4px 6px;border-radius:7px;background:rgba(0,0,0,.76);font-size:8px;font-weight:900;color:#fff;text-align:center}
+.bp-unified-work{min-width:0;background:#09090b;border:1px solid #27272a;border-radius:22px;padding:14px}
+.bp-unified-stage{position:relative;width:100%;max-width:620px;margin:0 auto;overflow:hidden;border-radius:14px;background:#111113;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+.bp-unified-slot{position:absolute;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+.bp-unified-slot.active{outline:2px solid #818cf8;outline-offset:-2px}
+.bp-unified-photo{position:absolute;left:50%;top:50%;width:100%;height:100%;object-fit:contain;transform-origin:center center;pointer-events:none;will-change:transform;-webkit-user-drag:none}
+.bp-unified-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;z-index:20;-webkit-user-drag:none}
+.bp-unified-slot-label{position:absolute;left:5px;top:5px;z-index:10;padding:4px 7px;border-radius:99px;background:rgba(0,0,0,.7);color:#fff;font-size:8px;font-weight:900;pointer-events:none}
+.bp-unified-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.bp-unified-help{font-size:9px;color:#71717a;line-height:1.45}
+.bp-unified-actions{display:flex;gap:8px;flex-wrap:wrap}
+.bp-unified-actions button{min-height:44px;padding:10px 14px;border-radius:12px;font-size:10px;font-weight:900;touch-action:manipulation}
+.bp-unified-primary{background:#4f46e5;color:#fff}
+.bp-unified-secondary{background:#18181b;border:1px solid #3f3f46;color:#fff}
+.bp-unified-assign{margin-top:10px;padding:10px 12px;border-radius:12px;background:#18181b;border:1px solid #27272a;color:#a1a1aa;font-size:9px;font-weight:800}
+@media(max-width:720px){
+ .bp-unified-layout{grid-template-columns:92px minmax(0,1fr);gap:9px}
+ .bp-unified-assets{padding:7px;max-height:none}
+ .bp-unified-work{padding:8px}
+ .bp-unified-bottom{align-items:stretch;flex-direction:column}
+ .bp-unified-actions{width:100%}.bp-unified-actions button{flex:1}
+}
+</style>
+<script id="bp-unified-photo-frame-composer-20261002">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const state={
+  activeSlot:0,
+  slotPhotos:[],
+  transforms:[],
+  holes:[],
+  naturalW:600,
+  naturalH:900,
+  token:0
+};
+window.BPUnifiedComposer=state;
+
+function photoSrc(v){return typeof v==='string'?v:String(v?.src||v?.dataUrl||v?.url||'')}
+function frameSrc(){
+  const direct=String(window.selectedFrameSrc||'').trim(); if(direct)return direct;
+  const id=String(window.selectedFrameId||'').trim();
+  const f=(Array.isArray(window.frameGallery)?window.frameGallery:[]).find(x=>x&&String(x.id)===id);
+  return String(f?.src||f?._localSrc||f?.publicUrl||f?.pngUrl||'').trim();
+}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function getPhotos(){return Array.isArray(capturedPhotos)?capturedPhotos.map(photoSrc).filter(Boolean):[]}
+function ensureTransforms(n){
+  while(state.transforms.length<n)state.transforms.push({scale:1,x:0,y:0,rotation:0});
+  state.transforms=state.transforms.slice(0,n);
+}
+function applyTransform(i){
+  const img=document.querySelector('.bp-unified-photo[data-slot="'+i+'"]'); if(!img)return;
+  const t=state.transforms[i]||{scale:1,x:0,y:0,rotation:0};
+  img.style.transform='translate(-50%,-50%) translate('+Number(t.x||0)+'%,'+Number(t.y||0)+'%) scale('+clamp(Number(t.scale)||1,.55,4)+') rotate('+Number(t.rotation||0)+'rad)';
+}
+function activePhoto(){return state.slotPhotos[state.activeSlot]||''}
+function selectSlot(i){state.activeSlot=i;renderSlotStates();renderAssets()}
+function assignPhoto(photoIndex){
+  if(!state.holes.length)return;
+  state.slotPhotos[state.activeSlot]=getPhotos()[photoIndex]||'';
+  renderUnified(false);
+}
+function renderAssets(){
+  const host=$('bpUnifiedAssets');if(!host)return;
+  const photos=getPhotos();host.innerHTML='';
+  photos.forEach((src,i)=>{
+    const b=document.createElement('button');b.type='button';b.className='bp-unified-asset';
+    if(state.slotPhotos[state.activeSlot]===src)b.classList.add('active');
+    const used=[];state.slotPhotos.forEach((p,s)=>{if(p===src)used.push(s+1)});
+    b.innerHTML='<img src="'+src+'" alt="Foto '+(i+1)+'">'+(used.length?'<div class="bp-used">Slot '+used.join(', ')+'</div>':'');
+    b.addEventListener('click',e=>{e.preventDefault();assignPhoto(i)});
+    host.appendChild(b);
+  });
+  const title=document.createElement('div');title.className='bp-unified-assign';
+  title.textContent='Slot '+(state.activeSlot+1)+' dipilih • ketuk foto di kiri untuk memasukkannya ke slot ini.';
+  host.appendChild(title);
+}
+function renderSlotStates(){
+  document.querySelectorAll('.bp-unified-slot').forEach((el,i)=>{
+    el.classList.toggle('active',i===state.activeSlot);
+  });
+  document.querySelectorAll('.bp-unified-slot-label').forEach((el,i)=>{
+    const used=state.slotPhotos[i]?'Foto '+(getPhotos().indexOf(state.slotPhotos[i])+1):'Pilih foto';
+    el.textContent='Slot '+(i+1)+' • '+used;
+  });
+  const slot=$('bpUnifiedSlotText');if(slot)slot.textContent='Slot '+(state.activeSlot+1);
+}
+async function getHoles(src,w,h,n){
+  try{
+    if(src&&typeof window.detectTransparentHoles==='function'){
+      const hls=await window.detectTransparentHoles(src,w,h,n);
+      if(Array.isArray(hls)&&hls.length>=n)return hls.slice(0,n);
+    }
+  }catch(e){console.warn('Unified composer hole detection',e)}
+  const pad=w*.07,gap=w*.012,footer=h*.13,isStrip=String(window.selectedLayoutType||'')==='strip';
+  const cols=isStrip?1:2,rows=isStrip?n:Math.ceil(n/2);
+  const usableH=h-pad*2-footer-gap*Math.max(0,rows-1),cellW=(w-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;
+  return Array.from({length:n},(_,i)=>({x:pad+(isStrip?0:i%2)*(cellW+gap),y:pad+(isStrip?i:Math.floor(i/2))*(cellH+gap),w:cellW,h:cellH}));
+}
+async function initState(){
+  const src=frameSrc(),photos=getPhotos();
+  let w=600,h=900;
+  if(src){try{const im=await loadImage(src);w=600;h=Math.max(300,Math.round(w*((im.naturalHeight||900)/(im.naturalWidth||600))))}catch(e){}}
+  if(h>1200){w=Math.max(300,Math.round(w*1200/h));h=1200}
+  const wanted=Math.max(1,Number(window.requiredPhotosCount)||Number((window.config?.packages||[]).find(p=>p.id===window.selectedPackageId)?.photos)||photos.length||1);
+  state.naturalW=w;state.naturalH=h;
+  state.holes=await getHoles(src,w,h,wanted);
+  state.slotPhotos=state.holes.map((_,i)=>photos[i]||'');
+  state.transforms=state.holes.map(()=>({scale:1,x:0,y:0,rotation:0}));
+  state.activeSlot=0;
+}
+function bindGestures(slot,i){
+  const pts=new Map();let g=null;
+  const dist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  const ang=(a,b)=>Math.atan2(b.clientY-a.clientY,b.clientX-a.clientX);
+  const norm=a=>{while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return a};
+  slot.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    selectSlot(i);try{slot.setPointerCapture(e.pointerId)}catch(_){}
+    pts.set(e.pointerId,{clientX:e.clientX,clientY:e.clientY});
+    const t=state.transforms[i]||{scale:1,x:0,y:0,rotation:0};
+    if(pts.size===1)g={mode:'drag',sx:e.clientX,sy:e.clientY,x:Number(t.x)||0,y:Number(t.y)||0};
+    else {const a=[...pts.values()][0],b=[...pts.values()][1];g={mode:'multi',d:Math.max(1,dist(a,b)),a:ang(a,b),scale:Number(t.scale)||1,rotation:Number(t.rotation)||0}}
+    e.preventDefault();e.stopPropagation();
+  },{passive:false});
+  slot.addEventListener('pointermove',e=>{
+    if(!pts.has(e.pointerId)||!g)return;
+    pts.set(e.pointerId,{clientX:e.clientX,clientY:e.clientY});
+    const t=state.transforms[i];
+    if(pts.size>=2){
+      const p=[...pts.values()].slice(0,2);t.scale=clamp(g.scale*(dist(p[0],p[1])/g.d),.55,4);t.rotation=norm(g.rotation+(ang(p[0],p[1])-g.a));
+    }else{
+      const dx=e.clientX-g.sx,dy=e.clientY-g.sy,r=slot.getBoundingClientRect();
+      t.x=clamp(g.x+dx/Math.max(1,r.width)*100,-100,100);t.y=clamp(g.y+dy/Math.max(1,r.height)*100,-100,100);
+    }
+    applyTransform(i);renderSlotStates();e.preventDefault();e.stopPropagation();
+  },{passive:false});
+  const end=e=>{pts.delete(e.pointerId);if(pts.size===0)g=null;else if(pts.size===1){const p=[...pts.values()][0],t=state.transforms[i];g={mode:'drag',sx:p.clientX,sy:p.clientY,x:Number(t.x)||0,y:Number(t.y)||0}}e.preventDefault();e.stopPropagation()};
+  slot.addEventListener('pointerup',end,{passive:false});slot.addEventListener('pointercancel',end,{passive:false});
+}
+function syncFinalState(){
+  const assigned=state.slotPhotos.map(x=>x||'').filter(Boolean);
+  try{framePhotos.length=0;assigned.forEach(x=>framePhotos.push(x))}catch(e){}
+  try{composerTransforms.length=0;state.transforms.forEach(t=>composerTransforms.push({scale:t.scale,x:t.x,y:t.y,rotation:t.rotation}))}catch(e){}
+  window.BPUnifiedComposer.slotPhotos=state.slotPhotos.slice();
+}
+async function renderUnified(reinit){
+  const host=$('bpUnifiedComposer');if(!host)return;
+  if(reinit)await initState();
+  const token=++state.token,src=frameSrc(),photos=getPhotos();if(token!==state.token)return;
+  host.innerHTML='<div class="bp-unified-layout"><div id="bpUnifiedAssets" class="bp-unified-assets"></div><div class="bp-unified-work"><div id="bpUnifiedStage" class="bp-unified-stage"></div><div class="bp-unified-bottom"><div class="bp-unified-help"><strong style="color:#e4e4e7">Slot <span id="bpUnifiedSlotText">1</span></strong><br>Ketuk foto di kiri untuk memasukkannya. Di preview: <b>geser</b> dengan 1 jari • <b>pinch</b> untuk zoom • <b>putar 2 jari</b>.</div><div class="bp-unified-actions"><button id="bpUnifiedReset" class="bp-unified-secondary" type="button">↺ Reset Foto</button><button id="bpUnifiedDone" class="bp-unified-primary" type="button">Lanjut Edit →</button></div></div></div></div>';
+  const stage=$('bpUnifiedStage');stage.style.aspectRatio=state.naturalW+'/'+state.naturalH;
+  state.holes.forEach((r,i)=>{
+    const slot=document.createElement('div');slot.className='bp-unified-slot';slot.dataset.slot=i;
+    slot.style.left=r.x/state.naturalW*100+'%';slot.style.top=r.y/state.naturalH*100+'%';slot.style.width=r.w/state.naturalW*100+'%';slot.style.height=r.h/state.naturalH*100+'%';
+    const img=document.createElement('img');img.className='bp-unified-photo';img.dataset.slot=i;img.src=state.slotPhotos[i]||'';img.alt='Slot '+(i+1);slot.appendChild(img);
+    const lab=document.createElement('div');lab.className='bp-unified-slot-label';lab.textContent='Slot '+(i+1);slot.appendChild(lab);stage.appendChild(slot);
+    bindGestures(slot,i);applyTransform(i);
+  });
+  if(src){const fr=document.createElement('img');fr.className='bp-unified-frame';fr.src=src;fr.alt='Frame';stage.appendChild(fr)}
+  renderAssets();renderSlotStates();
+  $('bpUnifiedReset').onclick=()=>{state.transforms[state.activeSlot]={scale:1,x:0,y:0,rotation:0};applyTransform(state.activeSlot)};
+  $('bpUnifiedDone').onclick=async()=>{syncFinalState();window.goToStep(7)};
+}
+function installUnified(){
+  if($('bpUnifiedComposer'))return;
+  const frame=$('step-frame');if(!frame)return;
+  const host=document.createElement('div');host.id='bpUnifiedComposer';host.className='bp-unified-shell';
+  host.innerHTML='<div class="mb-4"><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 04</span><h2 class="text-3xl font-extrabold mt-2">Pilih & Atur Foto</h2><p class="text-zinc-400 text-sm mt-1">Pilih foto di kiri, lalu masukkan ke kotak frame. Atur langsung di preview dengan sentuhan.</p></div>';
+  frame.appendChild(host);
+}
+const oldGo=window.goToStep;
+window.goToStep=function(n){
+  if(n===5||n===6){
+    installUnified();
+    document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));
+    const frame=$('step-frame');frame.classList.remove('hidden');
+    initState().then(()=>renderUnified(false));
+    currentStep=5;try{updateStatusBadge();resetIdleTimer()}catch(e){}
+    return;
+  }
+  if(n===7){
+    syncFinalState();
+    return oldGo(6);
+  }
+  return oldGo(n);
+};
+window.__bpUnifiedReady=true;
+})();
+</script>
+
 </html>

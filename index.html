@@ -4868,3 +4868,29 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 
 </html>
+
+<style id="bp-c8-state-bridge-20261002">
+/* Keep legacy lexical kiosk state and vNext/window integrations synchronized. */
+</style>
+<script id="bp-c8-state-bridge-20261002">
+(function(){
+  'use strict';
+  function bridge(name,get,set){
+    try{
+      Object.defineProperty(window,name,{configurable:true,enumerable:false,get:get,set:set});
+    }catch(e){
+      try{window[name]=get()}catch(_){}
+    }
+  }
+  bridge('selectedFrameSrc',()=>selectedFrameSrc,v=>{selectedFrameSrc=String(v||'');});
+  bridge('selectedFrameId',()=>selectedFrameId,v=>{selectedFrameId=String(v||'');});
+  bridge('currentFilter',()=>currentFilter,v=>{currentFilter=String(v||'none');});
+  bridge('capturedPhotos',()=>capturedPhotos,v=>{capturedPhotos=Array.isArray(v)?v:[];});
+  bridge('requiredPhotosCount',()=>requiredPhotosCount,v=>{requiredPhotosCount=Math.max(1,Number(v)||1);});
+  bridge('selectedPackageId',()=>selectedPackageId,v=>{selectedPackageId=v==null?null:String(v);});
+  window.__bpC8StateBridgeReady=true;
+  try{
+    if(typeof renderCaptureReview==='function') renderCaptureReview();
+  }catch(e){}
+})();
+</script>

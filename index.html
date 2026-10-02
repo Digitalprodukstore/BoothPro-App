@@ -3836,4 +3836,85 @@ else setTimeout(fixPackageCTA,80);
   document.addEventListener('click',function(e){const btn=e.target&&e.target.closest&&e.target.closest('#toPaymentBtn');if(btn){e.preventDefault();e.stopImmediatePropagation();if(typeof window.goToStep==='function')window.goToStep(3);}},true);
 })();
 </script>
-</body>\n</html>
+</body>\n<style id="bp-vnext-direct-manipulation-20261002">
+#bpComposerStage{touch-action:none!important;user-select:none;-webkit-user-select:none}
+#bpComposerStage canvas{touch-action:none!important;cursor:grab}
+#bpComposerStage.bp-dragging canvas{cursor:grabbing}
+.bp-direct-badge{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:6px 9px;border-radius:999px;background:rgba(99,102,241,.12);border:1px solid rgba(129,140,248,.22);font-size:9px;font-weight:800;color:#c4b5fd}
+.bp-slot-action{display:flex;gap:7px;align-items:center;margin-top:10px}
+.bp-slot-action select{flex:1;min-width:0;padding:9px;border-radius:10px;background:#18181b;border:1px solid #27272a;color:#e4e4e7;font-size:10px;font-weight:800}
+.bp-slot-action button{padding:9px 10px;border-radius:10px;background:#27272a;border:1px solid #3f3f46;color:#fff;font-size:10px;font-weight:900;white-space:nowrap}
+</style>
+<script id="bp-vnext-direct-manipulation-20261002">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+let pointers=new Map(),gestureStart=null,raf=0;
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+function activeTransform(){
+ if(typeof composerTransforms==='undefined')return null;
+ composerTransforms[selectedPhotoIndex]=composerTransforms[selectedPhotoIndex]||{scale:1,x:0,y:0};
+ return composerTransforms[selectedPhotoIndex];
+}
+function scheduleRender(){
+ if(raf)return;
+ raf=requestAnimationFrame(()=>{raf=0;if(typeof syncComposerControls==='function')syncComposerControls();if(typeof renderComposer==='function')renderComposer()});
+}
+function distance(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
+function installComposerGesture(){
+ const stage=$('bpComposerStage');if(!stage||stage.__bpGesture)return;
+ stage.__bpGesture=true;
+ stage.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  const canvas=e.target.closest&&e.target.closest('canvas');if(!canvas)return;
+  stage.setPointerCapture?.(e.pointerId);pointers.set(e.pointerId,e);
+  const t=activeTransform();if(!t)return;
+  if(pointers.size===1)gestureStart={mode:'drag',x:e.clientX,y:e.clientY,tx:t.x,ty:t.y};
+  else if(pointers.size===2){const ps=[...pointers.values()];gestureStart={mode:'pinch',distance:distance(ps[0],ps[1]),scale:t.scale}}
+  stage.classList.add('bp-dragging');e.preventDefault();
+ },{passive:false});
+ stage.addEventListener('pointermove',e=>{
+  if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,e);
+  const t=activeTransform();if(!t||!gestureStart)return;
+  const rect=stage.getBoundingClientRect();
+  if(pointers.size>=2){const ps=[...pointers.values()].slice(0,2),d=Math.max(1,distance(ps[0],ps[1]));t.scale=clamp(gestureStart.scale*(d/Math.max(1,gestureStart.distance)),1,2.5)}
+  else{const dx=e.clientX-gestureStart.x,dy=e.clientY-gestureStart.y,basis=Math.max(1,Math.min(rect.width,rect.height));t.x=clamp(gestureStart.tx+(dx/basis)*100,-50,50);t.y=clamp(gestureStart.ty+(dy/basis)*100,-50,50)}
+  scheduleRender();e.preventDefault();
+ },{passive:false});
+ const end=e=>{
+  pointers.delete(e.pointerId);
+  if(!pointers.size){gestureStart=null;stage.classList.remove('bp-dragging')}
+  else if(pointers.size===1){const p=[...pointers.values()][0],t=activeTransform();gestureStart={mode:'drag',x:p.clientX,y:p.clientY,tx:t.x,ty:t.y}}
+  e.preventDefault();
+ };
+ stage.addEventListener('pointerup',end,{passive:false});stage.addEventListener('pointercancel',end,{passive:false});
+ stage.addEventListener('lostpointercapture',e=>{pointers.delete(e.pointerId);if(!pointers.size){gestureStart=null;stage.classList.remove('bp-dragging')}});
+}
+function injectSwapControl(){
+ const controls=document.querySelector('.bp-composer-controls');if(!controls||$('bpComposerSwapTarget'))return;
+ const wrap=document.createElement('div');wrap.className='bp-slot-action';
+ wrap.innerHTML='<select id="bpComposerSwapTarget" aria-label="Pilih foto untuk ditukar"></select><button type="button" id="bpComposerSwapBtn">↔ Tukar Foto</button>';
+ controls.appendChild(wrap);
+ const hint=document.createElement('div');hint.className='bp-direct-badge';hint.textContent='✋ Drag foto • 🤏 Pinch zoom • ↔ Tukar slot';controls.appendChild(hint);
+ const sync=()=>{const s=$('bpComposerSwapTarget');if(!s)return;s.innerHTML='';capturedPhotos.forEach((_,i)=>{if(i!==selectedPhotoIndex){const o=document.createElement('option');o.value=i;o.textContent='Tukar dengan Foto '+(i+1);s.appendChild(o)}});if(!s.options.length)s.disabled=true};
+ $('bpComposerSwapBtn').onclick=()=>{
+  const s=$('bpComposerSwapTarget'),j=Number(s?.value);if(!Number.isInteger(j)||j<0||j>=capturedPhotos.length||j===selectedPhotoIndex)return;
+  const a=selectedPhotoIndex,[p1,p2]=[capturedPhotos[a],capturedPhotos[j]];capturedPhotos[a]=p2;capturedPhotos[j]=p1;
+  const t1=composerTransforms[a]||{scale:1,x:0,y:0},t2=composerTransforms[j]||{scale:1,x:0,y:0};composerTransforms[a]=t2;composerTransforms[j]=t1;
+  sync();renderComposer();
+ };
+ sync();
+}
+const oldInject=window.injectComposer;
+window.injectComposer=function(){const r=oldInject?oldInject.apply(this,arguments):undefined;setTimeout(()=>{installComposerGesture();injectSwapControl()},0);return r};
+const oldRenderComposer=window.renderComposer;
+if(typeof oldRenderComposer==='function'&&!oldRenderComposer.__bpGestureWrap){
+ window.renderComposer=function(){const r=oldRenderComposer.apply(this,arguments);setTimeout(()=>{installComposerGesture();injectSwapControl()},0);return r};
+ window.renderComposer.__bpGestureWrap=true;
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{installComposerGesture();injectSwapControl()},120));
+else setTimeout(()=>{installComposerGesture();injectSwapControl()},120);
+})();
+</script>
+
+</html>

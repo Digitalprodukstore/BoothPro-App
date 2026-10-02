@@ -4519,4 +4519,82 @@ else setTimeout(addFrameSourceNote,250);
 })();
 </script>
 
+
+<style id="bp-vnext-preview-hotfix-20261002">
+#captureReviewPreview,#editorPreview{width:100%!important}
+#captureReviewPreview .editor-frame,#editorPreview .editor-frame{width:min(100%,520px)!important;max-width:520px!important;margin:0 auto!important}
+#captureReviewPreview canvas,#editorPreview canvas{width:100%!important;height:auto!important;display:block!important}
+</style>
+<script id="bp-vnext-preview-hotfix-20261002">
+(function(){
+'use strict';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function bpFrame(){return String(selectedFrameSrc||'').trim()}
+function bpName(){const f=(Array.isArray(frameGallery)?frameGallery:[]).find(x=>x&&String(x.id)===String(selectedFrameId));return f?.name||'Frame terpilih'}
+function bpSources(){
+  const unified=window.BPUnifiedComposer?.slotPhotos;
+  if(Array.isArray(unified)&&unified.length) return unified.slice(0,Math.max(unified.length,requiredPhotosCount||0));
+  return Array.isArray(capturedPhotos)?capturedPhotos.slice():[];
+}
+async function bpRender(hostId,label){
+  const host=document.getElementById(hostId);if(!host)return;
+  const src=bpFrame(), sources=bpSources();
+  host.innerHTML='';
+  if(!sources.some(Boolean)){host.innerHTML='<div class="text-xs text-zinc-500 text-center p-8">Belum ada foto untuk ditampilkan.</div>';return}
+  const wrap=document.createElement('div');wrap.className='editor-frame shadow-2xl';wrap.style.width='min(100%,520px)';wrap.style.maxWidth='520px';wrap.style.margin='0 auto';wrap.style.overflow='hidden';wrap.style.background=frameBg;wrap.style.position='relative';
+  let W=600,H=900;
+  if(src){try{const fi=await loadImage(src);W=600;H=Math.max(300,Math.round(W*((fi.naturalHeight||900)/(fi.naturalWidth||600))));if(H>1400){H=1400;W=Math.round(H*((fi.naturalWidth||600)/(fi.naturalHeight||900)))}}catch(e){}}
+  wrap.style.aspectRatio=W+'/'+H;
+  const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;canvas.style.width='100%';canvas.style.height='auto';wrap.appendChild(canvas);host.appendChild(wrap);
+  const photos=[];
+  for(let i=0;i<sources.length;i++){
+    if(!sources[i]){photos.push(null);continue}
+    try{photos.push(await loadImage(sources[i]))}catch(e){photos.push(null)}
+  }
+  await drawFrameAwareComposition(canvas,true,photos,src);
+  canvas.style.filter=getAppliedFilter()==='none'?'none':getAppliedFilter();
+  const layer=document.createElement('div');layer.className='text-layer';layer.id=label==='editor'?'textLayerEditor':'textLayerCapture';wrap.appendChild(layer);
+  renderStickerOverlay();
+}
+window.renderCaptureReview=()=>bpRender('captureReviewPreview','capture');
+window.renderEditor=async()=>{await bpRender('editorPreview','editor')};
+
+const finalFilters=[
+ {id:'none',name:'Original',css:'none'},
+ {id:'vivid',name:'Vivid',css:'saturate(1.22) contrast(1.06)'},
+ {id:'warm',name:'Warm',css:'sepia(.16) saturate(1.08) contrast(1.02)'},
+ {id:'cool',name:'Cool',css:'saturate(.94) hue-rotate(10deg) contrast(1.03)'},
+ {id:'mono',name:'B&W',css:'grayscale(1) contrast(1.06)'},
+ {id:'sepia',name:'Sepia',css:'sepia(.78) contrast(1.03)'},
+ {id:'soft',name:'Soft',css:'brightness(1.04) saturate(.88) contrast(.96)'}
+];
+let finalBase='';
+function renderFinal(){
+ const host=document.getElementById('finalPreview');if(!host)return;
+ host.innerHTML='';
+ if(!finalCompositeDataUrl){host.innerHTML='<div class="text-sm text-zinc-500 text-center p-10">Preview hasil akhir belum siap.</div>';return}
+ const shell=document.createElement('div');shell.className='bp-final-preview-shell';
+ const stage=document.createElement('div');stage.className='bp-final-preview-stage';
+ const img=document.createElement('img');img.src=finalCompositeDataUrl;img.alt='Preview final foto dan frame';stage.appendChild(img);shell.appendChild(stage);
+ const bar=document.createElement('div');bar.className='bp-final-filterbar';
+ finalFilters.forEach(f=>{const b=document.createElement('button');b.type='button';b.className='bp-final-filter-btn'+((currentFilter||'none')===f.id?' active':'');b.textContent=f.name;b.onclick=async()=>{currentFilter=f.id;if(!finalBase)finalBase=finalCompositeDataUrl;try{const im=await loadImage(finalBase),c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;const x=c.getContext('2d');x.filter=f.css;x.drawImage(im,0,0,c.width,c.height);finalCompositeDataUrl=c.toDataURL('image/jpeg',.95)}catch(e){}renderFinal()};bar.appendChild(b)});
+ shell.appendChild(bar);const cap=document.createElement('div');cap.className='bp-final-caption';cap.textContent='Preview final — hasil ini yang akan dicetak.';shell.appendChild(cap);host.appendChild(shell);
+}
+window.renderFinalPreview=renderFinal;
+window.prepareFinal=async function(){
+ finalBase='';
+ try{finalCompositeDataUrl=await buildCompositeCanvas()}catch(e){console.warn('final composite',e)}
+ renderFinal();
+ try{generateQR()}catch(e){}
+};
+const oldGo=window.goToStep;
+window.goToStep=function(n){
+ const r=oldGo.apply(this,arguments);
+ if(n===5||n===6||n===7||n===8)setTimeout(()=>{try{if(n===5||n===6)window.renderEditor();else window.prepareFinal()}catch(e){}},120);
+ return r;
+};
+window.addEventListener('load',()=>setTimeout(()=>{try{renderCaptureReview();renderEditor()}catch(e){}},500));
+})();
+</script>
+
 </html>

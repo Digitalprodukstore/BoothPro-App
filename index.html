@@ -773,7 +773,61 @@ function escapeHtml(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':
 function loadImage(src){return new Promise((resolve,reject)=>{if(!src){reject(new Error('empty image'));return}const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('image load failed'));im.src=src})}
 function fitImageInRect(ctx,im,x,y,w,h,mode='cover'){const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;if(!iw||!ih)return;const scale=mode==='contain'?Math.min(w/iw,h/ih):Math.max(w/iw,h/ih);const dw=iw*scale,dh=ih*scale;ctx.drawImage(im,x+(w-dw)/2,y+(h-dh)/2,dw,dh)}
 async function detectTransparentHoles(frameSrc,targetW,targetH,needed){try{const im=await loadImage(frameSrc);const sw=360,sh=Math.max(180,Math.round(sw*(im.naturalHeight/im.naturalWidth||targetH/targetW)));const c=document.createElement('canvas');c.width=sw;c.height=sh;const x=c.getContext('2d',{willReadFrequently:true});x.clearRect(0,0,sw,sh);x.drawImage(im,0,0,sw,sh);const data=x.getImageData(0,0,sw,sh).data,transparent=new Uint8Array(sw*sh),seen=new Uint8Array(sw*sh),components=[];for(let y=0;y<sh;y++)for(let xx=0;xx<sw;xx++){const a=data[(y*sw+xx)*4+3];transparent[y*sw+xx]=a<55?1:0}const qx=new Int32Array(sw*sh),qy=new Int32Array(sw*sh);for(let sy=0;sy<sh;sy++)for(let sx=0;sx<sw;sx++){const si=sy*sw+sx;if(!transparent[si]||seen[si])continue;let head=0,tail=0,minX=sx,maxX=sx,minY=sy,maxY=sy,area=0,touchesEdge=false;qx[tail]=sx;qy[tail++]=sy;seen[si]=1;while(head<tail){const cx=qx[head],cy=qy[head++];area++;if(cx<minX)minX=cx;if(cx>maxX)maxX=cx;if(cy<minY)minY=cy;if(cy>maxY)maxY=cy;if(cx===0||cy===0||cx===sw-1||cy===sh-1)touchesEdge=true;const ns=[[cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]];for(const[nx,ny]of ns){if(nx<0||ny<0||nx>=sw||ny>=sh)continue;const ni=ny*sw+nx;if(transparent[ni]&&!seen[ni]){seen[ni]=1;qx[tail]=nx;qy[tail++]=ny}}}const bw=maxX-minX+1,bh=maxY-minY+1,ratio=(bw*bh)/(sw*sh),fill=area/Math.max(1,bw*bh);if(!touchesEdge&&area>=Math.max(36,sw*sh*0.0015)&&ratio>=0.006&&ratio<=0.72&&fill>=0.55)components.push({area,minX,minY,maxX,maxY})}components.sort((a,b)=>b.area-a.area);const minHoleArea=Math.max(36,sw*sh*0.0015);const candidates=components.filter(r=>r.area>=minHoleArea);if(candidates.length<needed)return null;/* M1.2: prefer the requested number of largest holes, then sort spatially. This prevents decorative transparent areas from stealing photo slots. */const selected=candidates.slice(0,needed).sort((a,b)=>a.minY-b.minY||a.minX-b.minX);const inset=Math.max(0,Math.min(.08,Number(config.frameFit?.safeInset)||0));return selected.map(r=>{let x0=r.minX/sw*targetW,y0=r.minY/sh*targetH,w=(r.maxX-r.minX+1)/sw*targetW,h=(r.maxY-r.minY+1)/sh*targetH;const ix=w*inset,iy=h*inset;return{x:x0+ix,y:y0+iy,w:Math.max(2,w-ix*2),h:Math.max(2,h-iy*2)}})}catch(e){return null}}
-async function drawFrameAwareComposition(canvas,includeFooter=true,photosArg=null,frameSrcArg=null){const photos=Array.isArray(photosArg)?photosArg:framePhotos;const frameSrc=typeof frameSrcArg==='string'?frameSrcArg:selectedFrameSrc;const c=canvas,ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);const appliedFilter=getAppliedFilter();const needed=Math.max(1,photos.length);const pad=c.width*.07,gap=c.width*.012,footer=c.height*.13;const isStrip=selectedLayoutType==='strip',cols=isStrip?1:2,rows=isStrip?Math.max(1,needed):Math.ceil(needed/2),usableH=c.height-pad*2-footer-gap*(rows-1),cellW=(c.width-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);photos.forEach((im,i)=>{if(!im)return;const r=Math.floor(i/cols),col=i%cols,x=pad+col*(cellW+gap),y=pad+r*(cellH+gap);ctx.save();ctx.beginPath();ctx.rect(x,y,cellW,cellH);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;fitImageInRect(ctx,im,x,y,cellW,cellH,'contain');ctx.restore()});ctx.filter='none';if(frameSrc){try{const frame=await loadImage(frameSrc);const holes=await detectTransparentHoles(frameSrc,c.width,c.height,needed);if(holes&&holes.length>=needed){ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);holes.forEach((r,i)=>{if(!photos[i])return;ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;/* M1: keep the entire captured photo inside the detected transparent hole; never crop/zoom into the frame artwork. */fitImageInRect(ctx,photos[i],r.x,r.y,r.w,r.h,'contain');ctx.restore()});ctx.filter='none'}ctx.drawImage(frame,0,0,c.width,c.height)}catch(e){}}if(includeFooter)drawPreviewFooterCanvas(ctx,c.width,c.height);return true}
+async function drawFrameAwareComposition(canvas,includeFooter=true,photosArg=null,frameSrcArg=null){
+  const photos=Array.isArray(photosArg)?photosArg:framePhotos;
+  const frameSrc=typeof frameSrcArg==='string'?frameSrcArg:selectedFrameSrc;
+  const c=canvas,ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const needed=Math.max(1,photos.length);
+  const meta=(()=>{
+    try{
+      const all=typeof getFrameChoicesSafe==='function'?getFrameChoicesSafe():(typeof getFrameChoices==='function'?getFrameChoices():[]);
+      return (all||[]).find(f=>String(f?.id)===String(selectedFrameId||''))||null;
+    }catch(e){return null}
+  })();
+  const pad=c.width*.07,gap=c.width*.012,footer=c.height*.13;
+  const isStrip=String(selectedLayoutType||'')==='strip';
+  const layout=String(meta?.layout||'');
+  let cols=isStrip?1:2;
+  if(!isStrip&&['two-side'].includes(layout))cols=2;
+  if(!isStrip&&['six-alt'].includes(layout))cols=3;
+  const rows=isStrip?Math.max(1,needed):Math.ceil(needed/cols);
+  const usableH=c.height-pad*2-footer-gap*(rows-1);
+  const cellW=(c.width-pad*2-gap*(cols-1))/cols;
+  const cellH=usableH/rows;
+  const fallbackHoles=Array.from({length:needed},(_,i)=>{
+    const col=isStrip?0:i%cols,row=isStrip?i:Math.floor(i/cols);
+    return{x:pad+col*(cellW+gap),y:pad+row*(cellH+gap),w:cellW,h:cellH};
+  });
+  ctx.fillStyle=frameBg;
+  ctx.fillRect(0,0,c.width,c.height);
+  let holes=fallbackHoles;
+  let frame=null;
+  if(frameSrc){
+    try{
+      frame=await loadImage(frameSrc);
+      const detected=await detectTransparentHoles(frameSrc,c.width,c.height,needed);
+      if(Array.isArray(detected)&&detected.length>=needed)holes=detected;
+    }catch(e){}
+  }
+  holes.forEach((r,i)=>{
+    const im=photos[i];if(!im)return;
+    ctx.save();
+    ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
+    /* Slot geometry is template-driven; transforms are applied inside the slot only. */
+    const t=window.BoothProComposerState?.transforms?.[i]||window.BPUnifiedComposer?.transforms?.[i]||{};
+    const scale=Number(t.scale)||1,tx=(Number(t.x)||0)/100*r.w,ty=(Number(t.y)||0)/100*r.h,rot=Number(t.rotation)||0;
+    ctx.translate(r.x+r.w/2+tx,r.y+r.h/2+ty);
+    ctx.rotate(rot);
+    ctx.scale(scale,scale);
+    fitImageInRect(ctx,im,-r.w/2,-r.h/2,r.w,r.h,'contain');
+    ctx.restore();
+  });
+  ctx.filter='none';
+  if(frame)ctx.drawImage(frame,0,0,c.width,c.height);
+  if(includeFooter)drawPreviewFooterCanvas(ctx,c.width,c.height);
+  return true;
+}
 let framePhotos=[];
 let previewRenderSeq=0;
 function getFooterSettings(){const f=config.footer||{};return{watermark:String(f.watermark??'⚡ BOOTHPRO'),showDate:f.showDate!==false,dateFormat:f.dateFormat||'id-short'}}
@@ -866,6 +920,13 @@ async function buildCompositeCanvas(){
       }
       await (window.drawFrameAwareComposition||drawFrameAwareComposition)(c,true,photos,selectedFrameSrc);
       drawStickersCanvas(c,panelW,panelH);
+      const exportFilter=getAppliedFilter();
+      if(exportFilter&&exportFilter!=='none'){
+        const filtered=document.createElement('canvas');filtered.width=c.width;filtered.height=c.height;
+        const fx=filtered.getContext('2d');fx.filter=exportFilter;fx.drawImage(c,0,0);fx.filter='none';
+        c.width=filtered.width;c.height=filtered.height;
+        c.getContext('2d').drawImage(filtered,0,0);
+      }
       return c
     };
     const panel=await makePanel();
@@ -4545,8 +4606,14 @@ function bpRenderFinalPreview(){
   host.innerHTML='';
   const shell=document.createElement('div');shell.className='bp-final-preview-shell';
   const stage=document.createElement('div');stage.className='bp-final-preview-stage';
-  const im=document.createElement('img');im.src=String(window.finalCompositeDataUrl||'');im.alt='Preview hasil akhir';
-  im.draggable=false;stage.appendChild(im);shell.appendChild(stage);
+  const im=document.createElement('img');
+  im.src=String(bpFinalBase||window.finalCompositeDataUrl||'');
+  im.alt='Preview hasil akhir';
+  im.draggable=false;
+  stage.style.filter=(FINAL_FILTERS.find(x=>x.id===bpFinalFilter)||FINAL_FILTERS[0]).css;
+  stage.style.position='relative';
+  stage.style.overflow='hidden';
+  stage.appendChild(im);shell.appendChild(stage);
   const bar=document.createElement('div');bar.className='bp-final-filterbar';
   FINAL_FILTERS.forEach(f=>{
     const b=document.createElement('button');b.type='button';b.className='bp-final-filter-btn'+(f.id===bpFinalFilter?' active':'');b.textContent=f.name;

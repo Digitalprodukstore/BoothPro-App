@@ -4448,10 +4448,11 @@ function bpFrameName(){
   return String(f?.name||'Frame terpilih');
 }
 function bpPhotos(){
-  const c=Array.isArray(window.capturedPhotos)?window.capturedPhotos:[];
+  // Positional composer state: preserve empty slots so photo N stays mapped to frame slot N.
+  const c=Array.isArray(window.capturedPhotos)?window.capturedPhotos.slice():[];
   const unified=window.BPUnifiedComposer?.slotPhotos;
-  if(Array.isArray(unified)&&unified.some(Boolean)) return unified.filter(Boolean);
-  return c.filter(Boolean);
+  if(Array.isArray(unified)&&unified.some(Boolean)) return unified.slice();
+  return c;
 }
 async function bpCanvasPreview(){
   const frame=bpFrameSource(),photos=bpPhotos();
@@ -4466,7 +4467,10 @@ async function bpCanvasPreview(){
   try{
     if(typeof window.drawFrameAwareComposition==='function'){
       const imgs=[];
-      for(const src of photos){try{imgs.push(await window.loadImage(src))}catch(e){}}
+      for(const src of photos){
+        if(!src){imgs.push(null);continue}
+        try{imgs.push(await window.loadImage(src))}catch(e){imgs.push(null)}
+      }
       await window.drawFrameAwareComposition(c,true,imgs,frame);
     }
   }catch(e){
@@ -4695,9 +4699,10 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 let rightFrameState={holes:[],w:600,h:900,active:0,token:0,pointers:new Map(),gesture:null};
 
 function bpPhotos(){
+  // Keep slot indexes intact for Step 4 transforms and frame-hole mapping.
   const u=window.BPUnifiedComposer?.slotPhotos;
-  if(Array.isArray(u)&&u.some(Boolean))return u.filter(Boolean);
-  return Array.isArray(window.capturedPhotos)?window.capturedPhotos.filter(Boolean):[];
+  if(Array.isArray(u)&&u.some(Boolean))return u.slice();
+  return Array.isArray(window.capturedPhotos)?window.capturedPhotos.slice():[];
 }
 function bpFrameSrc(){
   return String(window.selectedFrameSrc||'').trim();

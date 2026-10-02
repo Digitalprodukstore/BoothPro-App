@@ -3512,4 +3512,247 @@ window.BoothProM36={addDashboardEntry,hydrateGallery};
 @media(max-width:640px){.m3912-category-grid,.m3912-frame-grid{gap:8px}.m3912-category{min-height:106px}}
 </style>
 \n
+
+<!-- BP C8 INTERACTIVE FRAME ADJUSTMENT -->
+<style id="bp-c8-interactive-frame-style">
+.bp-c8-editor-stage{position:relative;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none}
+.bp-c8-photo-hit{position:absolute;border:1px solid transparent;border-radius:4px;touch-action:none;cursor:grab;z-index:24;background:rgba(255,255,255,0.001)}
+.bp-c8-photo-hit:active{cursor:grabbing}
+.bp-c8-photo-hit.bp-active{border-color:rgba(129,140,248,.72);box-shadow:0 0 0 2px rgba(129,140,248,.16)}
+.bp-c8-hint{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:30;pointer-events:none;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.72);color:#fff;font-size:9px;font-weight:800;white-space:nowrap;backdrop-filter:blur(5px)}
+</style>
+<script id="bp-c8-interactive-frame-script">
+(function(){
+'use strict';
+const BP=window.__BP_C8__=window.__BP_C8__||{
+  transforms:[],
+  rects:[],
+  frameKey:'',
+  activeIndex:0,
+  gesture:null
+};
+
+function bpEnsureTransforms(n){
+  n=Math.max(0,Number(n)||0);
+  while(BP.transforms.length<n)BP.transforms.push({scale:1,x:0,y:0});
+  if(BP.transforms.length>n)BP.transforms.length=n;
+  return BP.transforms;
+}
+function bpResetTransforms(){
+  BP.transforms=[];
+  BP.rects=[];
+  BP.frameKey='';
+  BP.activeIndex=0;
+}
+function bpTransformFor(i){
+  bpEnsureTransforms(Math.max(Number(i)+1,capturedPhotos.length||0));
+  return BP.transforms[i];
+}
+function bpClamp(v,min,max){return Math.max(min,Math.min(max,v))}
+function bpGetFrameKey(src,w,h,n){return String(src||'plain')+'|'+w+'x'+h+'|'+n}
+function bpFitTransformed(ctx,im,r,t,filter){
+  if(!im||!r)return;
+  const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;
+  if(!iw||!ih)return;
+  const base=Math.min(r.w/iw,r.h/ih);
+  const s=bpClamp(Number(t?.scale)||1,.55,3.5);
+  const dw=iw*base*s,dh=ih*base*s;
+  const ox=r.x+(r.w-dw)/2+(Number(t?.x)||0)*r.w;
+  const oy=r.y+(r.h-dh)/2+(Number(t?.y)||0)*r.h;
+  ctx.save();
+  ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
+  ctx.filter=filter==='none'?'none':filter;
+  ctx.drawImage(im,ox,oy,dw,dh);
+  ctx.restore();
+}
+async function bpGetRects(frameSrc,w,h,n){
+  const key=bpGetFrameKey(frameSrc,w,h,n);
+  if(BP.frameKey===key&&BP.rects.length>=n)return BP.rects;
+  let rects=null;
+  if(frameSrc){
+    try{rects=await detectTransparentHoles(frameSrc,w,h,n)}catch(e){}
+  }
+  if(!rects||rects.length<n){
+    const pad=w*.07,gap=w*.012,footer=h*.13;
+    const isStrip=selectedLayoutType==='strip',cols=isStrip?1:2;
+    const rows=isStrip?Math.max(1,n):Math.ceil(n/2);
+    const usableH=h-pad*2-footer-gap*(rows-1);
+    const cellW=(w-pad*2-gap*(cols-1))/cols;
+    const cellH=usableH/rows;
+    rects=[];
+    for(let i=0;i<n;i++){
+      const row=Math.floor(i/cols),col=i%cols;
+      rects.push({x:pad+col*(cellW+gap),y:pad+row*(cellH+gap),w:cellW,h:cellH});
+    }
+  }
+  BP.frameKey=key;BP.rects=rects;
+  return rects;
+}
+async function bpDraw(canvas,photos,frameSrc,includeFooter){
+  const ctx=canvas.getContext('2d');
+  const w=canvas.width,h=canvas.height,n=photos.length;
+  const rects=await bpGetRects(frameSrc,w,h,n);
+  bpEnsureTransforms(n);
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle=frameBg;ctx.fillRect(0,0,w,h);
+  const filter=typeof getAppliedFilter==='function'?getAppliedFilter():'none';
+  photos.forEach((im,i)=>bpFitTransformed(ctx,im,rects[i],BP.transforms[i],filter));
+  if(frameSrc){
+    try{const frame=await loadImage(frameSrc);ctx.filter='none';ctx.drawImage(frame,0,0,w,h)}catch(e){}
+  }
+  if(includeFooter&&typeof drawPreviewFooterCanvas==='function')drawPreviewFooterCanvas(ctx,w,h);
+  return rects;
+}
+async function bpInteractivePreview(wrap,photos,frameSrc){
+  const token=++previewRenderSeq;
+  let naturalW=600,naturalH=900;
+  if(frameSrc){
+    try{
+      const fi=await loadImage(frameSrc);
+      naturalW=600;
+      naturalH=Math.max(300,Math.round(naturalW*((fi.naturalHeight||900)/(fi.naturalWidth||600))));
+      if(naturalH>1200){naturalH=1200;naturalW=Math.max(300,Math.round(naturalH*((fi.naturalWidth||600)/(fi.naturalHeight||900))))}
+    }catch(e){}
+  }
+  if(token!==previewRenderSeq)return;
+  wrap.style.aspectRatio=naturalW+'/'+naturalH;
+  wrap.innerHTML='';
+  const stage=document.createElement('div');stage.className='bp-c8-editor-stage';
+  const canvas=document.createElement('canvas');
+  canvas.width=naturalW;canvas.height=naturalH;canvas.className='absolute inset-0 w-full h-full block rounded-[10px]';
+  stage.appendChild(canvas);wrap.appendChild(stage);
+  const loaded=[];
+  for(const s of photos){try{loaded.push(await loadImage(s))}catch(e){}}
+  if(token!==previewRenderSeq)return;
+  const rects=await bpDraw(canvas,loaded,frameSrc,true);
+  if(token!==previewRenderSeq)return;
+
+  const layer=document.createElement('div');
+  layer.className='absolute inset-0 z-[25]';
+  layer.style.touchAction='none';
+  stage.appendChild(layer);
+
+  const stageRect=()=>stage.getBoundingClientRect();
+  const redraw=async()=>{
+    if(token!==previewRenderSeq)return;
+    await bpDraw(canvas,loaded,frameSrc,true);
+    canvas.style.filter='none';
+  };
+
+  rects.slice(0,loaded.length).forEach((r,i)=>{
+    const hit=document.createElement('div');
+    hit.className='bp-c8-photo-hit';
+    hit.dataset.photoIndex=String(i);
+    hit.style.left=(r.x/naturalW*100)+'%';
+    hit.style.top=(r.y/naturalH*100)+'%';
+    hit.style.width=(r.w/naturalW*100)+'%';
+    hit.style.height=(r.h/naturalH*100)+'%';
+    hit.title='Geser foto · cubit untuk zoom';
+    hit.addEventListener('pointerdown',e=>{
+      e.preventDefault();e.stopPropagation();
+      BP.activeIndex=i;
+      hit.classList.add('bp-active');
+      try{hit.setPointerCapture(e.pointerId)}catch(err){}
+      if(!BP.gesture)BP.gesture={};
+      BP.gesture[i]=BP.gesture[i]||{points:new Map(),start:null};
+      BP.gesture[i].points.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      const pts=[...BP.gesture[i].points.values()];
+      const t=bpTransformFor(i);
+      BP.gesture[i].start={scale:t.scale,x:t.x,y:t.y,mid:pts[0],dist:0};
+    });
+    hit.addEventListener('pointermove',async e=>{
+      const g=BP.gesture?.[i];if(!g)return;
+      g.points.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      const pts=[...g.points.values()];
+      const sr=stageRect();
+      const t=bpTransformFor(i);
+      if(pts.length===1){
+        const st=g.start;
+        t.x=bpClamp(st.x+(pts[0].x-st.mid.x)/sr.width,-1.5,1.5);
+        t.y=bpClamp(st.y+(pts[0].y-st.mid.y)/sr.height,-1.5,1.5);
+      }else{
+        const a=pts[0],b=pts[1];
+        const mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+        const dist=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
+        if(!g.pinch){
+          g.pinch={baseScale:t.scale,baseX:t.x,baseY:t.y,mid,dist};
+        }
+        t.scale=bpClamp(g.pinch.baseScale*(dist/g.pinch.dist),.55,3.5);
+        t.x=bpClamp(g.pinch.baseX+(mid.x-g.pinch.mid.x)/sr.width,-1.5,1.5);
+        t.y=bpClamp(g.pinch.baseY+(mid.y-g.pinch.mid.y)/sr.height,-1.5,1.5);
+      }
+      await redraw();
+    });
+    const end=e=>{
+      const g=BP.gesture?.[i];if(!g)return;
+      g.points.delete(e.pointerId);
+      if(g.points.size===0){delete BP.gesture[i];hit.classList.remove('bp-active')}
+      else if(g.points.size===1){
+        const p=[...g.points.values()][0],t=bpTransformFor(i);
+        g.start={scale:t.scale,x:t.x,y:t.y,mid:p,dist:0};g.pinch=null;
+      }
+      try{if(hit.hasPointerCapture(e.pointerId))hit.releasePointerCapture(e.pointerId)}catch(err){}
+    };
+    hit.addEventListener('pointerup',end);
+    hit.addEventListener('pointercancel',end);
+    layer.appendChild(hit);
+  });
+
+  const hint=document.createElement('div');
+  hint.className='bp-c8-hint';
+  hint.textContent='Geser foto • Cubit untuk zoom';
+  stage.appendChild(hint);
+  setTimeout(()=>{if(hint.isConnected)hint.style.opacity='0';hint.style.transition='opacity .5s'},2600);
+  const textLayer=document.createElement('div');
+  textLayer.className='text-layer';textLayer.id='textLayerEditor';stage.appendChild(textLayer);
+  renderStickerOverlay();
+}
+window.BoothProC8={
+  reset:bpResetTransforms,
+  transforms:BP.transforms,
+  getTransforms:()=>BP.transforms.map(x=>({...x})),
+  setTransform:(i,v)=>{const t=bpTransformFor(i);Object.assign(t,v||{})}
+};
+window.renderFrameAwarePreview=async function(wrap,id){
+  const photoSources=capturedPhotos.slice();
+  const frameSrcSnapshot=selectedFrameSrc;
+  if(id==='editor'){
+    await bpInteractivePreview(wrap,photoSources,frameSrcSnapshot);
+    return;
+  }
+  const token=++previewRenderSeq;
+  let naturalW=600,naturalH=900;
+  if(frameSrcSnapshot){
+    try{const fi=await loadImage(frameSrcSnapshot);naturalH=Math.max(300,Math.round(naturalW*((fi.naturalHeight||900)/(fi.naturalWidth||600))));if(naturalH>1200){naturalH=1200;naturalW=Math.max(300,Math.round(naturalH*((fi.naturalWidth||600)/(fi.naturalHeight||900))))}}catch(e){}
+  }
+  if(token!==previewRenderSeq)return;
+  wrap.style.aspectRatio=naturalW+'/'+naturalH;wrap.innerHTML='';
+  const canvas=document.createElement('canvas');canvas.width=naturalW;canvas.height=naturalH;canvas.className='w-full h-full block rounded-[10px]';
+  wrap.appendChild(canvas);
+  const photos=[];for(const s of photoSources){try{photos.push(await loadImage(s))}catch(e){}}
+  if(token!==previewRenderSeq)return;
+  await bpDraw(canvas,photos,frameSrcSnapshot,true);
+  const layer=document.createElement('div');layer.className='text-layer';layer.id=id==='mini'?'textLayerMini':'textLayerCapture';wrap.appendChild(layer);
+  renderStickerOverlay();
+};
+window.drawFrameAwareComposition=async function(canvas,includeFooter=true,photosArg=null,frameSrcArg=null){
+  const photos=Array.isArray(photosArg)?photosArg:framePhotos;
+  const frameSrc=typeof frameSrcArg==='string'?frameSrcArg:selectedFrameSrc;
+  return bpDraw(canvas,photos,frameSrc,includeFooter);
+};
+const oldResetToHome=window.resetToHome;
+window.resetToHome=function(){
+  bpResetTransforms();
+  return typeof oldResetToHome==='function'?oldResetToHome.apply(this,arguments):undefined;
+};
+const oldSelectFrame=window.selectFrame;
+window.selectFrame=function(f){
+  const prev=selectedFrameId;
+  const r=typeof oldSelectFrame==='function'?oldSelectFrame.apply(this,arguments):false;
+  if(String(prev)!==String(selectedFrameId))bpResetTransforms();
+  return r;
+};
+})();
+</script>
+
 </body>\n</html>

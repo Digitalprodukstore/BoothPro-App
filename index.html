@@ -921,7 +921,7 @@ function bindEditorComposerGestures(canvas){
   const pos=e=>{const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}};
   const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
   const angle=(a,b)=>Math.atan2(b.y-a.y,b.x-a.x);
-  const render=()=>renderEditor();
+  const render=()=>{refreshEditorCanvas().catch(e=>console.warn('Editor render:',e))};
   canvas.addEventListener('pointerdown',e=>{
     const p=pos(e);points.set(e.pointerId,p);canvas.setPointerCapture?.(e.pointerId);
     if(points.size===1){
@@ -957,6 +957,13 @@ function bindEditorComposerGestures(canvas){
   const end=e=>{points.delete(e.pointerId);if(points.size<2)start=null;};
   canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',end);canvas.addEventListener('pointerleave',()=>{});
 }
+async function refreshEditorCanvas(){
+  const host=$('editorPreview');if(!host)return;
+  const canvas=host.querySelector('canvas');if(!canvas)return;
+  await drawFrameAwareComposition(canvas,true,null,selectedFrameSrc);
+  canvas.style.filter=getAppliedFilter()==='none'?'none':getAppliedFilter();
+  renderEditorPhotoList();
+}
 function renderEditor(){
   const host=$('editorPreview');if(!host)return;
   host.innerHTML='';
@@ -967,7 +974,7 @@ function renderEditor(){
     const canvas=wrap.querySelector('canvas');
     if(canvas)bindEditorComposerGestures(canvas);
     if(signaturePadActive)initSignaturePad();
-  },50);
+  },80);
 }
 function renderEditorFrameQuickGrid(){const g=$('editorFrameQuickGrid');if(!g)return;g.innerHTML='';const frames=getFrameChoices();frames.forEach(f=>{const b=document.createElement('button');b.type='button';b.className='h-14 rounded-lg overflow-hidden border '+(selectedFrameId===f.id?'border-indigo-500':'border-zinc-700');b.title=f.name;b.onclick=()=>selectFrame(f);if(f.src)b.innerHTML='<img src="'+f.src+'" class="w-full h-full object-cover">';else b.innerHTML='<div class="w-full h-full" style="background:'+frameColor(f.id)+'"></div>';g.appendChild(b)})}
 function startCaptureFromFrame(){if(!selectedFrameId){alert('Pilih frame terlebih dahulu.');return}goToStep(4)}

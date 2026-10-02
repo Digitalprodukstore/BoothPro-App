@@ -4597,4 +4597,280 @@ window.addEventListener('load',()=>setTimeout(()=>{try{renderCaptureReview();ren
 })();
 </script>
 
+
+<style id="bp-vnext-frame-composer-final-20261002">
+/* Final frame/composer synchronization hotfix */
+#captureReviewPreview,#editorPreview,#finalPreview{position:relative;z-index:3;pointer-events:auto}
+#captureReviewPreview canvas,#editorPreview canvas{touch-action:none}
+#preFrameGrid [data-frame-id],#frameGallery [data-frame-id]{pointer-events:auto!important;position:relative;z-index:5}
+</style>
+<script id="bp-vnext-frame-composer-final-20261002">
+(function(){
+'use strict';
+const bpEl=id=>document.getElementById(id);
+const bpWait=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* IMPORTANT: use the kiosk engine's lexical state, not window.*.
+   Top-level let bindings such as selectedFrameSrc/selectedFrameId are not
+   guaranteed to exist as window properties. */
+function bpSelectedFrameSrc(){
+  return String(selectedFrameSrc||'').trim();
+}
+function bpSelectedFrame(){
+  const id=String(selectedFrameId||'');
+  let f=null;
+  try{
+    const all=typeof getFrameChoicesSafe==='function'?getFrameChoicesSafe():(Array.isArray(frameGallery)?frameGallery:[]);
+    f=all.find(x=>x&&String(x.id)===id)||null;
+  }catch(e){}
+  return f;
+}
+function bpFramePhotoCount(){
+  const f=bpSelectedFrame();
+  const n=Number(f?.photos);
+  return n>0?n:Math.max(1,Number(requiredPhotosCount)||Number(capturedPhotos?.length)||1);
+}
+function bpCapturedSlots(){
+  return Array.isArray(capturedPhotos)?capturedPhotos.map(v=>v||''):[]; 
+}
+function bpUnifiedSlots(){
+  const s=window.BPUnifiedComposer;
+  if(s&&Array.isArray(s.slotPhotos)&&s.slotPhotos.length)return s.slotPhotos.map(v=>v||'');
+  return bpCapturedSlots();
+}
+function bpFrameNaturalSize(src){
+  return loadImage(src).then(im=>{
+    let w=600,h=Math.max(300,Math.round(w*((im.naturalHeight||900)/(im.naturalWidth||600))));
+    if(h>1400){h=1400;w=Math.max(300,Math.round(h*((im.naturalWidth||600)/(im.naturalHeight||900))))}
+    return {w,h};
+  }).catch(()=>({w:600,h:900}));
+}
+
+/* Render the real frame shape. The number of detected holes comes from the
+   selected frame, not from the number of photos already captured. This means
+   a 2x2 frame remains 2x2 while photos are being captured one-by-one. */
+async function bpRenderStaticFrame(hostId){
+  const host=bpEl(hostId); if(!host)return;
+  const src=bpSelectedFrameSrc(), slots=hostId==='captureReviewPreview'?bpCapturedSlots():bpUnifiedSlots();
+  host.innerHTML='';
+  if(!slots.some(Boolean)){
+    host.innerHTML='<div class="text-xs text-zinc-500 text-center p-8">Belum ada foto untuk ditampilkan.</div>';
+    return;
+  }
+  const size=src?await bpFrameNaturalSize(src):{w:600,h:900};
+  const wrap=document.createElement('div');
+  wrap.style.cssText='position:relative;width:min(100%,520px);margin:0 auto;aspect-ratio:'+size.w+'/'+size.h+';overflow:hidden;border-radius:16px;background:'+String(frameBg||'#111')+';box-shadow:0 18px 55px rgba(0,0,0,.42)';
+  const canvas=document.createElement('canvas');canvas.width=size.w;canvas.height=size.h;
+  canvas.style.cssText='display:block;width:100%;height:auto;object-fit:contain';
+  wrap.appendChild(canvas);host.appendChild(wrap);
+  const photos=[];
+  for(let i=0;i<Math.max(slots.length,bpFramePhotoCount());i++){
+    const p=slots[i]||'';
+    if(!p){photos.push(null);continue}
+    try{photos.push(await loadImage(p))}catch(e){photos.push(null)}
+  }
+  try{
+    await drawFrameAwareComposition(canvas,true,photos,src);
+  }catch(e){
+    const ctx=canvas.getContext('2d');ctx.fillStyle=frameBg||'#111';ctx.fillRect(0,0,size.w,size.h);
+    if(src){try{const fr=await loadImage(src);ctx.drawImage(fr,0,0,size.w,size.h)}catch(_){}}
+  }
+  const label=document.createElement('div');
+  label.textContent=bpSelectedFrame()?.name||'Frame terpilih';
+  label.style.cssText='position:absolute;left:10px;bottom:10px;padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.72);color:#fff;font-size:9px;font-weight:900;letter-spacing:.03em;pointer-events:none';
+  wrap.appendChild(label);
+}
+
+/* The existing interactive composer had the same window.* state bug.
+   Replace its helper functions so its frame and photo slots stay synchronized. */
+try{
+  frameSrc=function(){
+    const direct=bpSelectedFrameSrc();
+    if(direct)return direct;
+    const f=bpSelectedFrame();
+    return String(f?.src||f?._localSrc||f?.publicUrl||f?.pngUrl||'').trim();
+  };
+  getPhotos=function(){
+    return bpCapturedSlots().map(photoSrc);
+  };
+  initState=async function(){
+    const src=frameSrc(),photos=getPhotos();
+    let w=600,h=900;
+    if(src){try{const im=await loadImage(src);h=Math.max(300,Math.round(w*((im.naturalHeight||900)/(im.naturalWidth||600))));if(h>1200){w=Math.max(300,Math.round(w*1200/h));h=1200}}catch(e){}}
+    const wanted=Math.max(1,bpFramePhotoCount());
+    state.naturalW=w;state.naturalH=h;
+    state.holes=src?await getHoles(src,w,h,wanted):[];
+    if(!state.holes.length){
+      const cols=selectedLayoutType==='strip'?1:2,rows=selectedLayoutType==='strip'?wanted:Math.ceil(wanted/2);
+      const pad=w*.07,gap=w*.012,footer=h*.13;
+      const usableH=h-pad*2-footer-gap*(rows-1),cellW=(w-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;
+      state.holes=Array.from({length:wanted},(_,i)=>({x:pad+(i%cols)*(cellW+gap),y:pad+Math.floor(i/cols)*(cellH+gap),w:cellW,h:cellH}));
+    }
+    state.slotPhotos=state.holes.map((_,i)=>photos[i]||'');
+    state.transforms=state.holes.map((_,i)=>window.BPUnifiedComposer?.transforms?.[i]||{scale:1,x:0,y:0,rotation:0});
+    state.activeSlot=Math.min(Number(state.activeSlot)||0,state.holes.length-1);
+  };
+}catch(e){console.warn('composer helper patch',e)}
+
+/* Capture review: frame determines the geometry; partial capture fills only
+   the slots already taken. */
+window.renderCaptureReview=async function(){try{await bpRenderStaticFrame('captureReviewPreview')}catch(e){console.warn('capture review',e)}};
+
+/* Editor preview: always show the exact selected frame and current composer
+   state. No separate sticker UI is added here. */
+window.renderEditor=async function(){
+  const host=bpEl('editorPreview');if(!host)return;
+  host.innerHTML='';
+  const src=bpSelectedFrameSrc(),slots=bpUnifiedSlots();
+  if(!src&&!slots.some(Boolean)){host.innerHTML='<div class="text-xs text-zinc-500 text-center p-8">Preview belum siap.</div>';return}
+  const size=src?await bpFrameNaturalSize(src):{w:600,h:900};
+  const wrap=document.createElement('div');wrap.style.cssText='position:relative;width:min(100%,520px);margin:0 auto;aspect-ratio:'+size.w+'/'+size.h+';overflow:hidden;border-radius:16px;background:'+String(frameBg||'#111')+';box-shadow:0 18px 55px rgba(0,0,0,.42)';
+  const canvas=document.createElement('canvas');canvas.width=size.w;canvas.height=size.h;canvas.style.cssText='display:block;width:100%;height:auto';
+  wrap.appendChild(canvas);host.appendChild(wrap);
+  const photos=[];for(let i=0;i<Math.max(slots.length,bpFramePhotoCount());i++){const p=slots[i]||'';if(!p){photos.push(null);continue}try{photos.push(await loadImage(p))}catch(e){photos.push(null)}}
+  /* Base preview follows the exact selected frame. Interactive transforms remain
+     on Step 4; this page is the Creative Edit stage. */
+  try{await drawFrameAwareComposition(canvas,true,photos,src)}catch(e){}
+  try{if(typeof renderEditorFrameQuickGrid==='function')renderEditorFrameQuickGrid()}catch(e){}
+};
+
+/* Final output renderer: reuse the exact frame holes AND the Step-4 transform
+   state, so the printed/downloaded image is the same composition the customer
+   adjusted. */
+async function bpBuildFinalComposite(){
+  const src=bpSelectedFrameSrc();
+  const slots=bpUnifiedSlots();
+  const size=src?await bpFrameNaturalSize(src):{w:1200,h:1800};
+  const targetW=1200,targetH=1800;
+  const ratio=size.w/Math.max(1,size.h);
+  let panelW=targetW,panelH=targetH;
+  if(selectedLayoutType==='strip'){
+    panelH=targetH;panelW=Math.min(targetW,Math.max(300,Math.round(panelH*ratio)));
+  }
+  const canvas=document.createElement('canvas');canvas.width=panelW;canvas.height=panelH;
+  const ctx=canvas.getContext('2d');ctx.fillStyle=frameBg||'#111';ctx.fillRect(0,0,panelW,panelH);
+  let holes=[];
+  if(src){try{holes=await detectTransparentHoles(src,panelW,panelH,bpFramePhotoCount())}catch(e){}}
+  if(!holes.length){
+    const wanted=Math.max(1,bpFramePhotoCount()),cols=selectedLayoutType==='strip'?1:2,rows=selectedLayoutType==='strip'?wanted:Math.ceil(wanted/2);
+    const pad=panelW*.07,gap=panelW*.012,footer=panelH*.13,usableH=panelH-pad*2-footer-gap*(rows-1),cellW=(panelW-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;
+    holes=Array.from({length:wanted},(_,i)=>({x:pad+(i%cols)*(cellW+gap),y:pad+Math.floor(i/cols)*(cellH+gap),w:cellW,h:cellH}));
+  }
+  const transforms=Array.isArray(window.BPUnifiedComposer?.transforms)?window.BPUnifiedComposer.transforms:[];
+  for(let i=0;i<holes.length;i++){
+    const p=slots[i]||'';if(!p)continue;
+    try{
+      const im=await loadImage(p),r=holes[i],t=transforms[i]||{scale:1,x:0,y:0,rotation:0};
+      const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;
+      const sc=Math.min(r.w/iw,r.h/ih),dw=iw*sc,dh=ih*sc;
+      const ox=r.x+(r.w-dw)/2+(Number(t.x)||0)*r.w/100;
+      const oy=r.y+(r.h-dh)/2+(Number(t.y)||0)*r.h/100;
+      ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
+      ctx.translate(ox+dw/2,oy+dh/2);ctx.rotate(Number(t.rotation)||0);ctx.scale(Number(t.scale)||1,Number(t.scale)||1);
+      ctx.filter=typeof getAppliedFilter==='function'?(getAppliedFilter()==='none'?'none':getAppliedFilter()):'none';
+      ctx.drawImage(im,-dw/2,-dh/2,dw,dh);ctx.restore();
+    }catch(e){}
+  }
+  if(src){try{const fr=await loadImage(src);ctx.filter='none';ctx.drawImage(fr,0,0,panelW,panelH)}catch(e){}}
+  try{if(typeof drawPreviewFooterCanvas==='function')drawPreviewFooterCanvas(ctx,panelW,panelH)}catch(e){}
+  try{if(typeof drawStickersCanvas==='function')drawStickersCanvas(ctx,panelW,panelH)}catch(e){}
+  const out=document.createElement('canvas');out.width=1200;out.height=1800;const ox=out.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,out.width,out.height);
+  if(selectedLayoutType==='strip'){
+    const copies=Math.max(1,Math.min(2,Number((config.packages.find(p=>p.id===selectedPackageId)||{}).prints)||1));
+    const gap=Math.max(12,Math.round(out.width*.025)),total=copies*panelW+(copies-1)*gap,start=(out.width-total)/2;
+    for(let i=0;i<copies;i++)containDrawCanvas(ox,canvas,start+i*(panelW+gap),0,panelW,panelH);
+  }else containDrawCanvas(ox,canvas,0,0,out.width,out.height);
+  return out.toDataURL('image/jpeg',.95);
+}
+
+/* Final page has filter controls only. Filter state is kept separately from
+   currentFilter so Creative Edit state is not corrupted. */
+const BP_FINAL_FILTERS=[
+  {id:'none',name:'Original',css:'none'},
+  {id:'vivid',name:'Vivid',css:'saturate(1.22) contrast(1.06)'},
+  {id:'warm',name:'Warm',css:'sepia(.16) saturate(1.08) contrast(1.02)'},
+  {id:'cool',name:'Cool',css:'saturate(.94) hue-rotate(10deg) contrast(1.03)'},
+  {id:'mono',name:'B&W',css:'grayscale(1) contrast(1.06)'},
+  {id:'sepia',name:'Sepia',css:'sepia(.78) contrast(1.03)'},
+  {id:'soft',name:'Soft',css:'brightness(1.04) saturate(.88) contrast(.96)'}
+];
+let bpFinalBase='',bpFinalFilter='none';
+async function bpApplyFinalFilter(id){
+  const f=BP_FINAL_FILTERS.find(x=>x.id===id)||BP_FINAL_FILTERS[0];
+  bpFinalFilter=f.id;
+  if(!bpFinalBase)bpFinalBase=String(finalCompositeDataUrl||'');
+  if(!bpFinalBase)return;
+  try{
+    const im=await loadImage(bpFinalBase),c=document.createElement('canvas');
+    c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;
+    const x=c.getContext('2d');x.filter=f.css;x.drawImage(im,0,0,c.width,c.height);
+    finalCompositeDataUrl=c.toDataURL('image/jpeg',.95);
+  }catch(e){finalCompositeDataUrl=bpFinalBase}
+  bpRenderFinal();
+}
+function bpRenderFinal(){
+  const host=bpEl('finalPreview');if(!host)return;
+  host.innerHTML='';
+  if(!finalCompositeDataUrl){host.innerHTML='<div class="text-sm text-zinc-500 text-center p-10">Preview hasil akhir belum siap.</div>';return}
+  const shell=document.createElement('div');shell.style.cssText='width:min(100%,680px);margin:0 auto';
+  const stage=document.createElement('div');stage.style.cssText='padding:14px;border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.1);box-shadow:0 20px 70px rgba(0,0,0,.32)';
+  const img=document.createElement('img');img.src=finalCompositeDataUrl;img.alt='Preview final foto dan frame';img.style.cssText='display:block;width:100%;max-height:62vh;object-fit:contain;border-radius:14px;background:#111';stage.appendChild(img);shell.appendChild(stage);
+  const bar=document.createElement('div');bar.style.cssText='display:flex;gap:8px;overflow-x:auto;padding:10px 2px 3px;scrollbar-width:none';
+  BP_FINAL_FILTERS.forEach(f=>{const b=document.createElement('button');b.type='button';b.textContent=f.name;b.style.cssText='flex:0 0 auto;min-height:44px;padding:9px 13px;border-radius:12px;border:1px solid #3f3f46;background:#18181b;color:#e4e4e7;font-size:10px;font-weight:900;touch-action:manipulation';if(f.id===bpFinalFilter)b.style.cssText+=';border-color:#818cf8;background:#312e81;color:#fff;box-shadow:0 0 0 2px rgba(129,129,248,.18)';b.onclick=()=>bpApplyFinalFilter(f.id);bar.appendChild(b)});
+  shell.appendChild(bar);
+  const cap=document.createElement('div');cap.style.cssText='margin-top:8px;text-align:center;color:#a1a1aa;font-size:10px;font-weight:700';cap.textContent='Preview final — foto + frame + filter yang akan dicetak.';shell.appendChild(cap);
+  host.appendChild(shell);
+}
+window.renderFinalPreview=bpRenderFinal;
+window.prepareFinal=async function(){
+  try{finalCompositeDataUrl=await bpBuildFinalComposite()}catch(e){console.warn('BP final composite',e)}
+  bpFinalBase=String(finalCompositeDataUrl||'');bpFinalFilter='none';bpRenderFinal();
+  try{
+    const pkg=config.packages.find(p=>p.id===selectedPackageId);
+    if(bpEl('sessionIdDisplay'))bpEl('sessionIdDisplay').innerText=sessionId;
+    if(bpEl('finalSessionText'))bpEl('finalSessionText').innerText=`${capturedPhotos.length} foto · ${pkg?.name||''} · soft file + loop/GIF siap.`;
+    if(bpEl('printCountLabel'))bpEl('printCountLabel').innerText=`(${pkg?.prints||1} strip)`;
+    if(typeof generateQR==='function')generateQR();
+  }catch(e){}
+};
+
+/* Keep final preview synchronized with the existing internal step mapping. */
+const bpOldGo=window.goToStep;
+window.goToStep=function(n){
+  const r=bpOldGo.apply(this,arguments);
+  if(n===4)setTimeout(()=>{try{window.renderCaptureReview()}catch(e){}},100);
+  if(n===6)setTimeout(()=>{try{window.renderEditor()}catch(e){}},120);
+  if(n===7||n===8)setTimeout(()=>{try{window.prepareFinal()}catch(e){}},160);
+  return r;
+};
+
+/* Custom/dashboard-uploaded frames: reinforce touch selection at the gallery
+   boundary. The normal card onclick remains intact; this is a safe fallback
+   for cards whose inner image captures the touch. */
+document.addEventListener('click',function(e){
+  const card=e.target&&e.target.closest?e.target.closest('#preFrameGrid [data-frame-id],#frameGallery [data-frame-id]'):null;
+  if(!card)return;
+  const id=String(card.dataset.frameId||'');
+  if(!id)return;
+  try{
+    const all=typeof getFrameChoicesSafe==='function'?getFrameChoicesSafe():(Array.isArray(frameGallery)?frameGallery:[]);
+    const f=all.find(x=>x&&String(x.id)===id);
+    if(f){selectFrame(f);e.preventDefault();e.stopPropagation()}
+  }catch(err){}
+},true);
+
+/* Repaint the two review surfaces whenever a new frame is selected. */
+const bpOriginalSelectFrame=selectFrame;
+selectFrame=function(f){
+  const ok=bpOriginalSelectFrame(f);
+  if(ok){
+    setTimeout(()=>{try{window.renderCaptureReview()}catch(e){}},30);
+    setTimeout(()=>{try{if(document.getElementById('bpUnifiedComposer'))renderUnified(true)}catch(e){}},50);
+    setTimeout(()=>{try{window.renderEditor()}catch(e){}},80);
+  }
+  return ok;
+};
+})();
+</script>
+
 </html>

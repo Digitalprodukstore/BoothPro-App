@@ -3851,199 +3851,256 @@ else setTimeout(fixPackageCTA,80);
   document.addEventListener('click',function(e){const btn=e.target&&e.target.closest&&e.target.closest('#toPaymentBtn');if(btn){e.preventDefault();e.stopImmediatePropagation();if(typeof window.goToStep==='function')window.goToStep(3);}},true);
 })();
 </script>
-</body>\n<style id="bp-vnext-direct-manipulation-20261002">
+</body>\n<style id="bp-vnext-dom-composer-20261002">
 #bpComposerStage{touch-action:none!important;user-select:none;-webkit-user-select:none;overscroll-behavior:none;position:relative}
-#bpComposerStage canvas{touch-action:none!important;cursor:grab;display:block}
-#bpComposerStage.bp-dragging canvas{cursor:grabbing}
-.bp-composer-hit-layer{position:absolute;inset:0;z-index:6;touch-action:none!important;pointer-events:none}
-.bp-composer-hit{position:absolute;border:1px solid transparent;background:transparent;border-radius:8px;touch-action:none!important;pointer-events:auto}
-.bp-composer-hit.active{border-color:rgba(129,140,248,.38);box-shadow:0 0 0 2px rgba(129,140,248,.12) inset}
+.bp-dom-composer{position:relative;max-width:360px;width:100%;margin:0 auto;overflow:hidden;border-radius:12px;background:#09090b}
+.bp-dom-composer-slot{position:absolute;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+.bp-dom-composer-photo{position:absolute;left:50%;top:50%;width:100%;height:100%;object-fit:contain;transform-origin:center center;will-change:transform;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.bp-dom-composer-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none;-webkit-user-drag:none;z-index:20}
+.bp-dom-composer-slot.active{box-shadow:inset 0 0 0 2px rgba(129,140,248,.55)}
+.bp-dom-composer-slot.active:after{content:"";position:absolute;inset:0;border:2px solid rgba(129,140,248,.55);pointer-events:none}
+.bp-dom-composer-empty{display:flex;align-items:center;justify-content:center;height:100%;padding:18px;color:#71717a;font-size:10px;text-align:center}
 .bp-composer-gesture-help{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:10px}
 .bp-composer-gesture-help span{padding:7px 9px;border-radius:999px;background:#18181b;border:1px solid #27272a;color:#a1a1aa;font-size:9px;font-weight:800}
 .bp-composer-gesture-help strong{color:#e4e4e7}
-.bp-composer-rotation{display:none!important}
-.bp-direct-badge{display:none!important}
 .bp-slot-action{display:flex;gap:7px;align-items:center;margin-top:10px}
 .bp-slot-action select{flex:1;min-width:0;padding:9px;border-radius:10px;background:#18181b;border:1px solid #27272a;color:#e4e4e7;font-size:10px;font-weight:800}
 .bp-slot-action button{padding:9px 10px;border-radius:10px;background:#27272a;border:1px solid #3f3f46;color:#fff;font-size:10px;font-weight:900;white-space:nowrap}
-@media(max-width:640px){.bp-composer-hit{border-color:transparent}.bp-composer-gesture-help{margin-top:8px}}
+@media(max-width:640px){.bp-composer-gesture-help{margin-top:8px}}
 </style>
-<script id="bp-vnext-direct-manipulation-20261002">
+<script id="bp-vnext-dom-composer-20261002">
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
 const S=()=>window.BoothProComposerState;
 let pointers=new Map();
 let gesture=null;
-let raf=0;
+let renderToken=0;
 
-function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
 function state(){return S&&S()}
-function active(){const s=state();return s?s.activeTransform():null}
-function stage(){return $('bpComposerStage')}
-function photoCount(){return Array.isArray(window.capturedPhotos)?capturedPhotos.length:0}
-function layoutRects(){
-  const st=stage(), n=photoCount(); if(!st||!n)return [];
-  const w=st.clientWidth,h=st.clientHeight,pad=w*.07,gap=w*.012,footer=h*.13;
-  const isStrip=String(window.selectedLayoutType||'')==='strip',cols=isStrip?1:2,rows=isStrip?Math.max(1,n):Math.ceil(n/2);
-  const usableH=h-pad*2-footer-gap*(rows-1),cellW=(w-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;
-  const out=[];
-  for(let i=0;i<n;i++){
-    const col=isStrip?0:i%2,row=isStrip?i:Math.floor(i/2);
-    out.push({x:pad+col*(cellW+gap),y:pad+row*(cellH+gap),w:cellW,h:cellH});
-  }
-  return out;
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+function activeTransform(){
+  const s=state();if(!s)return null;
+  return s.activeTransform();
 }
-function pointIndex(clientX,clientY){
-  const st=stage();const rect=st?.getBoundingClientRect();if(!rect)return 0;
-  const x=clientX-rect.left,y=clientY-rect.top,rs=layoutRects();
-  for(let i=rs.length-1;i>=0;i--){const r=rs[i];if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return i}
-  let best=0,bestD=Infinity;rs.forEach((r,i)=>{const d=Math.hypot(x-(r.x+r.w/2),y-(r.y+r.h/2));if(d<bestD){bestD=d;best=i}});return best;
+function frameSource(){
+  const direct=String(window.selectedFrameSrc||'').trim();
+  if(direct)return direct;
+  const id=String(window.selectedFrameId||'').trim();
+  const list=Array.isArray(window.frameGallery)?window.frameGallery:[];
+  const f=list.find(x=>x&&String(x.id)===id);
+  return String(f?.src||f?._localSrc||f?.publicUrl||f?.pngUrl||'').trim();
 }
-function syncThumbSelection(){
+function photoSrc(src){return typeof src==='string'?src:(src?.src||'')}
+function setPhotoTransform(idx){
   const s=state();if(!s)return;
-  const idx=s.selectedPhotoIndex;
+  const t=s.transforms?.[idx]||{scale:1,x:0,y:0,rotation:0};
+  const img=document.querySelector('.bp-dom-composer-photo[data-index="'+idx+'"]');
+  if(!img)return;
+  img.style.transform='translate(-50%,-50%) translate('+Number(t.x||0)+'%,'+Number(t.y||0)+'%) scale('+clamp(Number(t.scale)||1,.65,3.5)+') rotate('+Number(t.rotation||0)+'rad)';
+}
+function setActiveSlot(idx){
+  const s=state();if(!s)return;
+  s.selectedPhotoIndex=idx;
+  document.querySelectorAll('.bp-dom-composer-slot').forEach((el,i)=>el.classList.toggle('active',i===idx));
   document.querySelectorAll('.bp-composer-asset').forEach((el,i)=>el.classList.toggle('active',i===idx));
   const no=$('bpComposerPhotoNo');if(no)no.textContent=String(idx+1);
+  const t=s.activeTransform();
   const z=$('bpComposerZoomVal'),x=$('bpComposerXVal'),y=$('bpComposerYVal');
-  const t=active()||{scale:1,x:0,y:0,rotation:0};
   if(z)z.textContent=Math.round(t.scale*100)+'%';
   if(x)x.textContent=Math.round(t.x)+'%';
   if(y)y.textContent=Math.round(t.y)+'%';
 }
-function rebuildHitLayer(){
-  const st=stage();const s=state();if(!st||!s)return;
-  const old=st.querySelector('.bp-composer-hit-layer');if(old)old.remove();
-  const layer=document.createElement('div');layer.className='bp-composer-hit-layer';
-  const rs=layoutRects(),n=photoCount();
-  rs.forEach((r,i)=>{
-    const hit=document.createElement('div');hit.className='bp-composer-hit'+(i===s.selectedPhotoIndex?' active':'');
-    hit.style.left=(r.x/st.clientWidth*100)+'%';hit.style.top=(r.y/st.clientHeight*100)+'%';
-    hit.style.width=(r.w/st.clientWidth*100)+'%';hit.style.height=(r.h/st.clientHeight*100)+'%';
-    hit.dataset.photoIndex=String(i);
-    layer.appendChild(hit);
+async function resolveHoles(src,w,h,n){
+  try{
+    if(src&&typeof window.detectTransparentHoles==='function'){
+      const holes=await window.detectTransparentHoles(src,w,h,n);
+      if(Array.isArray(holes)&&holes.length)return holes;
+    }
+  }catch(e){console.warn('DOM Composer hole detection:',e)}
+  const pad=w*.07,gap=w*.012,footer=h*.13,isStrip=String(window.selectedLayoutType||'')==='strip';
+  const cols=isStrip?1:2,rows=isStrip?Math.max(1,n):Math.ceil(n/2);
+  const usableH=h-pad*2-footer-gap*(rows-1),cellW=(w-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;
+  return Array.from({length:n},(_,i)=>{
+    const col=isStrip?0:i%2,row=isStrip?i:Math.floor(i/2);
+    return {x:pad+col*(cellW+gap),y:pad+row*(cellH+gap),w:cellW,h:cellH};
   });
-  st.appendChild(layer);
 }
-function schedule(){
-  if(raf)return;
-  raf=requestAnimationFrame(()=>{raf=0;syncThumbSelection();if(typeof window.renderComposer==='function')window.renderComposer();});
-}
-function renderOnly(){
-  syncThumbSelection();
-  if(typeof window.renderComposer==='function')window.renderComposer();
+async function renderDomComposer(){
+  const stage=$('bpComposerStage'),s=state();
+  if(!stage||!s)return;
+  const token=++renderToken;
+  const photos=Array.isArray(window.capturedPhotos)?capturedPhotos.slice():[];
+  const src=frameSource();
+  stage.innerHTML='';
+  if(!photos.length){stage.innerHTML='<div class="bp-dom-composer"><div class="bp-dom-composer-empty">Belum ada foto untuk disesuaikan.</div></div>';return}
+
+  let naturalW=600,naturalH=900;
+  if(src){
+    try{
+      const fi=await window.loadImage(src);
+      naturalH=Math.max(300,Math.round(naturalW*((fi.naturalHeight||900)/(fi.naturalWidth||600))));
+      if(naturalH>1200){naturalH=1200;naturalW=Math.max(300,Math.round(naturalH*((fi.naturalWidth||600)/(fi.naturalHeight||900))))}
+    }catch(e){}
+  }
+  if(token!==renderToken)return;
+  const root=document.createElement('div');
+  root.className='bp-dom-composer';
+  root.style.aspectRatio=naturalW+'/'+naturalH;
+  stage.appendChild(root);
+
+  const holes=await resolveHoles(src,naturalW,naturalH,photos.length);
+  if(token!==renderToken)return;
+
+  photos.forEach((p,i)=>{
+    const r=holes[i];if(!r)return;
+    const slot=document.createElement('div');
+    slot.className='bp-dom-composer-slot'+(i===s.selectedPhotoIndex?' active':'');
+    slot.dataset.index=String(i);
+    slot.style.left=(r.x/naturalW*100)+'%';
+    slot.style.top=(r.y/naturalH*100)+'%';
+    slot.style.width=(r.w/naturalW*100)+'%';
+    slot.style.height=(r.h/naturalH*100)+'%';
+
+    const img=document.createElement('img');
+    img.className='bp-dom-composer-photo';
+    img.dataset.index=String(i);
+    img.src=photoSrc(p);
+    img.alt='Foto '+(i+1);
+    img.draggable=false;
+    slot.appendChild(img);
+    root.appendChild(slot);
+    setPhotoTransform(i);
+
+    slot.addEventListener('pointerdown',onPointerDown,{passive:false});
+    slot.addEventListener('pointermove',onPointerMove,{passive:false});
+    slot.addEventListener('pointerup',onPointerEnd,{passive:false});
+    slot.addEventListener('pointercancel',onPointerEnd,{passive:false});
+  });
+
+  if(src){
+    const fr=document.createElement('img');
+    fr.className='bp-dom-composer-frame';
+    fr.src=src;
+    fr.alt='Frame terpilih';
+    fr.draggable=false;
+    root.appendChild(fr);
+  }else{
+    const empty=document.createElement('div');
+    empty.className='bp-dom-composer-empty';
+    empty.style.position='absolute';empty.style.inset='0';empty.style.zIndex='30';
+    empty.textContent='Frame belum tersedia. Pilih frame kembali.';
+    root.appendChild(empty);
+  }
+  setActiveSlot(s.selectedPhotoIndex);
 }
 function pointerDistance(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)}
 function pointerAngle(a,b){return Math.atan2(b.clientY-a.clientY,b.clientX-a.clientX)}
 function normalizeAngle(a){while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return a}
-function install(){
-  const st=stage();if(!st||st.__bpDirectV2)return false;
-  st.__bpDirectV2=true;
-  st.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse'&&e.button!==0)return;
-    const target=e.target.closest?.('.bp-composer-hit');
-    const idx=target?Number(target.dataset.photoIndex):pointIndex(e.clientX,e.clientY);
-    const s=state();if(!s)return;
-    if(Number.isInteger(idx)&&idx>=0&&idx<photoCount())s.selectedPhotoIndex=idx;
-    syncThumbSelection();rebuildHitLayer();
-    try{st.setPointerCapture(e.pointerId)}catch(_){}
-    pointers.set(e.pointerId,{clientX:e.clientX,clientY:e.clientY});
-    const t=active();if(!t)return;
-    if(pointers.size===1){
-      gesture={mode:'drag',startX:e.clientX,startY:e.clientY,tx:Number(t.x)||0,ty:Number(t.y)||0,moved:false};
-    }else if(pointers.size===2){
-      const ps=[...pointers.values()].slice(0,2);
-      gesture={mode:'multi',startDistance:Math.max(1,pointerDistance(ps[0],ps[1])),startAngle:pointerAngle(ps[0],ps[1]),scale:Number(t.scale)||1,rotation:Number(t.rotation)||0,moved:false};
-    }
-    st.classList.add('bp-dragging');e.preventDefault();
-  },{passive:false});
-  st.addEventListener('pointermove',e=>{
-    if(!pointers.has(e.pointerId))return;
-    pointers.set(e.pointerId,{clientX:e.clientX,clientY:e.clientY});
-    const t=active();if(!t||!gesture)return;
-    if(pointers.size>=2){
-      const ps=[...pointers.values()].slice(0,2);
-      const d=Math.max(1,pointerDistance(ps[0],ps[1]));
-      const a=pointerAngle(ps[0],ps[1]);
-      t.scale=clamp(gesture.scale*(d/gesture.startDistance),0.65,3.5);
-      t.rotation=normalizeAngle(gesture.rotation+(a-gesture.startAngle));
-      gesture.moved=true;
-    }else{
-      const dx=e.clientX-gesture.startX,dy=e.clientY-gesture.startY;
-      const basis=Math.max(1,Math.min(st.clientWidth,st.clientHeight));
-      t.x=clamp(gesture.tx+(dx/basis)*100,-100,100);
-      t.y=clamp(gesture.ty+(dy/basis)*100,-100,100);
-      if(Math.abs(dx)+Math.abs(dy)>3)gesture.moved=true;
-    }
-    syncThumbSelection();
-    if(raf)cancelAnimationFrame(raf);
-    raf=requestAnimationFrame(()=>{raf=0;renderOnly();});
-    e.preventDefault();
-  },{passive:false});
-  const end=e=>{
-    pointers.delete(e.pointerId);
-    if(pointers.size===0){gesture=null;st.classList.remove('bp-dragging');rebuildHitLayer();}
-    else if(pointers.size===1){
-      const p=[...pointers.values()][0],t=active();
-      gesture={mode:'drag',startX:p.clientX,startY:p.clientY,tx:Number(t?.x)||0,ty:Number(t?.y)||0,moved:false};
-    }
-    e.preventDefault();
-  };
-  st.addEventListener('pointerup',end,{passive:false});
-  st.addEventListener('pointercancel',end,{passive:false});
-  st.addEventListener('lostpointercapture',e=>{pointers.delete(e.pointerId);if(!pointers.size){gesture=null;st.classList.remove('bp-dragging')}});
-  return true;
+
+function onPointerDown(e){
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  const slot=e.currentTarget,idx=Number(slot.dataset.index),s=state();
+  if(!s)return;
+  if(pointers.size&&[...pointers.values()][0].slot!==slot){
+    pointers.clear();gesture=null;
+  }
+  setActiveSlot(idx);
+  try{slot.setPointerCapture(e.pointerId)}catch(_){}
+  pointers.set(e.pointerId,{clientX:e.clientX,clientY:e.clientY,slot});
+  const t=s.activeTransform();
+  if(pointers.size===1){
+    gesture={slot,idx,mode:'drag',startX:e.clientX,startY:e.clientY,tx:Number(t.x)||0,ty:Number(t.y)||0,moved:false};
+  }else{
+    const ps=[...pointers.values()].slice(0,2);
+    gesture={slot,idx,mode:'multi',startDistance:Math.max(1,pointerDistance(ps[0],ps[1])),startAngle:pointerAngle(ps[0],ps[1]),scale:Number(t.scale)||1,rotation:Number(t.rotation)||0,moved:false};
+  }
+  e.preventDefault();e.stopPropagation();
 }
-function addGestureHelp(){
-  const controls=document.querySelector('.bp-composer-controls');if(!controls||controls.querySelector('.bp-composer-gesture-help'))return;
-  const help=document.createElement('div');help.className='bp-composer-gesture-help';
-  help.innerHTML='<span>👆 <strong>Sentuh foto</strong> pilih</span><span>✋ <strong>Geser</strong> posisi</span><span>🤏 <strong>Pinch</strong> zoom</span><span>↻ <strong>Putar 2 jari</strong></span>';
-  controls.appendChild(help);
+function onPointerMove(e){
+  if(!pointers.has(e.pointerId)||!gesture)return;
+  pointers.set(e.pointerId,{clientX:e.clientX,clientY:e.clientY,slot:gesture.slot});
+  const s=state(),t=s?.transforms?.[gesture.idx];
+  if(!s||!t)return;
+  if(pointers.size>=2){
+    const ps=[...pointers.values()].slice(0,2);
+    const d=Math.max(1,pointerDistance(ps[0],ps[1]));
+    const a=pointerAngle(ps[0],ps[1]);
+    t.scale=clamp(gesture.scale*(d/gesture.startDistance),.65,3.5);
+    t.rotation=normalizeAngle(gesture.rotation+(a-gesture.startAngle));
+  }else{
+    const dx=e.clientX-gesture.startX,dy=e.clientY-gesture.startY;
+    const rect=gesture.slot.getBoundingClientRect();
+    t.x=clamp(gesture.tx+(dx/Math.max(1,rect.width))*100,-100,100);
+    t.y=clamp(gesture.ty+(dy/Math.max(1,rect.height))*100,-100,100);
+  }
+  setPhotoTransform(gesture.idx);
+  setActiveSlot(gesture.idx);
+  e.preventDefault();e.stopPropagation();
 }
-function hidePrimarySliders(){
+function onPointerEnd(e){
+  pointers.delete(e.pointerId);
+  if(pointers.size===0){
+    gesture=null;
+  }else if(pointers.size===1){
+    const p=[...pointers.values()][0],s=state(),t=s?.transforms?.[gesture?.idx];
+    gesture={slot:p.slot,idx:gesture?.idx??Number(p.slot.dataset.index),mode:'drag',startX:p.clientX,startY:p.clientY,tx:Number(t?.x)||0,ty:Number(t?.y)||0,moved:false};
+  }
+  e.preventDefault();e.stopPropagation();
+}
+function syncComposerControls(){
+  const s=state();if(!s)return;
+  const t=s.activeTransform();
+  const z=$('bpComposerZoomVal'),x=$('bpComposerXVal'),y=$('bpComposerYVal');
+  if(z)z.textContent=Math.round(t.scale*100)+'%';
+  if(x)x.textContent=Math.round(t.x)+'%';
+  if(y)y.textContent=Math.round(t.y)+'%';
+  const no=$('bpComposerPhotoNo');if(no)no.textContent=String(s.selectedPhotoIndex+1);
+  const zi=$('bpComposerZoom');if(zi)zi.value=Math.round(t.scale*100);
+  const xi=$('bpComposerX');if(xi)xi.value=Math.round(t.x);
+  const yi=$('bpComposerY');if(yi)yi.value=Math.round(t.y);
+}
+function decorateControls(){
+  const controls=document.querySelector('.bp-composer-controls');if(!controls)return;
   ['bpComposerZoom','bpComposerX','bpComposerY'].forEach(id=>{
     const el=$(id);if(el)el.closest('.mt-4,.mt-5')?.classList.add('hidden');
   });
-  const hint=document.querySelector('.bp-composer-hint');if(hint)hint.textContent='Edit langsung di preview: sentuh foto → geser • pinch untuk zoom • dua jari untuk memutar. Hasil ikut preview, final, dan print.';
+  const hint=document.querySelector('.bp-composer-hint');if(hint)hint.textContent='Edit langsung di preview: sentuh foto → geser • pinch untuk zoom • dua jari untuk memutar. Hasil ini memakai state yang sama untuk preview, final, dan print.';
+  if(!controls.querySelector('.bp-composer-gesture-help')){
+    const help=document.createElement('div');help.className='bp-composer-gesture-help';
+    help.innerHTML='<span>👆 <strong>Sentuh foto</strong> pilih</span><span>✋ <strong>Geser</strong> posisi</span><span>🤏 <strong>Pinch</strong> zoom</span><span>↻ <strong>Putar 2 jari</strong></span>';
+    controls.appendChild(help);
+  }
 }
-function addResetAndSwapOnly(){
-  const controls=document.querySelector('.bp-composer-controls');if(!controls||$('bpComposerDirectActions'))return;
-  const box=document.createElement('div');box.id='bpComposerDirectActions';box.className='bp-composer-toolbar';
-  box.innerHTML='<button type="button" id="bpComposerDirectReset">↺ Reset Foto</button><button type="button" id="bpComposerDirectFit">Fit</button><button type="button" id="bpComposerDirectSwap">↔ Tukar Foto</button>';
-  controls.appendChild(box);
-  $('bpComposerDirectReset').onclick=()=>{const t=active();if(t){t.scale=1;t.x=0;t.y=0;t.rotation=0}renderOnly();};
-  $('bpComposerDirectFit').onclick=()=>{const t=active();if(t){t.scale=1;t.x=0;t.y=0;t.rotation=0}renderOnly();};
-  $('bpComposerDirectSwap').onclick=()=>document.getElementById('bpComposerSwapBtn')?.click();
+function bindAssetClicks(){
+  document.querySelectorAll('.bp-composer-asset').forEach((el,i)=>{
+    el.onclick=function(e){e.preventDefault();e.stopPropagation();const s=state();if(s){s.selectedPhotoIndex=i;syncComposerControls();renderComposerDomOnly()}};
+  });
 }
-function injectSwap(){
-  const controls=document.querySelector('.bp-composer-controls');if(!controls||$('bpComposerSwapTarget'))return;
-  const wrap=document.createElement('div');wrap.className='bp-slot-action';
-  wrap.innerHTML='<select id="bpComposerSwapTarget" aria-label="Pilih foto untuk ditukar"></select><button type="button" id="bpComposerSwapBtn">↔ Tukar Foto</button>';
-  controls.appendChild(wrap);
-  const sync=()=>{const s=$('bpComposerSwapTarget');const st=state();if(!s||!st)return;s.innerHTML='';capturedPhotos.forEach((_,i)=>{if(i!==st.selectedPhotoIndex){const o=document.createElement('option');o.value=i;o.textContent='Tukar dengan Foto '+(i+1);s.appendChild(o)}});s.disabled=!s.options.length};
-  $('bpComposerSwapBtn').onclick=()=>{
-    const s=$('bpComposerSwapTarget'),j=Number(s?.value),st=state();if(!st||!Number.isInteger(j)||j<0||j>=capturedPhotos.length||j===st.selectedPhotoIndex)return;
-    const a=st.selectedPhotoIndex,[p1,p2]=[capturedPhotos[a],capturedPhotos[j]];capturedPhotos[a]=p2;capturedPhotos[j]=p1;
-    const ts=st.transforms||[];const t1=ts[a]||{scale:1,x:0,y:0,rotation:0},t2=ts[j]||{scale:1,x:0,y:0,rotation:0};ts[a]=t2;ts[j]=t1;
-    st.transforms=ts;sync();renderOnly();
-  };
-  sync();
+function renderComposerDomOnly(){
+  syncComposerControls();
+  document.querySelectorAll('.bp-dom-composer-photo').forEach((_,i)=>setPhotoTransform(i));
+  document.querySelectorAll('.bp-dom-composer-slot').forEach((el,i)=>el.classList.toggle('active',i===state()?.selectedPhotoIndex));
+  bindAssetClicks();
 }
-function decorate(){
-  install();addGestureHelp();hidePrimarySliders();addResetAndSwapOnly();injectSwap();rebuildHitLayer();
+const originalRenderComposer=window.renderComposer;
+window.renderComposer=function(){
+  if(typeof originalRenderComposer==='function'){
+    try{originalRenderComposer.apply(this,arguments)}catch(e){console.warn('Composer legacy render:',e)}
+  }
+  setTimeout(()=>{decorateControls();renderDomComposer();},30);
+};
+window.BoothProDOMComposer={render:renderDomComposer,refresh:renderComposerDomOnly};
+
+function install(){
+  if(!$('bpComposerStage'))return false;
+  decorateControls();
+  bindAssetClicks();
+  renderDomComposer();
+  return true;
 }
-const oldRender=window.renderComposer;
-if(typeof oldRender==='function'&&!oldRender.__bpDirectV2){
-  window.renderComposer=function(){const r=oldRender.apply(this,arguments);setTimeout(decorate,0);return r};
-  window.renderComposer.__bpDirectV2=true;
-}
-const oldInject=window.injectComposer;
-if(typeof oldInject==='function'&&!oldInject.__bpDirectV2){
-  window.injectComposer=function(){const r=oldInject.apply(this,arguments);setTimeout(decorate,0);return r};
-  window.injectComposer.__bpDirectV2=true;
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(decorate,120));
-else setTimeout(decorate,120);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,120));
+else setTimeout(install,120);
 })();
 </script>
 

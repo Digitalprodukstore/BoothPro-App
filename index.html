@@ -3813,4 +3813,27 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else setTimeout(fixPackageCTA,80);
 })();
 </script>
+
+<!-- FINAL vNext package->payment guard: frame is intentionally deferred to the next screen. -->
+<script id="bp-vnext-package-payment-guard-20261002">
+(function(){
+  function enforcePackagePaymentCTA(){
+    const btn=document.getElementById('toPaymentBtn');
+    if(!btn)return;
+    btn.disabled=false; btn.removeAttribute('disabled'); btn.style.pointerEvents='auto'; btn.style.opacity='1';
+    btn.onclick=function(e){ if(e){e.preventDefault();e.stopPropagation();} if(typeof window.goToStep==='function')window.goToStep(3); return false; };
+    const label=document.getElementById('toPaymentLabel'); if(label)label.textContent='Lanjut ke Pembayaran';
+  }
+  function installGuard(){
+    enforcePackagePaymentCTA();
+    if(typeof window.updatePackageSummary==='function' && !window.updatePackageSummary.__bpPaymentGuard){
+      const original=window.updatePackageSummary;
+      const wrapped=function(){const result=original.apply(this,arguments); enforcePackagePaymentCTA(); return result;};
+      wrapped.__bpPaymentGuard=true; window.updatePackageSummary=wrapped;
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(installGuard,120)); else setTimeout(installGuard,120);
+  document.addEventListener('click',function(e){const btn=e.target&&e.target.closest&&e.target.closest('#toPaymentBtn');if(btn){e.preventDefault();e.stopImmediatePropagation();if(typeof window.goToStep==='function')window.goToStep(3);}},true);
+})();
+</script>
 </body>\n</html>

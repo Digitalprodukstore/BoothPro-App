@@ -3568,17 +3568,17 @@ function install(){
 
   /* Frame is now a dedicated pre-capture screen. The existing frame renderer remains the authority. */
   const oldPre=document.querySelector('#step-package #preFrameGrid');
+  const pkgFramePanel=oldPre?.parentElement;
   const frameHost=document.createElement('div');frameHost.className='bp-vnext-frame-wrap';
   frameHost.innerHTML='<div class="bp-vnext-progress"><span class="bp-dot active">1 Paket</span><span class="bp-dot active">2 Pembayaran</span><span class="bp-dot active">3 Frame</span><span class="bp-dot">4 Foto</span><span class="bp-dot">5 Edit</span><span class="bp-dot">6 Hasil</span></div><div style="font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#a78bfa;margin-bottom:6px">Pilih Frame</div><div style="font-size:11px;color:#71717a;margin-bottom:12px">Pilih kategori lalu frame. Frame masih dapat disesuaikan lagi setelah foto diambil.</div>';
   if(oldPre){oldPre.parentElement.insertBefore(frameHost,oldPre.parentElement.firstChild);frameHost.appendChild(oldPre)}
-  const pkgFramePanel=oldPre?.parentElement;
   if(pkgFramePanel){pkgFramePanel.classList.add('hidden')}
   frame.innerHTML='<div class="mb-5"><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 03</span><h2 class="text-3xl font-extrabold mt-2">Pilih Frame</h2><p class="text-zinc-400 text-sm mt-1">Masuk ke pengalaman visual setelah pembayaran.</p></div>';
   frame.appendChild(frameHost);
   const sel=document.createElement('div');sel.className='bp-vnext-selected';sel.innerHTML='<div><span>Frame terpilih</span><strong id="vnextSelectedFrameName">Belum dipilih</strong></div><span id="vnextSelectedFrameCategory">—</span>';
   frameHost.appendChild(sel);
   const cont=document.createElement('button');cont.id='vnextFrameContinue';cont.type='button';cont.innerHTML='Lanjut ke Kamera <i class="fa-solid fa-arrow-right ml-1"></i>';
-  cont.onclick=function(){if(!window.frameSelectionConfirmed||!window.selectedFrameId){alert('Pilih frame terlebih dahulu.');return}window.__bpVNextCaptureReady=true;window.goToStep(4)};
+  cont.onclick=function(){if(!frameSelectionConfirmed||!selectedFrameId){alert('Pilih frame terlebih dahulu.');return}window.__bpVNextCaptureReady=true;window.goToStep(4)};
   frameHost.appendChild(cont);
 
   /* Hide the old post-capture frame gallery from this screen for now; engine remains intact for the next composer milestone. */
@@ -3617,10 +3617,10 @@ function install(){
       safe(function(){renderPayment()});window.currentStep=3;safe(function(){updateStatusBadge();resetIdleTimer()});return;
     }
     if(n===4){
-      if(window.paymentConfirmed && !window.__bpVNextCaptureReady && !window.frameSelectionConfirmed){
+      if(paymentConfirmed && !window.__bpVNextCaptureReady && !frameSelectionConfirmed){
         frame.classList.remove('hidden');pkg.classList.add('hidden');payHost.classList.add('hidden');safe(function(){renderPreFrames()});window.currentStep=3;safe(updateStatusBadge);return;
       }
-      if(window.paymentConfirmed && !window.__bpVNextCaptureStarted){
+      if(paymentConfirmed && !window.__bpVNextCaptureStarted){
         window.__bpVNextCaptureStarted=true;window.__bpVNextCaptureReady=false;
         frame.classList.add('hidden');pkg.classList.add('hidden');payHost.classList.add('hidden');
         return originalGo(4);
@@ -3651,7 +3651,7 @@ function install(){
 
   /* Keep selected frame name visible in the new Frame screen. */
   const refreshFrameLabel=function(){
-    const f=(typeof getFrameChoicesSafe==='function'?(getFrameChoicesSafe()||[]).find(x=>x.id===window.selectedFrameId):null);
+    const f=(typeof getFrameChoicesSafe==='function'?(getFrameChoicesSafe()||[]).find(x=>x.id===selectedFrameId):null);
     const n=$('vnextSelectedFrameName'),c=$('vnextSelectedFrameCategory');
     if(n)n.textContent=f?.name||'Belum dipilih';
     if(c)c.textContent=f?.category||'—';

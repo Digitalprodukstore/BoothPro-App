@@ -5067,7 +5067,7 @@ window.goToStep=function(n){
   const target=(n===5||n===6)?7:n;
   const r=legacyGo.apply(this,[target]);
   if(target===7)setTimeout(()=>{showFinal();},80);
-  if(target===4)setTimeout(()=>{ensureCaptureWorkspace();},120);
+  if(target===4)setTimeout(async()=>{try{if(typeof window.renderEditor==='function')await window.renderEditor()}catch(e){}ensureCaptureWorkspace()},140);
   return r;
 };
 

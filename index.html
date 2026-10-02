@@ -4205,7 +4205,7 @@ async function getHoles(src,w,h,n){
   try{
     if(src&&typeof window.detectTransparentHoles==='function'){
       const hls=await window.detectTransparentHoles(src,w,h,n);
-      if(Array.isArray(hls)&&hls.length>=n)return hls.slice(0,n);
+      if(Array.isArray(hls)&&hls.length)return hls.slice(0,n);
     }
   }catch(e){console.warn('Unified composer hole detection',e)}
   const pad=w*.07,gap=w*.012,footer=h*.13,isStrip=String(window.selectedLayoutType||'')==='strip';
@@ -4218,7 +4218,7 @@ async function initState(){
   let w=600,h=900;
   if(src){try{const im=await loadImage(src);w=600;h=Math.max(300,Math.round(w*((im.naturalHeight||900)/(im.naturalWidth||600))))}catch(e){}}
   if(h>1200){w=Math.max(300,Math.round(w*1200/h));h=1200}
-  const wanted=Math.max(1,Number(window.requiredPhotosCount)||Number((window.config?.packages||[]).find(p=>p.id===window.selectedPackageId)?.photos)||photos.length||1);
+  const frameMeta=(Array.isArray(window.frameGallery)?window.frameGallery:[]).find(x=>x&&String(x.id)===String(window.selectedFrameId)); const wanted=Math.max(1,Number(frameMeta?.photos)||Number(requiredPhotosCount)||photos.length||1);
   state.naturalW=w;state.naturalH=h;
   state.holes=await getHoles(src,w,h,wanted);
   state.slotPhotos=state.holes.map((_,i)=>photos[i]||'');

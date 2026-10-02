@@ -3512,4 +3512,160 @@ window.BoothProM36={addDashboardEntry,hydrateGallery};
 @media(max-width:640px){.m3912-category-grid,.m3912-frame-grid{gap:8px}.m3912-category{min-height:106px}}
 </style>
 \n
+
+<style id="bp-vnext-ux-20261002">
+/* BoothPro UX vNext: presentation layer only. Existing engine/screens remain available underneath. */
+.bp-vnext-host{width:100%;min-width:0}
+.bp-vnext-progress{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:0 auto 18px;padding:8px 12px}
+.bp-vnext-progress .bp-dot{display:flex;align-items:center;gap:6px;color:#71717a;font-size:10px;font-weight:800}
+.bp-vnext-progress .bp-dot:before{content:"";width:8px;height:8px;border-radius:999px;background:#3f3f46}
+.bp-vnext-progress .bp-dot.active{color:#e4e4e7}
+.bp-vnext-progress .bp-dot.active:before{background:var(--bp-accent,#818cf8);box-shadow:0 0 0 4px rgba(129,140,248,.12)}
+#vnextPaymentPanel{margin-top:18px}
+#vnextPaymentPanel>div{max-width:100%!important}
+.bp-vnext-frame-wrap{background:#09090b;border:1px solid #27272a;border-radius:24px;padding:18px}
+.bp-vnext-frame-wrap .bp-vnext-selected{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding:12px 14px;border-radius:14px;background:#18181b;border:1px solid #27272a}
+.bp-vnext-frame-wrap .bp-vnext-selected strong{font-size:13px}
+.bp-vnext-frame-wrap .bp-vnext-selected span{font-size:10px;color:#a1a1aa}
+#vnextFrameContinue{width:100%;margin-top:14px;padding:15px;border-radius:14px;background:linear-gradient(90deg,#4f46e5,#7c3aed);color:#fff;font-weight:900}
+.bp-vnext-ai{margin-top:4px;padding:14px;border-radius:18px;background:linear-gradient(135deg,rgba(79,70,229,.12),rgba(124,58,237,.06));border:1px solid rgba(129,140,248,.22)}
+.bp-vnext-ai-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bp-vnext-ai-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.bp-vnext-ai-grid button{padding:11px;border-radius:12px;background:#18181b;border:1px solid #27272a;color:#f4f4f5;text-align:left;font-size:11px;font-weight:800}
+.bp-vnext-ai-grid button:hover{border-color:#6366f1;background:#1e1b2f}
+.bp-vnext-ai-grid small{display:block;color:#71717a;font-size:9px;font-weight:600;margin-top:3px}
+.bp-vnext-ai-note{font-size:9px;color:#71717a;line-height:1.4;margin-top:8px}
+.bp-vnext-output{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:18px}
+.bp-vnext-output-card{background:#09090b;border:1px solid #27272a;border-radius:22px;padding:18px}
+.bp-vnext-output-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.bp-vnext-output-actions button{min-height:50px;border-radius:13px;font-weight:900}
+.bp-vnext-print{margin-top:14px;border-top:1px solid #27272a;padding-top:14px}
+.bp-vnext-print-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}
+.bp-vnext-print-grid button{padding:10px;border-radius:11px;background:#18181b;border:1px solid #27272a;color:#e4e4e7;font-size:11px;font-weight:800}
+.bp-vnext-print-grid button.active{border-color:#818cf8;background:rgba(99,102,241,.14)}
+.bp-vnext-output .bp-vnext-primary{background:#fff;color:#18181b}
+.bp-vnext-output .bp-vnext-digital{background:#4f46e5;color:#fff}
+@media(max-width:900px){.bp-vnext-output{grid-template-columns:1fr}.bp-vnext-output-card{padding:14px}}
+@media(max-width:640px){.bp-vnext-ai-grid{grid-template-columns:1fr}.bp-vnext-print-grid{grid-template-columns:1fr 1fr}}
+</style>
+<script id="bp-vnext-ux-20261002">
+(function(){
+'use strict';
+function $(id){return document.getElementById(id)}
+function safe(fn){try{fn()}catch(e){console.warn('BoothPro vNext:',e)}}
+function install(){
+  if($('bpVNextInstalled'))return;
+  const pkg=$('step-package'), pay=$('step-payment'), frame=$('step-frame'), editor=$('step-editor'), final=$('step-final');
+  if(!pkg||!pay||!frame||!editor||!final)return;
+  const marker=document.createElement('span');marker.id='bpVNextInstalled';marker.style.display='none';document.body.appendChild(marker);
+
+  /* Package + Payment on one customer screen. Payment engine DOM is moved, not duplicated. */
+  const payHost=document.createElement('div');payHost.id='vnextPaymentPanel';payHost.className='bp-vnext-host hidden';
+  payHost.innerHTML='<div class="bp-vnext-progress"><span class="bp-dot active">1 Paket</span><span class="bp-dot active">2 Pembayaran</span><span class="bp-dot">3 Frame</span><span class="bp-dot">4 Foto</span><span class="bp-dot">5 Edit</span><span class="bp-dot">6 Hasil</span></div>';
+  while(pay.firstElementChild)payHost.appendChild(pay.firstElementChild);
+  pkg.appendChild(payHost);
+  pay.classList.add('hidden');pay.setAttribute('data-vnext-hidden','1');
+
+  /* Frame is now a dedicated pre-capture screen. The existing frame renderer remains the authority. */
+  const oldPre=document.querySelector('#step-package #preFrameGrid');
+  const frameHost=document.createElement('div');frameHost.className='bp-vnext-frame-wrap';
+  frameHost.innerHTML='<div class="bp-vnext-progress"><span class="bp-dot active">1 Paket</span><span class="bp-dot active">2 Pembayaran</span><span class="bp-dot active">3 Frame</span><span class="bp-dot">4 Foto</span><span class="bp-dot">5 Edit</span><span class="bp-dot">6 Hasil</span></div><div style="font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#a78bfa;margin-bottom:6px">Pilih Frame</div><div style="font-size:11px;color:#71717a;margin-bottom:12px">Pilih kategori lalu frame. Frame masih dapat disesuaikan lagi setelah foto diambil.</div>';
+  if(oldPre){oldPre.parentElement.insertBefore(frameHost,oldPre.parentElement.firstChild);frameHost.appendChild(oldPre)}
+  const pkgFramePanel=oldPre?.parentElement;
+  if(pkgFramePanel){pkgFramePanel.classList.add('hidden')}
+  frame.innerHTML='<div class="mb-5"><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 03</span><h2 class="text-3xl font-extrabold mt-2">Pilih Frame</h2><p class="text-zinc-400 text-sm mt-1">Masuk ke pengalaman visual setelah pembayaran.</p></div>';
+  frame.appendChild(frameHost);
+  const sel=document.createElement('div');sel.className='bp-vnext-selected';sel.innerHTML='<div><span>Frame terpilih</span><strong id="vnextSelectedFrameName">Belum dipilih</strong></div><span id="vnextSelectedFrameCategory">—</span>';
+  frameHost.appendChild(sel);
+  const cont=document.createElement('button');cont.id='vnextFrameContinue';cont.type='button';cont.innerHTML='Lanjut ke Kamera <i class="fa-solid fa-arrow-right ml-1"></i>';
+  cont.onclick=function(){if(!window.frameSelectionConfirmed||!window.selectedFrameId){alert('Pilih frame terlebih dahulu.');return}window.__bpVNextCaptureReady=true;window.goToStep(4)};
+  frameHost.appendChild(cont);
+
+  /* Hide the old post-capture frame gallery from this screen for now; engine remains intact for the next composer milestone. */
+  safe(function(){const fg=$('frameGallery');if(fg)fg.classList.add('hidden');const fr=$('frameMiniPreview');if(fr)fr.classList.add('hidden');});
+
+  /* AI Studio UX inside the existing editor. No external API key is introduced by this commit. */
+  const ai=document.createElement('div');ai.className='bp-vnext-ai';
+  ai.innerHTML='<div class="bp-vnext-ai-head"><div><div style="font-size:11px;font-weight:900;color:#e4e4e7">✨ AI STUDIO</div><div style="font-size:9px;color:#71717a;margin-top:2px">Creative tools tanpa mengganggu editor utama</div></div><span class="pro-badge">AI</span></div><div class="bp-vnext-ai-grid"><button type="button" data-ai="enhance">✨ AI Enhance<small>Lighting + clarity</small></button><button type="button" data-ai="beauty">✨ AI Portrait<small>Beauty natural</small></button><button type="button" data-ai="vintage">✨ AI Style<small>Editorial vintage</small></button><button type="button" data-ai="photocard">✨ AI Photocard<small>Siapkan gaya photocard</small></button></div><div class="bp-vnext-ai-note">Mesin AI generatif/cloud akan dipasang sebagai provider terpisah pada milestone berikutnya. UI ini sudah dibuat modular agar engine utama tidak terganggu.</div>';
+  editor.querySelector('.safe-scroll')?.appendChild(ai);
+  ai.querySelectorAll('button[data-ai]').forEach(b=>b.addEventListener('click',function(){
+    const k=this.dataset.ai;
+    if(k==='enhance'){window.applyImageFilter&&applyImageFilter('brightness(105%) contrast(110%) saturate(108%)');}
+    else if(k==='beauty'){window.applyImageFilter&&applyImageFilter('brightness(103%) contrast(96%) saturate(105%) blur(.15px)');}
+    else if(k==='vintage'){window.applyImageFilter&&applyImageFilter('sepia(32%) contrast(105%) saturate(90%) brightness(103%)');}
+    else if(k==='photocard'){window.applyImageFilter&&applyImageFilter('contrast(108%) saturate(112%) brightness(103%)');alert('AI Photocard style siap. Generator layout/AI cloud akan menjadi modul berikutnya.');}
+  }));
+
+  /* Output + Print: the existing final engine is retained; presentation becomes one delivery screen. */
+  final.querySelector('h2')?.replaceChildren(document.createTextNode('Hasil Foto & Print'));
+  const p=final.querySelector('#finalSessionText');if(p)p.textContent='Satu halaman untuk download, QR/share, GIF/Boomerang, dan cetak.';
+  final.classList.add('bp-vnext-final');
+  const right=final.querySelector('.grid.lg\\:grid-cols-3')?.lastElementChild || final.querySelector('.grid')?.lastElementChild;
+  if(right)right.classList.add('bp-vnext-output-card');
+
+  /* Customer progress + step routing. Existing engine functions are called, not rewritten. */
+  const originalGo=window.goToStep;
+  window.__bpVNextOriginalGoToStep=originalGo;
+  window.goToStep=function(n){
+    /* Keep Welcome untouched. */
+    if(n===1){return originalGo(1)}
+    if(n===2){
+      payHost.classList.add('hidden');pkgFramePanel?.classList.add('hidden');pkg.classList.remove('hidden');originalGo(2);payHost.classList.add('hidden');pkgFramePanel?.classList.add('hidden');return;
+    }
+    if(n===3){
+      pkg.classList.remove('hidden');pkgFramePanel?.classList.add('hidden');payHost.classList.remove('hidden');
+      safe(function(){renderPayment()});window.currentStep=3;safe(function(){updateStatusBadge();resetIdleTimer()});return;
+    }
+    if(n===4){
+      if(window.paymentConfirmed && !window.__bpVNextCaptureReady && !window.frameSelectionConfirmed){
+        frame.classList.remove('hidden');pkg.classList.add('hidden');payHost.classList.add('hidden');safe(function(){renderPreFrames()});window.currentStep=3;safe(updateStatusBadge);return;
+      }
+      if(window.paymentConfirmed && !window.__bpVNextCaptureStarted){
+        window.__bpVNextCaptureStarted=true;window.__bpVNextCaptureReady=false;
+        frame.classList.add('hidden');pkg.classList.add('hidden');payHost.classList.add('hidden');
+        return originalGo(4);
+      }
+      return originalGo(4);
+    }
+    if(n===5){return originalGo(5)}
+    if(n===6){return originalGo(6)}
+    if(n===7){return originalGo(7)}
+    return originalGo(n);
+  };
+
+  /* goToPayment stays compatible: clicking its button opens the payment panel on the same page. */
+  window.goToPayment=function(){
+    const p=(config.packages||[]).find(x=>x.id===selectedPackageId);
+    if(!p){alert('Pilih paket terlebih dahulu.');return}
+    if(!selectedFrameId||!frameSelectionConfirmed){/* vNext allows payment before frame; frame selection is the next screen. */ window.goToStep(3); return}
+    renderPayment();window.goToStep(3);
+  };
+  const oldConfirmPayment=window.confirmPayment;
+  window.confirmPayment=function(method){oldConfirmPayment(method)};
+  const oldConfirmVoucher=window.confirmVoucher;
+  window.confirmVoucher=function(){oldConfirmVoucher()};
+
+  /* Package page: payment is allowed after package selection; frame validation is deferred to frame screen. */
+  const btn=$('toPaymentBtn');if(btn){btn.disabled=false;btn.onclick=function(e){e.preventDefault();window.goToStep(3)}}
+  const summary=$('selectedPackageSummary');if(summary)summary.insertAdjacentHTML('afterend','<div id="vnextFrameDeferred" class="text-[10px] text-zinc-500 mt-1">Frame dipilih di langkah berikutnya.</div>');
+
+  /* Keep selected frame name visible in the new Frame screen. */
+  const refreshFrameLabel=function(){
+    const f=(typeof getFrameChoicesSafe==='function'?(getFrameChoicesSafe()||[]).find(x=>x.id===window.selectedFrameId):null);
+    const n=$('vnextSelectedFrameName'),c=$('vnextSelectedFrameCategory');
+    if(n)n.textContent=f?.name||'Belum dipilih';
+    if(c)c.textContent=f?.category||'—';
+  };
+  const oldSelect=window.selectFrame;
+  if(typeof oldSelect==='function'&&!oldSelect.__bpVNext){
+    const wrap=function(f){const r=oldSelect.apply(this,arguments);setTimeout(refreshFrameLabel,0);return r};wrap.__bpVNext=true;window.selectFrame=wrap;
+  }
+
+  /* Start in the redesigned package screen. */
+  originalGo(1);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else setTimeout(install,0);
+})();
+</script>
+
 </body>\n</html>

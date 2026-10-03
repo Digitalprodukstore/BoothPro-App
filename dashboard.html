@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BoothPro Dashboard v3.2</title>
+<title>BoothPro Dashboard v3.3 · Sync Center</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -23,7 +23,7 @@ body{font-family:Inter,sans-serif}
 <header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 md:px-8 py-4">
   <div class="max-w-7xl mx-auto flex flex-wrap gap-3 justify-between items-center">
     <div>
-      <h1 class="font-black text-lg">BoothPro Dashboard <span class="text-indigo-400">v3.2</span></h1>
+      <h1 class="font-black text-lg">BoothPro Dashboard <span class="text-indigo-400">v3.3</span></h1>
       <p class="text-[11px] text-slate-500">Koneksi Kiosk: Universal Direct Storage & Broadcast Sync</p>
     </div>
     <div class="flex gap-2 items-center">
@@ -263,10 +263,10 @@ body{font-family:Inter,sans-serif}
     <div class="flex flex-col md:flex-row md:items-center gap-3">
       <div class="flex-1">
         <div class="font-bold"><i class="fa-solid fa-file-zipper text-indigo-300 mr-2"></i>Soft File Admin</div>
-        <p class="text-[11px] text-slate-500 mt-1">Pilih sesi lalu satu tombol untuk mengunduh Foto Final + GIF + Live Session dalam satu ZIP.</p>
+        <p class="text-[11px] text-slate-500 mt-1">Pilih sesi lalu unduh softfile dari sumber sesi yang sama dengan Kiosk. Foto Final + GIF + Live Session akan dimasukkan jika tersedia.</p>
       </div>
       <select id="softfileSessionSelect" class="input md:w-72"></select>
-      <button id="adminSoftfileDownloadBtn" type="button" onclick="adminDownloadSoftfileFromDashboard()" class="btn btn-primary min-h-[44px] whitespace-nowrap"><i class="fa-solid fa-download mr-2"></i>Download Softfile</button>
+      <button id="adminSoftfileDownloadBtn" type="button" onclick="adminDownloadSoftfileFromDashboard()" class="btn btn-primary min-h-[48px] px-5 whitespace-nowrap"><i class="fa-solid fa-download mr-2"></i>Download Softfile</button>
     </div>
     <p id="adminSoftfileStatus" class="text-[10px] text-slate-500 mt-2"></p>
   </div>
@@ -610,17 +610,21 @@ async function adminDownloadSoftfileFromDashboard(){
   let manifest=null;try{manifest=JSON.parse(localStorage.getItem('boothpro_cloud_'+sid)||'null')}catch(e){}
   if(!manifest){if(status)status.textContent='Soft file sesi ini belum tersinkron ke Cloud. Selesaikan upload soft file dari kiosk terlebih dahulu.';return}
   const photoUrl=manifest.photoUrl||'',gifUrl=manifest.gifUrl||'',videoUrl=manifest.videoUrl||'';
-  if(!photoUrl||!gifUrl||!videoUrl){if(status)status.textContent='Paket belum lengkap. Pastikan Foto + GIF + Live Session sudah berhasil di-upload dari kiosk.';return}
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Menyiapkan...'}if(status)status.textContent='Mengambil 3 soft file final...';
+  const sources=[photoUrl&&{name:'01-Foto-Final.jpg',url:photoUrl},gifUrl&&{name:'02-GIF.gif',url:gifUrl},videoUrl&&{name:'03-Live-Session.webm',url:videoUrl}].filter(Boolean);
+  if(!sources.length){if(status)status.textContent='Soft file sesi ini belum tersedia di Cloud. Selesaikan upload dari Kiosk terlebih dahulu.';return}
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Menyiapkan...'}if(status)status.textContent='Mengambil '+sources.length+' soft file final...';
   try{
-    const [pr,gr,vr]=await Promise.all([fetch(photoUrl),fetch(gifUrl),fetch(videoUrl)]);
-    if(!pr.ok||!gr.ok||!vr.ok)throw new Error('Salah satu soft file tidak dapat diakses.');
-    const files=[{name:'01-Foto-Final.jpg',blob:await pr.blob()},{name:'02-GIF.gif',blob:await gr.blob()},{name:'03-Live-Session.webm',blob:await vr.blob()}];
+    const responses=await Promise.all(sources.map(x=>fetch(x.url)));
+    if(responses.some(r=>!r.ok))throw new Error('Salah satu soft file tidak dapat diakses.');
+    const files=[];
+    for(let i=0;i<sources.length;i++)files.push({name:sources[i].name,blob:await responses[i].blob()});
     const zip=await bpDashZipStore(files),url=URL.createObjectURL(zip),a=document.createElement('a');a.href=url;a.download='BoothPro-'+String(sid).replace(/[^a-z0-9_-]/gi,'-')+'-Softfile.zip';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
     if(status)status.textContent='✓ Download siap: Foto Final + GIF + Live Session.';
   }catch(e){if(status)status.textContent='Gagal download soft file: '+(e?.message||e)}
   finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-download mr-2"></i>Download Softfile'}}
 }
+if(syncChannel){try{syncChannel.onmessage=()=>{renderStats();renderTx()}}catch(e){}}
+window.addEventListener('storage',e=>{if([HISTORY_KEY,FRAME_KEY,STICKER_KEY].includes(e.key)||String(e.key||'').startsWith('boothpro_cloud_')){renderStats();renderTx()}});
 function renderTx(){
   const h=getHistory().slice().reverse();
   txBody.innerHTML=h.length?'':'<tr><td colspan="7" class="py-4 text-slate-500">Belum ada transaksi.</td></tr>';

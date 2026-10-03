@@ -2934,7 +2934,9 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
     const s=await window.boothProCloudSession();
     return !!(s&&s.user&&s.user.id);
   };
+window.getBoothProSupabaseSession=window.boothProCloudSession;
 
+  
   /* Clear stale key once on boot; it can no longer override the fixed cloud authority. */
   clearStaleAuthConfig();
 })();

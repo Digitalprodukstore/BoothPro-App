@@ -3032,42 +3032,52 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
   };
 
   window.submitDashboardLogin=async function(){
+    const err=el('authError');
     const email=String(el('authEmail')?.value||'').trim().toLowerCase();
     const password=String(el('authPassword')?.value||'');
-    if(!email||!password){setError('Email dan password wajib diisi.');return;}
+    if(!email||!password){setError('Email dan password wajib diisi.');return false;}
     setError('');
     setButtonBusy(true);
+    let cloud=null;
     try{
-      const cloud=await window.signInBoothProSupabase(email,password);
+      cloud=await window.signInBoothProSupabase(email,password);
+    }catch(cloudErr){
       try{
-        if(typeof config==='object'&&config){
-          config.cloudSync=config.cloudSync||{};
-          config.cloudSync.enabled=true;
-          config.cloudSync.userId=cloud.user.id;
-          config.cloudSync.workspaceId=cloud.user.id;
-          if(typeof saveConfig==='function')saveConfig({skipCloud:true});
-        }
-      }catch(e){console.warn('Cloud identity local cache:',e);}
-
-      /* Login success must never be cancelled by a config-sync failure. */
-      try{
-        if(typeof pullBoothProCloud==='function')await Promise.race([
-          Promise.resolve(pullBoothProCloud(true)),
-          new Promise(r=>setTimeout(r,5000))
-        ]);
-      }catch(syncErr){console.warn('BoothPro Cloud sync after login:',syncErr);}
-
-      if(typeof openDashboardUnlocked==='function')openDashboardUnlocked();
-      if(typeof closeDashboardAuth==='function')closeDashboardAuth();
-      else if(el('dashboardAuthModal'))el('dashboardAuthModal').classList.add('hidden');
-    }catch(err){
-      console.error('BoothPro Cloud login:',err);
-      setError('Login Cloud gagal: '+(err?.message||String(err)));
-    }finally{
-      setButtonBusy(false);
+        const a=typeof getAuth==='function'?getAuth():null;
+        if(!a?.email || email!==String(a.email).trim().toLowerCase()) throw cloudErr;
+        if(!a.passwordSalt||!a.passwordHash) throw new Error('Akun lokal belum siap dimigrasikan ke Cloud. Gunakan Reset Password.');
+        const hash=await (typeof bpLocalPasswordHash==='function'?bpLocalPasswordHash(password,a.passwordSalt,a.iterations||180000):'');
+        if(!hash||hash!==a.passwordHash) throw cloudErr;
+        if(err)err.textContent='Akun lokal benar. Mengaktifkan Cloud...';
+        const provision=typeof provisionSupabaseFromLocalAccount==='function'?await provisionSupabaseFromLocalAccount(email,password):null;
+        if(provision?.user?.id) cloud=provision;
+        else throw new Error('Akun lokal sudah benar, tetapi Supabase belum memberikan sesi Cloud. Periksa verifikasi email Supabase lalu masuk kembali.');
+      }catch(migrationErr){throw migrationErr;}
     }
+    if(!cloud?.user?.id||!cloud?.access_token)throw new Error('Supabase tidak mengembalikan session login yang valid.');
+    try{
+      if(typeof config==='object'&&config){
+        config.auth=config.auth||{};
+        config.auth.email=email;
+        config.cloudSync=config.cloudSync||{};
+        config.cloudSync.enabled=true;
+        config.cloudSync.autoPull=true;
+        config.cloudSync.autoPush=true;
+        config.cloudSync.userId=cloud.user.id;
+        config.cloudSync.workspaceId=cloud.user.id;
+        config.cloudSync.lastAuthAt=Date.now();
+        if(typeof saveConfig==='function')saveConfig({skipCloud:true,silent:true});
+      }
+    }catch(e){console.warn('Cloud identity local cache:',e);}
+    try{
+      if(typeof setAuthSession==='function')setAuthSession();
+      if(typeof pushBoothProCloud==='function')await Promise.race([Promise.resolve(pushBoothProCloud(true)),new Promise(r=>setTimeout(r,5000))]);
+      if(typeof pullBoothProCloud==='function')await Promise.race([Promise.resolve(pullBoothProCloud(true)),new Promise(r=>setTimeout(r,5000))]);
+    }catch(syncErr){console.warn('BoothPro Cloud sync after login:',syncErr);}
+    try{if(typeof openDashboardUnlocked==='function')openDashboardUnlocked();}catch(e){}
+    try{if(typeof closeDashboardAuth==='function')closeDashboardAuth();}catch(e){}
+    return true;
   };
-
   /* Recovery uses the same single configuration and API-key header rule. */
   window.boothProAuthRecovery=async function(email){
     const e=String(email||'').trim().toLowerCase();

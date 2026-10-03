@@ -1699,7 +1699,8 @@ async function ensureDashboardAccount(){
 }
 async function openDashboardAuth(){
  const a=getAuth();
- if(authSessionValid()){openDashboardUnlocked();return}
+ const sessionOk=await Promise.resolve(authSessionValid());
+ if(sessionOk){openDashboardUnlocked();return}
  if(a.lockUntil&&Date.now()<a.lockUntil){showAuthModal();showDashboardLogin();$('authError').innerText='Login dikunci sementara. Coba lagi beberapa menit.';return}
  // C8: perangkat baru tidak boleh dipaksa memiliki akun localStorage.
  // Supabase Auth adalah sumber identitas utama; local PBKDF2 hanya fallback.

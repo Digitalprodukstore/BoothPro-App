@@ -4071,9 +4071,28 @@ window.selectFrame=function(f){
 </script>
 
 <style id="bp-cloud-sync-touch-target-fix">
-#dashboardModal button[data-bp-cloud-test],#dashboardModal button[data-bp-cloud-pull]{min-height:48px!important;min-width:150px!important;position:relative!important;z-index:100!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
-#dashboardModal .bp-cloud-actions{display:flex!important;flex-wrap:wrap!important;gap:10px!important;position:relative!important;z-index:100!important}
-@media(max-width:640px){#dashboardModal button[data-bp-cloud-test],#dashboardModal button[data-bp-cloud-pull]{flex:1 1 100%!important;width:100%!important}}
+#dashboardModal .bp-cloud-sync-touch-btn{
+  min-height:52px!important;
+  min-width:0!important;
+  width:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  margin:0!important;
+  position:relative!important;
+  z-index:10000!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  -webkit-tap-highlight-color:transparent!important;
+}
+#dashboardModal .bp-cloud-sync-touch-wrap{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+  width:100%!important;
+  position:relative!important;
+  z-index:10000!important;
+}
 </style>
 <script id="bp-cloud-sync-touch-target-script">
 (function(){
@@ -4083,26 +4102,23 @@ function fixCloudButtons(){
   if(!modal)return;
   const buttons=[...modal.querySelectorAll('button')].filter(b=>{
     const t=(b.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
-    return t.includes('simpan')&&t.includes('cloud') || t.includes('ambil')&&t.includes('data cloud');
+    return (t.includes('simpan')&&t.includes('cloud')) || (t.includes('ambil')&&t.includes('data cloud'));
   });
+  if(buttons.length<2)return;
   buttons.forEach(b=>{
-    const t=(b.textContent||'').toLowerCase();
-    b.dataset.bpCloudTest=t.includes('simpan')?'1':'';
-    b.dataset.bpCloudPull=t.includes('ambil')?'1':'';
-    b.style.minHeight='48px';
-    b.style.minWidth='150px';
-    b.style.position='relative';
-    b.style.zIndex='100';
-    b.style.pointerEvents='auto';
-    b.style.touchAction='manipulation';
+    b.classList.add('bp-cloud-sync-touch-btn');
+    b.disabled=false;
+    b.removeAttribute('aria-disabled');
   });
-  buttons.forEach(b=>{
-    const p=b.parentElement;
-    if(p&&!p.dataset.bpCloudActions){
-      const siblings=[...p.children].filter(x=>x.tagName==='BUTTON'&&((x.textContent||'').toLowerCase().includes('cloud')|| (x.textContent||'').toLowerCase().includes('simpan')|| (x.textContent||'').toLowerCase().includes('ambil')));
-      if(siblings.length>=2){p.classList.add('bp-cloud-actions');p.dataset.bpCloudActions='1';}
-    }
-  });
+  const parent=buttons[0].parentElement;
+  if(parent && buttons.every(b=>b.parentElement===parent)){
+    parent.classList.add('bp-cloud-sync-touch-wrap');
+  }else{
+    buttons.forEach(b=>{
+      const p=b.parentElement;
+      if(p)p.classList.add('bp-cloud-sync-touch-wrap');
+    });
+  }
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixCloudButtons);
 else fixCloudButtons();

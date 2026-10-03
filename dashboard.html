@@ -259,6 +259,17 @@ body{font-family:Inter,sans-serif}
     <h2 class="font-bold">Riwayat Sesi Kiosk</h2>
     <div class="flex gap-2"><button class="btn" onclick="exportCsv()">Export CSV</button><button class="btn btn-danger" onclick="clearHistory()">Hapus Riwayat</button></div>
   </div>
+  <div class="rounded-2xl border border-indigo-500/30 bg-indigo-950/20 p-4">
+    <div class="flex flex-col md:flex-row md:items-center gap-3">
+      <div class="flex-1">
+        <div class="font-bold"><i class="fa-solid fa-file-zipper text-indigo-300 mr-2"></i>Soft File Admin</div>
+        <p class="text-[11px] text-slate-500 mt-1">Pilih sesi lalu satu tombol untuk mengunduh Foto Final + GIF + Live Session dalam satu ZIP.</p>
+      </div>
+      <select id="softfileSessionSelect" class="input md:w-72"></select>
+      <button id="adminSoftfileDownloadBtn" type="button" onclick="adminDownloadSoftfileFromDashboard()" class="btn btn-primary min-h-[44px] whitespace-nowrap"><i class="fa-solid fa-download mr-2"></i>Download Softfile</button>
+    </div>
+    <p id="adminSoftfileStatus" class="text-[10px] text-slate-500 mt-2"></p>
+  </div>
   <div class="overflow-x-auto"><table class="w-full text-xs"><thead class="text-slate-500 text-left"><tr><th class="py-2">Waktu</th><th>ID</th><th>Paket</th><th>Foto</th><th>Cetak</th><th>Metode</th><th class="text-right">Harga</th></tr></thead><tbody id="txBody"></tbody></table></div>
 </section>
 
@@ -376,7 +387,7 @@ function fillForm(){
   camResolution.value=config.camera.resolution||'1280x720';camFacing.value=config.camera.facingMode||'user';
   mtMode.value=config.midtrans.mode||'manual';mtEnv.value=config.midtrans.env||'production';mtApiBase.value=config.midtrans.apiBase||'';qrisUrl.value=config.qris||'';
   cldName.value=config.cloudinary.cloudName||'';cldPreset.value=config.cloudinary.uploadPreset||'';softBase.value=config.softBase||'';shareBase.value=config.shareBase||'';
-  renderStats();renderTx();
+  renderStats();renderTx();renderSoftfileSessionOptions();
 }
 function hex(v,f){return/^#[0-9a-fA-F]{6}$/.test(v||'')?v:f}
 
@@ -573,6 +584,43 @@ function renderStats(){
   statRevenue.textContent=money(today.reduce((a,x)=>a+(Number(x.price)||0),0));
   statAll.textContent=h.length;
 }
+function renderSoftfileSessionOptions(){
+  const sel=$('softfileSessionSelect');if(!sel)return;
+  const h=getHistory().slice().sort((a,b)=>new Date(b.date||b.timestamp||0)-new Date(a.date||a.timestamp||0));
+  sel.innerHTML=h.length?h.map(x=>'<option value="'+esc(x.id||'')+'">'+esc((x.id||'-')+' · '+(x.packageName||x.package||'Sesi')+' · '+new Date(x.date||x.timestamp||Date.now()).toLocaleString('id-ID'))+'</option>').join(''):'<option value="">Belum ada sesi</option>';
+}
+function bpDashCrc32(bytes){
+  let table=bpDashCrc32.table;if(!table){table=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);table[n]=c>>>0}bpDashCrc32.table=table}
+  let c=0xFFFFFFFF;for(let i=0;i<bytes.length;i++)c=table[(c^bytes[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0;
+}
+function bpDashU16(a,p,v){a[p]=v&255;a[p+1]=(v>>>8)&255}
+function bpDashU32(a,p,v){a[p]=v&255;a[p+1]=(v>>>8)&255;a[p+2]=(v>>>16)&255;a[p+3]=(v>>>24)&255}
+async function bpDashZipStore(files){
+  const enc=new TextEncoder(),parts=[],central=[];let offset=0;
+  for(const f of files){
+    const name=enc.encode(f.name),data=new Uint8Array(await f.blob.arrayBuffer()),crc=bpDashCrc32(data);
+    const local=new Uint8Array(30+name.length);bpDashU32(local,0,0x04034b50);bpDashU16(local,4,20);bpDashU16(local,6,0);bpDashU16(local,8,0);bpDashU16(local,10,0);bpDashU16(local,12,0);bpDashU32(local,14,crc);bpDashU32(local,18,data.length);bpDashU32(local,22,data.length);bpDashU16(local,26,name.length);bpDashU16(local,28,0);local.set(name,30);parts.push(local,data);offset+=local.length+data.length;
+    const c=new Uint8Array(46+name.length);bpDashU32(c,0,0x02014b50);bpDashU16(c,4,20);bpDashU16(c,6,20);bpDashU16(c,8,0);bpDashU16(c,10,0);bpDashU16(c,12,0);bpDashU16(c,14,0);bpDashU32(c,16,crc);bpDashU32(c,20,data.length);bpDashU32(c,24,data.length);bpDashU16(c,28,name.length);bpDashU16(c,30,0);bpDashU16(c,32,0);bpDashU16(c,34,0);bpDashU16(c,36,0);bpDashU32(c,38,0);bpDashU32(c,42,offset-local.length-data.length);c.set(name,46);central.push(c);
+  }
+  const centralSize=central.reduce((n,x)=>n+x.length,0),end=new Uint8Array(22);bpDashU32(end,0,0x06054b50);bpDashU16(end,8,files.length);bpDashU16(end,10,files.length);bpDashU32(end,12,centralSize);bpDashU32(end,16,offset);return new Blob([...parts,...central,end],{type:'application/zip'});
+}
+async function adminDownloadSoftfileFromDashboard(){
+  const btn=$('adminSoftfileDownloadBtn'),status=$('adminSoftfileStatus'),sid=$('softfileSessionSelect')?.value||'';
+  if(!sid){if(status)status.textContent='Belum ada sesi yang bisa diunduh.';return}
+  let manifest=null;try{manifest=JSON.parse(localStorage.getItem('boothpro_cloud_'+sid)||'null')}catch(e){}
+  if(!manifest){if(status)status.textContent='Soft file sesi ini belum tersinkron ke Cloud. Selesaikan upload soft file dari kiosk terlebih dahulu.';return}
+  const photoUrl=manifest.photoUrl||'',gifUrl=manifest.gifUrl||'',videoUrl=manifest.videoUrl||'';
+  if(!photoUrl||!gifUrl||!videoUrl){if(status)status.textContent='Paket belum lengkap. Pastikan Foto + GIF + Live Session sudah berhasil di-upload dari kiosk.';return}
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Menyiapkan...'}if(status)status.textContent='Mengambil 3 soft file final...';
+  try{
+    const [pr,gr,vr]=await Promise.all([fetch(photoUrl),fetch(gifUrl),fetch(videoUrl)]);
+    if(!pr.ok||!gr.ok||!vr.ok)throw new Error('Salah satu soft file tidak dapat diakses.');
+    const files=[{name:'01-Foto-Final.jpg',blob:await pr.blob()},{name:'02-GIF.gif',blob:await gr.blob()},{name:'03-Live-Session.webm',blob:await vr.blob()}];
+    const zip=await bpDashZipStore(files),url=URL.createObjectURL(zip),a=document.createElement('a');a.href=url;a.download='BoothPro-'+String(sid).replace(/[^a-z0-9_-]/gi,'-')+'-Softfile.zip';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+    if(status)status.textContent='✓ Download siap: Foto Final + GIF + Live Session.';
+  }catch(e){if(status)status.textContent='Gagal download soft file: '+(e?.message||e)}
+  finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-download mr-2"></i>Download Softfile'}}
+}
 function renderTx(){
   const h=getHistory().slice().reverse();
   txBody.innerHTML=h.length?'':'<tr><td colspan="7" class="py-4 text-slate-500">Belum ada transaksi.</td></tr>';
@@ -581,6 +629,7 @@ function renderTx(){
     tr.innerHTML=`<td class="py-2">${esc(new Date(x.date||x.timestamp||Date.now()).toLocaleString('id-ID'))}</td><td>${esc(x.id||'')}</td><td>${esc(x.packageName||x.package||'')}</td><td>${esc(x.count||0)}</td><td>${esc(x.prints||0)}</td><td>${esc(x.method||'')}</td><td class="text-right">${money(x.price)}</td>`;
     txBody.appendChild(tr);
   });
+  renderSoftfileSessionOptions();
 }
 function exportCsv(){
   const rows=[['waktu','id','paket','foto','cetak','metode','harga'],...getHistory().map(x=>[new Date(x.date||x.timestamp||Date.now()).toISOString(),x.id||'',x.packageName||'',x.count||0,x.prints||0,x.method||'',x.price||0])];

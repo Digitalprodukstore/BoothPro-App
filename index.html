@@ -818,7 +818,7 @@ function renderPhotoOrderControls(){
  if(film){
   [...film.querySelectorAll('[data-capture-index]')].forEach(el=>{
     const idx=Number(el.dataset.captureIndex),assigned=a.includes(idx),on=idx===selected;
-    el.classList.toggle('ring-2',on);el.classList.toggle('ring-emerald-400',on);el.classList.toggle('ring-offset-2',on);
+    el.classList.toggle('ring-2',on);el.classList.toggle('ring-emerald-400',on);el.classList.toggle('ring-offset-2',on);el.classList.toggle('bp-photo-picked',on);
     el.classList.toggle('bp-tray-assigned',assigned);
     const badge=el.querySelector('.bp-tray-assigned-badge');
     if(badge)badge.remove();
@@ -2117,13 +2117,13 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
   window.updateGalleryPreviews=function(){
     const g=c7El('filmStripGallery');if(!g)return;g.innerHTML='';
     capturedPhotos.forEach((src,idx)=>{
-      const item=document.createElement('div');item.className='relative rounded-xl overflow-hidden aspect-[4/3] bg-zinc-900 border border-zinc-800';
+      const item=document.createElement('div');item.dataset.captureIndex=String(idx);item.className='bp-tray-photo relative rounded-xl overflow-hidden aspect-[4/3] bg-zinc-900 border border-zinc-800 cursor-pointer select-none touch-manipulation';item.setAttribute('role','button');item.setAttribute('aria-label','Pilih foto '+(idx+1)+' untuk ditempatkan ke frame');
       const im=document.createElement('img');im.src=src;im.className='w-full h-full object-cover';im.alt='Foto '+(idx+1);
       const b=document.createElement('div');b.className='absolute top-1 left-1 bg-black/70 rounded-md text-[10px] px-1.5 py-0.5 font-bold';b.textContent='#'+(idx+1);
-      const rb=document.createElement('button');rb.type='button';rb.className='absolute bottom-1 left-1 px-2 py-1 rounded-lg bg-indigo-600/95 text-white text-[10px] font-bold';rb.textContent='↻ Retake';rb.onclick=()=>c7RetakeSlot(idx);
+      const rb=document.createElement('button');rb.type='button';rb.className='absolute bottom-1 left-1 px-2 py-1 rounded-lg bg-indigo-600/95 text-white text-[10px] font-bold';rb.textContent='↻ Retake';rb.onclick=(e)=>{e.preventDefault();e.stopPropagation();c7RetakeSlot(idx)};
       const del=document.createElement('button');del.type='button';del.className='absolute top-1 right-1 h-7 w-7 rounded-full bg-red-600/90 text-white';del.title='Hapus foto';del.innerHTML='<i class="fa-solid fa-trash text-[11px]"></i>';
-      del.onclick=()=>{if(retakeCount>=3){alert('Batas retake 3 kali sudah tercapai.');return}capturedPhotos.splice(idx,1);retakeCount++;c7RetakeIndex=-1;updateGalleryPreviews();renderCaptureReview();c7RenderState();c7Save()};
-      item.append(im,b,rb,del);g.appendChild(item);
+      del.onclick=(e)=>{e.preventDefault();e.stopPropagation();if(retakeCount>=3){alert('Batas retake 3 kali sudah tercapai.');return}capturedPhotos.splice(idx,1);retakeCount++;c7RetakeIndex=-1;updateGalleryPreviews();renderCaptureReview();c7RenderState();c7Save()};
+      item.addEventListener('click',(e)=>{if(e.target.closest('button'))return;window.__BP_PHOTO_PICK__=idx;renderPhotoOrderControls();renderCaptureReview()});item.append(im,b,rb,del);g.appendChild(item);
     });
     c7RenderState();
   };
@@ -3618,6 +3618,15 @@ window.BoothProM36={addDashboardEntry,hydrateGallery};
 .bp-c8-slot-empty i{font-size:15px;color:#a78bfa}.bp-c8-slot-empty small{font-size:8px;color:#a1a1aa;font-weight:700}
 .bp-c8-slot-number{position:absolute;left:7px;top:7px;z-index:28;width:23px;height:23px;border-radius:999px;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:900;pointer-events:none}
 .bp-c8-slot-filled-badge{position:absolute;left:7px;top:7px;z-index:28;padding:4px 7px;border-radius:999px;background:rgba(16,185,129,.88);color:#fff;font-size:8px;font-weight:900;pointer-events:none}
+</style>
+
+<style id="bp-photo-tray-selection-fix">
+.bp-tray-photo{position:relative;outline:2px solid transparent;outline-offset:2px;transition:outline-color .15s,box-shadow .15s,transform .15s;}
+.bp-tray-photo:active{transform:scale(.985)}
+.bp-tray-photo.bp-photo-picked{outline-color:#818cf8;box-shadow:0 0 0 4px rgba(129,140,248,.18),0 8px 24px rgba(0,0,0,.22);}
+.bp-tray-photo.bp-photo-picked::after{content:'✓ FOTO DIPILIH — TAP POSISI FRAME';position:absolute;left:6px;right:6px;bottom:6px;padding:7px 6px;border-radius:9px;background:rgba(79,70,229,.94);color:#fff;font-size:8px;font-weight:900;text-align:center;letter-spacing:.02em;pointer-events:none;z-index:25;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.bp-tray-photo.bp-photo-picked img{transform:scale(.985);filter:brightness(1.05)}
+.bp-tray-photo:not(.bp-photo-picked)::before{content:'TAP UNTUK PILIH';position:absolute;left:6px;right:6px;bottom:6px;padding:5px 6px;border-radius:8px;background:rgba(0,0,0,.66);color:#d4d4d8;font-size:7px;font-weight:800;text-align:center;pointer-events:none;z-index:10}
 </style>
 <style id="bp-c8-interactive-frame-style">
 .bp-c8-editor-stage{position:relative;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none}

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "entity": "boothpro_config",
+  "source_of_truth": "cloud",
+  "identity": {
+    "workspace_id": "string",
+    "booth_id": "string",
+    "updated_at": "ISO-8601",
+    "revision": "integer"
+  },
+  "brand": {
+    "name": "string",
+    "tagline": "string",
+    "logo": "string",
+    "homeTitle": "string",
+    "homeSubtitle": "string"
+  },
+  "packages": [
+    {
+      "id": "string",
+      "name": "string",
+      "price": "number",
+      "photos": "number",
+      "prints": "number",
+      "layout": "strip|4-grid|6-grid",
+      "desc": "string"
+    }
+  ],
+  "payment": {
+    "qris": "string",
+    "vouchers": "object",
+    "extraPrintPrice": "number",
+    "extraPrintMax": "number"
+  },
+  "session": {
+    "durationMinutes": "number",
+    "countdownSeconds": "number",
+    "idleSeconds": "number"
+  },
+  "camera": {
+    "facingMode": "user|environment",
+    "deviceId": "string",
+    "resolution": "string"
+  },
+  "print": {
+    "printSize": "string",
+    "autoPrint": "boolean",
+    "printerName": "string",
+    "bridgeUrl": "string"
+  },
+  "theme": {
+    "bg": "string",
+    "accent": "string",
+    "style": "string",
+    "backgroundImage": "string"
+  },
+  "frame": {
+    "defaultFrameId": "string",
+    "disabledBuiltins": "string[]",
+    "categories": "object",
+    "categoryCovers": "object",
+    "overrides": "object",
+    "slots": "array"
+  },
+  "cloud": {
+    "enabled": "boolean",
+    "autoPull": "boolean",
+    "autoPush": "boolean"
+  },
+  "delivery": {
+    "softBase": "string",
+    "shareBase": "string",
+    "shareMessage": "string"
+  },
+  "footer": {
+    "watermark": "string",
+    "showDate": "boolean",
+    "dateFormat": "string"
+  },
+  "features": "object",
+  "notes": "This is the canonical mapping contract; runtime config remains compatible with the locked Kiosk defaultConfig."
+}

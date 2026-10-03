@@ -1056,7 +1056,7 @@ async function uploadDataUrlToCloudinary(dataUrl,resourceType='image',options={}
 async function publishSessionCloud(){const status=$('cloudUploadStatus');if(status)status.innerText='Mengunggah soft file...';try{const result={sessionId,boothId:String(config.cloudSync?.boothId||config.cloudSync?.workspaceId||'BOOTH-DEFAULT'),photoUrl:null,photoPublicId:null,gifUrl:null,gifPublicId:null,videoUrl:null,videoPublicId:null,bundle:true};if(finalCompositeDataUrl){const up=await uploadDataUrlToCloudinary(finalCompositeDataUrl,'image');result.photoUrl=up.secure_url||up.url;result.photoPublicId=up.public_id||null}try{const gifBlob=await generateGifBlob();const gu=await uploadDataUrlToCloudinary(await blobToDataUrl(gifBlob),'image');result.gifUrl=gu.secure_url||gu.url;result.gifPublicId=gu.public_id||null;finalGifDataUrl=URL.createObjectURL(gifBlob)}catch(e){console.warn('GIF Cloudinary gagal',e)}if(sessionVideoBlob){try{const vr=await uploadDataUrlToCloudinary(await blobToDataUrl(sessionVideoBlob),'video');result.videoUrl=vr.secure_url||vr.url;result.videoPublicId=vr.public_id||null}catch(e){console.warn('Video Cloudinary gagal',e)}}if(config.shareBase){try{const rr=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});if(rr.ok){const j=await rr.json();result.shareUrl=j.shareUrl||j.bundleUrl||null}}catch(e){console.warn('Share API tidak tersedia',e)}}const manifestRow=await writeBoothProSessionManifest(result);result.manifestId=manifestRow?.id||null;localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));if(result.shareUrl||result.photoUrl){generateQR(result.shareUrl||result.photoUrl);if(status)status.innerText=result.shareUrl?'Bundling foto + GIF + video siap. QR siap dipindai.':'Foto/GIF tersinkron. Aktifkan Share API agar QR menjadi bundling.'}else if(status)status.innerText='Upload selesai; Share URL belum dikonfigurasi.';return result}catch(e){console.warn(e);if(status)status.innerText='Cloud belum aktif: '+e.message;return null}}async function writeBoothProSessionManifest(mediaResult){
  try{
   const c=getBoothProCloudConfig(); if(!c.enabled) return null;
-  const session=await getBoothProSupabaseSession(); if(!session?.user?.id) return null;
+  const session=await window.boothProCloudSession(); if(!session?.user?.id) return null;
   const pkg=config.packages?.find(p=>p.id===selectedPackageId)||{};
   const body={
    user_id:session.user.id,
@@ -1327,7 +1327,7 @@ async function uploadFrameToCloud(item,src){
  // This avoids Safari/WebKit TDZ errors observed during storage uploads.
  const authCfg=getCommercialAuthConfig();
  if(!authCfg.url||!authCfg.anon)throw new Error('Supabase belum dikonfigurasi.');
- const authSession=await getBoothProSupabaseSession();
+ const authSession=await window.boothProCloudSession();
  if(!authSession?.user?.id||!authSession?.access_token)throw new Error('Sesi Cloud belum aktif.');
  const safeExt=String(item.originalType||'image/png').split('/')[1]?.replace(/[^a-z0-9]/gi,'')||'png';
  const storagePath=authSession.user.id+'/'+item.id+'.'+safeExt;
@@ -1451,7 +1451,7 @@ function cloudSafeConfigSnapshot(){
  return c;
 }
 async function ensureCloudIdentity(){
- const session=await getBoothProSupabaseSession();
+ const session=await window.boothProCloudSession();
  if(!session?.user?.id)return null;
  config.cloudSync=config.cloudSync||{};
  config.cloudSync.enabled=true;
@@ -1474,7 +1474,7 @@ function loadBoothProCloudSettings(){
 function setCloudStatus(msg,ok=false){const el=$('dashCloudStatus');if(!el)return;el.className='text-[10px] mt-2 '+(ok?'text-emerald-400':'text-zinc-500');el.textContent=msg}
 async function saveBoothProCloudSettings(){
  const enabled=$('dashCloudEnabled')?.checked===true;
- const session=await getBoothProSupabaseSession();
+ const session=await window.boothProCloudSession();
  if(!session?.user?.id){setCloudStatus('Login Supabase belum aktif. Masuk Dashboard dengan akun yang sudah tersinkron.');return}
  config.cloudSync=config.cloudSync||{};config.cloudSync.workspaceId=session.user.id;config.cloudSync.enabled=enabled;config.cloudSync.autoPull=true;config.cloudSync.autoPush=true;
  saveConfig({skipCloud:true});
@@ -1505,7 +1505,7 @@ async function pullBoothProCloud(manual=false){
  const c=getBoothProCloudConfig();if(!c.enabled)return null;
  if(boothProCloudPullBusy)return null;boothProCloudPullBusy=true;
  try{
-  const session=await getBoothProSupabaseSession();
+  const session=await window.boothProCloudSession();
   if(!session?.user?.id)throw new Error('Sesi Supabase belum aktif.');
   const uid=session.user.id;
   setCloudStatus(manual?'Mengambil konfigurasi dari Cloud...':'Menyinkronkan konfigurasi...');

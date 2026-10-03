@@ -39,6 +39,24 @@ body{font-family:Inter,sans-serif}
   ⚠️ <b>Peringatan Origin/Protokol:</b> Dashboard ini dibuka via <code>file://</code> atau origin terpisah. Buka Kiosk dan Dashboard di domain/port server web yang sama (misal: <code>http://localhost:8000</code>) agar tersambung otomatis.
 </div>
 
+<section id="cloudSyncPanel" class="panel p-4 border border-emerald-500/20">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div><h2 class="font-bold">☁️ BoothPro Cloud Sync v1</h2><p class="text-[10px] text-slate-500 mt-1">Cloud menjadi sumber konfigurasi. Browser storage hanya cache/fallback.</p></div>
+    <span id="cloudSyncStatus" class="text-[10px] px-2 py-1 rounded-full bg-slate-800 text-slate-400">BELUM TERHUBUNG</span>
+  </div>
+  <div class="grid md:grid-cols-3 gap-3 mt-3">
+    <label class="lbl">Email Cloud<input id="cloudEmail" type="email" autocomplete="username" class="input" placeholder="akun Supabase"></label>
+    <label class="lbl">Password Cloud<input id="cloudPassword" type="password" autocomplete="current-password" class="input" placeholder="password"></label>
+    <label class="lbl">Booth ID<input id="cloudBoothId" class="input" placeholder="BOOTH-001"></label>
+  </div>
+  <div class="flex flex-wrap gap-2 mt-3">
+    <button type="button" class="btn btn-primary" onclick="cloudLogin()">Hubungkan Cloud</button>
+    <button type="button" class="btn" onclick="cloudPull()">Ambil Config Cloud</button>
+    <button type="button" class="btn" onclick="cloudPush()">Simpan Config ke Cloud</button>
+    <button type="button" class="btn btn-danger" onclick="cloudLogout()">Putuskan</button>
+  </div>
+  <p id="cloudSyncDetail" class="text-[10px] text-slate-500 mt-2">Belum ada sesi Cloud.</p>
+</section>
 <section class="grid grid-cols-2 lg:grid-cols-5 gap-3">
   <div class="panel p-4"><p class="lbl">Sesi Hari Ini</p><p id="statSessions" class="text-2xl font-black mt-1">0</p></div>
   <div class="panel p-4"><p class="lbl">Omzet Hari Ini</p><p id="statRevenue" class="text-2xl font-black mt-1">Rp 0</p></div>
@@ -403,6 +421,23 @@ function collectForm(){
   config.cloudinary={cloudName:cldName.value.trim(),uploadPreset:cldPreset.value.trim()};
   config.softBase=softBase.value.trim();config.shareBase=shareBase.value.trim();
 }
+
+/* ============ BOOTHPRO CLOUD CONFIG SYNC V1 ============ */
+const BOOTHPRO_CLOUD_TABLE='boothpro_cloud_config';
+const BOOTHPRO_CLOUD_URL='https://jnajtcuxlgkpplyvvsik.supabase.co';
+const BOOTHPRO_CLOUD_KEY='sb_publishable_WGOpLbsmk_3Prr2pabYuMw_juhU0mN-';
+let cloudSession=null;
+function cloudSetStatus(msg,ok=false){const b=$('cloudSyncStatus'),d=$('cloudSyncDetail');if(b){b.textContent=ok?'CLOUD TERHUBUNG':'CLOUD';b.className='text-[10px] px-2 py-1 rounded-full '+(ok?'bg-emerald-600 text-white':'bg-slate-800 text-slate-400')}if(d)d.textContent=msg}
+async function cloudAuth(email,password){const res=await fetch(BOOTHPRO_CLOUD_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:BOOTHPRO_CLOUD_KEY,Authorization:'Bearer '+BOOTHPRO_CLOUD_KEY,'Content-Type':'application/json'},body:JSON.stringify({email:String(email).trim().toLowerCase(),password:String(password)})});let data={};try{data=await res.json()}catch(e){}if(!res.ok||!data.access_token||!data.user?.id)throw new Error(data.error_description||data.msg||data.message||'Login Cloud gagal');cloudSession=data;sessionStorage.setItem('boothpro_cloud_session',JSON.stringify({access_token:data.access_token,refresh_token:data.refresh_token,user:data.user,expires_at:Date.now()+Number(data.expires_in||3600)*1000}));return data}
+function loadCloudSession(){try{const x=JSON.parse(sessionStorage.getItem('boothpro_cloud_session')||'null');if(x&&x.access_token&&x.user?.id&&Number(x.expires_at||0)>Date.now()+30000){cloudSession=x;return x}}catch(e){}return null}
+function cloudHeaders(){return {apikey:BOOTHPRO_CLOUD_KEY,Authorization:'Bearer '+(cloudSession?.access_token||BOOTHPRO_CLOUD_KEY),'Content-Type':'application/json',Accept:'application/json',Prefer:'resolution=merge-duplicates,return=representation'}}
+async function cloudRest(path,opts={}){const res=await fetch(BOOTHPRO_CLOUD_URL+'/rest/v1/'+path,{...opts,headers:{...cloudHeaders(),...(opts.headers||{})}});let data=null;try{data=await res.json()}catch(e){}if(!res.ok)throw new Error(data?.message||data?.hint||data?.details||'Cloud HTTP '+res.status);return data||{}}
+function cloudMergeConfig(remote,local){const out=Object.assign({},remote||{},local||{});out.cloudSync=Object.assign({},remote?.cloudSync||{},local?.cloudSync||{},{enabled:true,autoPull:true,autoPush:true,workspaceId:cloudSession?.user?.id||remote?.cloudSync?.workspaceId||'',boothId:String($('cloudBoothId')?.value||remote?.cloudSync?.boothId||'').trim()});return out}
+async function cloudLogin(){try{const email=$('cloudEmail')?.value||'',password=$('cloudPassword')?.value||'';if(!email||!password)throw new Error('Email dan password Cloud wajib diisi.');const x=await cloudAuth(email,password);cloudSetStatus('Login berhasil untuk '+(x.user?.email||email)+'.',true);$('cloudPassword').value='';await cloudPull()}catch(e){cloudSetStatus('Login gagal: '+(e.message||e),false)}}
+async function cloudPull(){try{if(!cloudSession)loadCloudSession();if(!cloudSession?.user?.id)throw new Error('Hubungkan Cloud terlebih dahulu.');const uid=encodeURIComponent(cloudSession.user.id);const rows=await cloudRest(BOOTHPRO_CLOUD_TABLE+'?user_id=eq.'+uid+'&select=config,version,updated_at&limit=1',{method:'GET',headers:{Prefer:'return=minimal'}});const row=Array.isArray(rows)?rows[0]:null;if(!row?.config){cloudSetStatus('Akun terhubung. Belum ada config Cloud.',true);return null}config=Object.assign({},config,row.config,{cloudSync:Object.assign({},config.cloudSync||{},row.config.cloudSync||{})});localStorage.setItem(CONFIG_KEY_300,JSON.stringify(config));localStorage.setItem(CONFIG_KEY_212,JSON.stringify(config));$('cloudBoothId').value=String(config.cloudSync?.boothId||'');fillForm();cloudSetStatus('Config Cloud diterapkan · revision '+String(row.version||1),true);return row}catch(e){cloudSetStatus('Pull gagal: '+(e.message||e),false);return null}}
+async function cloudPush(){try{if(!cloudSession)loadCloudSession();if(!cloudSession?.user?.id)throw new Error('Hubungkan Cloud terlebih dahulu.');collectForm();const uid=encodeURIComponent(cloudSession.user.id);let remote=null;try{const rows=await cloudRest(BOOTHPRO_CLOUD_TABLE+'?user_id=eq.'+uid+'&select=config,version,updated_at&limit=1',{method:'GET',headers:{Prefer:'return=minimal'}});remote=Array.isArray(rows)?rows[0]:null}catch(e){}const merged=cloudMergeConfig(remote?.config||{},config),nextVersion=Math.max(0,Number(remote?.version)||0)+1;await cloudRest(BOOTHPRO_CLOUD_TABLE+'?on_conflict=user_id',{method:'POST',body:JSON.stringify({user_id:cloudSession.user.id,config:merged,version:nextVersion,updated_at:new Date().toISOString()})});config=merged;localStorage.setItem(CONFIG_KEY_300,JSON.stringify(config));localStorage.setItem(CONFIG_KEY_212,JSON.stringify(config));cloudSetStatus('✓ Config tersimpan ke Cloud · revision '+nextVersion,true);return true}catch(e){cloudSetStatus('Push gagal: '+(e.message||e),false);return false}}
+function cloudLogout(){cloudSession=null;sessionStorage.removeItem('boothpro_cloud_session');cloudSetStatus('Sesi Cloud diputus. Local cache tetap tersedia.',false)}
+(function(){const x=loadCloudSession();if(x)setTimeout(()=>cloudSetStatus('Sesi Cloud aktif · '+(x.user?.email||x.user?.id),true),0)})();
 
 function saveAll(){collectForm();if(persist())fillForm()}
 function reloadAll(){config=loadConfig();stickers=getJSON(STICKER_KEY,[])||[];frameItems=getJSON(FRAME_KEY,[])||[];fillForm();flash('DIMUAT')}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BoothPro Dashboard v3.3 · Sync Center</title>
+<title>BoothPro Dashboard v3.4 · Kiosk Control Center · Sync Center</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -44,15 +44,12 @@ body{font-family:Inter,sans-serif}
   <div class="panel p-4"><p class="lbl">Omzet Hari Ini</p><p id="statRevenue" class="text-2xl font-black mt-1">Rp 0</p></div>
   <div class="panel p-4"><p class="lbl">Total Sesi</p><p id="statAll" class="text-2xl font-black mt-1">0</p></div>
   <div class="panel p-4"><p class="lbl">Frame Tersimpan</p><p id="statFrames" class="text-2xl font-black mt-1">0</p></div>
-  <div class="panel p-4"><p class="lbl">Stiker Custom</p><p id="statStickers" class="text-2xl font-black mt-1">0</p></div>
 </section>
 
 <nav class="panel p-1.5 flex gap-1 overflow-x-auto">
   <button class="tab btn active whitespace-nowrap" onclick="showTab('brand',this)">Brand & Paket</button>
   <button class="tab btn whitespace-nowrap" onclick="showTab('theme',this)">Tema & Background</button>
   <button class="tab btn whitespace-nowrap" onclick="showTab('features',this)">Fitur & Timer</button>
-  <button class="tab btn whitespace-nowrap" onclick="showTab('effects',this)">Efek</button>
-  <button class="tab btn whitespace-nowrap" onclick="showTab('stickers',this)">Stiker</button>
   <button class="tab btn whitespace-nowrap" onclick="showTab('frames',this)">Frame</button>
   <button class="tab btn whitespace-nowrap" onclick="showTab('print',this)">Print</button>
   <button class="tab btn whitespace-nowrap" onclick="showTab('payment',this)">Pembayaran</button>
@@ -124,63 +121,13 @@ body{font-family:Inter,sans-serif}
 </section>
 
 <!-- FITUR -->
-<section id="tab-features" class="hidden grid lg:grid-cols-2 gap-6">
-  <div class="panel p-5 space-y-3">
-    <h2 class="font-bold">Saklar Fitur Kiosk</h2>
-    <div id="featureGrid" class="grid sm:grid-cols-2 gap-2"></div>
-  </div>
-  <div class="panel p-5 space-y-3">
-    <h2 class="font-bold">Timer & Sesi</h2>
-    <div class="grid grid-cols-2 gap-3">
-      <div><label class="lbl">Durasi sesi (menit)</label><input id="cfgDuration" type="number" min="1" max="60" class="input"></div>
-      <div><label class="lbl">Countdown shutter (detik)</label><input id="cfgCountdown" type="number" min="1" max="15" class="input"></div>
-      <div><label class="lbl">Interval tick countdown (ms)</label><input id="cfgTick" type="number" min="300" max="3000" step="50" class="input"></div>
-      <div><label class="lbl">Idle ke attract (detik)</label><input id="cfgIdle" type="number" min="15" max="600" class="input"></div>
-      <div><label class="lbl">Maks retake</label><input id="cfgRetakeMax" type="number" min="0" max="20" class="input"></div>
-      <div><label class="lbl">PIN Admin kiosk</label><input id="cfgAdminPin" class="input" placeholder="kosong = tanpa PIN"></div>
-    </div>
-    <button class="btn btn-primary w-full" onclick="saveAll()">Simpan Pengaturan</button>
-  </div>
-</section>
+<section id="tab-features" class="hidden grid lg:grid-cols-2 gap-6"><div class="panel p-5 space-y-3"><h2 class="font-bold">Timer & Sesi Kiosk</h2><p class="text-[11px] text-slate-500">Hanya pengaturan yang benar-benar dibaca oleh engine Kiosk.</p><div class="grid grid-cols-2 gap-3"><div><label class="lbl">Durasi sesi (menit)</label><input id="cfgDuration" type="number" min="1" max="60" class="input"></div><div><label class="lbl">Countdown shutter (detik)</label><input id="cfgCountdown" type="number" min="1" max="15" class="input"></div><div><label class="lbl">Idle ke attract (detik)</label><input id="cfgIdle" type="number" min="15" max="600" class="input"></div><div><label class="lbl">PIN Admin kiosk</label><input id="cfgAdminPin" class="input" placeholder="kosong = tanpa PIN"></div></div><button class="btn btn-primary w-full" onclick="saveAll()">Simpan Pengaturan</button></div></section>
 
 <!-- EFEK -->
-<section id="tab-effects" class="hidden grid lg:grid-cols-2 gap-6">
-  <div class="panel p-5 space-y-3">
-    <h2 class="font-bold">Daftar Efek Foto</h2>
-    <p class="text-[11px] text-slate-500">Nonaktifkan efek agar tidak muncul di editor kiosk.</p>
-    <div id="effectList" class="space-y-2"></div>
-  </div>
-  <div class="panel p-5 space-y-3">
-    <h2 class="font-bold">Tambah Efek Custom</h2>
-    <label class="lbl">Nama</label><input id="fxName" class="input" placeholder="Pastel Dream">
-    <label class="lbl">Deskripsi</label><input id="fxDesc" class="input" placeholder="Lembut pastel">
-    <label class="lbl">CSS filter</label><input id="fxCss" class="input font-mono" placeholder="contrast(110%) saturate(120%) sepia(15%)">
-    <div class="rounded-xl bg-slate-950 border border-slate-800 p-3">
-      <p class="lbl mb-2">Preview</p>
-      <div id="fxPreview" class="h-24 rounded-lg" style="background:linear-gradient(120deg,#f59e0b,#ec4899,#6366f1)"></div>
-    </div>
-    <div class="grid grid-cols-2 gap-2">
-      <button class="btn" onclick="previewEffect()">Coba Preview</button>
-      <button class="btn btn-primary" onclick="addEffect()">Tambah Efek</button>
-    </div>
-    <button class="btn btn-danger w-full" onclick="resetEffects()">Reset ke Efek Bawaan</button>
-  </div>
-</section>
+
 
 <!-- STIKER -->
-<section id="tab-stickers" class="hidden grid lg:grid-cols-2 gap-6">
-  <div class="panel p-5 space-y-3">
-    <h2 class="font-bold">Upload Stiker Photobooth</h2>
-    <label class="lbl">Kategori</label><input id="stickerCat" class="input" value="Custom">
-    <label class="lbl">File PNG transparan / SVG (bisa banyak)</label>
-    <input type="file" accept="image/png,image/svg+xml,image/webp" multiple class="input" onchange="uploadStickers(event)">
-    <button class="btn btn-danger w-full" onclick="clearStickers()">Hapus Semua Stiker Custom</button>
-  </div>
-  <div class="panel p-5 space-y-3">
-    <h2 class="font-bold">Stiker Custom (<span id="stickerCount">0</span>)</h2>
-    <div id="stickerList" class="grid grid-cols-5 sm:grid-cols-8 gap-2"></div>
-  </div>
-</section>
+
 
 <!-- FRAME -->
 <section id="tab-frames" class="hidden grid lg:grid-cols-2 gap-6">
@@ -196,44 +143,7 @@ body{font-family:Inter,sans-serif}
 </section>
 
 <!-- PRINT -->
-<section id="tab-print" class="hidden grid lg:grid-cols-2 gap-6">
-  <div class="panel p-5 space-y-3">
-    <h2 class="font-bold">Ukuran & Mode Cetak</h2>
-    <label class="lbl">Ukuran kertas</label>
-    <select id="printSize" class="input" onchange="toggleCustomSize()">
-      <option value="4x6">4R / 4x6 inci (102×152mm)</option>
-      <option value="2x6">Strip 2x6 inci (51×152mm)</option>
-      <option value="5x7">5x7 inci (127×178mm)</option>
-      <option value="6x8">6x8 inci (152×203mm)</option>
-      <option value="A4">A4 (210×297mm)</option>
-      <option value="A5">A5 (148×210mm)</option>
-      <option value="custom">Custom (mm)</option>
-    </select>
-    <div id="customSizeWrap" class="grid grid-cols-2 gap-2 hidden">
-      <div><label class="lbl">Lebar (mm)</label><input id="printCustomW" type="number" class="input"></div>
-      <div><label class="lbl">Tinggi (mm)</label><input id="printCustomH" type="number" class="input"></div>
-    </div>
-    <div class="grid grid-cols-2 gap-2">
-      <div><label class="lbl">Orientasi</label><select id="printOrientation" class="input"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
-      <div><label class="lbl">Mode isi</label><select id="printFit" class="input"><option value="contain">Contain (utuh)</option><option value="cover">Cover (penuh, terpotong)</option></select></div>
-      <div><label class="lbl">Jumlah copy default</label><input id="printCopies" type="number" min="1" max="10" class="input"></div>
-      <div><label class="lbl">Nama printer (bridge)</label><input id="printerName" class="input" placeholder="DS-RX1HS"></div>
-    </div>
-  </div>
-  <div class="panel p-5 space-y-3">
-    <h2 class="font-bold">Hardware Bridge</h2>
-    <label class="lbl">Bridge URL</label><input id="bridgeUrl" class="input" placeholder="http://localhost:8787">
-    <label class="flex items-center gap-2 text-xs mt-2"><input id="autoPrint" type="checkbox" class="h-4 w-4"> Auto print setelah sesi selesai</label>
-    <label class="lbl">Mode kamera</label>
-    <select id="cameraMode" class="input"><option value="browser">Browser (getUserMedia)</option><option value="bridge">Bridge (DSLR/gPhoto)</option></select>
-    <div class="grid grid-cols-2 gap-2">
-      <div><label class="lbl">Resolusi kamera</label><select id="camResolution" class="input"><option>1280x720</option><option>1920x1080</option><option>640x480</option></select></div>
-      <div><label class="lbl">Facing mode</label><select id="camFacing" class="input"><option value="user">User</option><option value="environment">Environment</option></select></div>
-    </div>
-    <button class="btn w-full" onclick="pingBridge()">Tes Koneksi Bridge</button>
-    <p id="bridgeStatus" class="text-[11px] text-slate-500">Belum dites.</p>
-  </div>
-</section>
+<section id="tab-print" class="hidden grid lg:grid-cols-2 gap-6"><div class="panel p-5 space-y-3"><h2 class="font-bold">Ukuran & Hardware Cetak</h2><label class="lbl">Ukuran kertas</label><select id="printSize" class="input"><option value="4x6">4R / 4x6 inci (102×152mm)</option><option value="2x6">Strip 2x6 inci (51×152mm)</option><option value="A4">A4 (210×297mm)</option></select><label class="lbl">Nama printer (bridge)</label><input id="printerName" class="input" placeholder="Nama printer opsional"></div><div class="panel p-5 space-y-3"><h2 class="font-bold">Hardware Bridge & Kamera</h2><label class="lbl">Bridge URL</label><input id="bridgeUrl" class="input" placeholder="http://localhost:8787"><label class="flex items-center gap-2 text-xs mt-2"><input id="autoPrint" type="checkbox" class="h-4 w-4"> Auto print setelah sesi selesai</label><label class="lbl">Mode kamera</label><select id="cameraMode" class="input"><option value="browser">Browser (getUserMedia)</option><option value="bridge">Bridge (DSLR/gPhoto)</option></select><div class="grid grid-cols-2 gap-2"><div><label class="lbl">Resolusi kamera</label><select id="camResolution" class="input"><option>1280x720</option><option>1920x1080</option><option>640x480</option></select></div><div><label class="lbl">Facing mode</label><select id="camFacing" class="input"><option value="user">User</option><option value="environment">Environment</option></select></div></div><button class="btn w-full" onclick="pingBridge()">Tes Koneksi Bridge</button><p id="bridgeStatus" class="text-[11px] text-slate-500">Belum dites.</p></div></section>
 
 <!-- PEMBAYARAN -->
 <section id="tab-payment" class="hidden grid lg:grid-cols-2 gap-6">
@@ -289,7 +199,6 @@ body{font-family:Inter,sans-serif}
 <script>
 const CONFIG_KEY_300 = 'boothpro_config_v300';
 const CONFIG_KEY_212 = 'boothpro_config_v212';
-const STICKER_KEY = 'boothpro_stickers_v300';
 const FRAME_KEY = 'boothpro_frames_v212';
 const HISTORY_KEY = 'boothpro_history_v212';
 const SYNC_CHANNEL = 'boothpro_sync_v300';
@@ -336,7 +245,6 @@ function loadConfig(){
 }
 
 let config=loadConfig();
-let stickers=getJSON(STICKER_KEY,[])||[];
 let frameItems=getJSON(FRAME_KEY,[])||[];
 
 function persist(){
@@ -357,12 +265,6 @@ function persist(){
   return true;
 }
 
-function persistStickers(){
-  try{localStorage.setItem(STICKER_KEY,JSON.stringify(stickers))}catch(e){alert('Storage penuh.')}
-  try{syncChannel&&syncChannel.postMessage({type:'stickers',at:Date.now()})}catch(e){}
-  flash('STIKER DIKIRIM');
-}
-
 function persistFrames(){
   try{localStorage.setItem(FRAME_KEY,JSON.stringify(frameItems.slice(-24)))}catch(e){alert('Storage penuh.')}
   try{syncChannel&&syncChannel.postMessage({type:'frames',at:Date.now()})}catch(e){}
@@ -379,10 +281,9 @@ function fillForm(){
   renderPackages();
   const t=config.theme;themeBg.value=hex(t.bg,'#09090b');themeAccent.value=hex(t.accent,'#818cf8');themeCard.value=hex(t.card,'#18181b');themeText.value=hex(t.text,'#fafafa');themeStyle.value=t.style||'solid';themeDim.value=Number(t.dim)||0;$('dimLabel').innerText=themeDim.value;
   renderBgPreview();renderPresets();
-  renderFeatures();
-  cfgDuration.value=config.duration||7;cfgCountdown.value=config.countdown||3;cfgTick.value=config.features.countdownTick||700;cfgIdle.value=config.idleSeconds||90;cfgRetakeMax.value=config.features.retakeMax??3;cfgAdminPin.value=config.adminPin||'';
-  renderEffects();renderStickers();renderFrames();
-  const p=config.print;printSize.value=p.size||'4x6';printOrientation.value=p.orientation||'portrait';printFit.value=p.fit||'contain';printCopies.value=p.copies||1;printCustomW.value=p.customW||102;printCustomH.value=p.customH||152;toggleCustomSize();
+  cfgDuration.value=config.duration||7;cfgCountdown.value=config.countdown||3;cfgIdle.value=config.idleSeconds||90;cfgAdminPin.value=config.adminPin||'';
+  renderFrames();
+  printSize.value=config.printSize||'4x6';
   const h=config.hardware;bridgeUrl.value=h.bridgeUrl||'';autoPrint.checked=h.autoPrint===true;printerName.value=h.printerName||'';cameraMode.value=h.cameraMode||'browser';
   camResolution.value=config.camera.resolution||'1280x720';camFacing.value=config.camera.facingMode||'user';
   mtMode.value=config.midtrans.mode||'manual';mtEnv.value=config.midtrans.env||'production';mtApiBase.value=config.midtrans.apiBase||'';qrisUrl.value=config.qris||'';
@@ -393,20 +294,13 @@ function hex(v,f){return/^#[0-9a-fA-F]{6}$/.test(v||'')?v:f}
 
 function collectForm(){
   config.brand={...config.brand,name:brandName.value.trim()||'BOOTH PRO',tagline:brandTagline.value.trim(),homeTitle:brandHomeTitle.value.trim(),homeSubtitle:brandHomeSubtitle.value.trim(),logo:brandLogo.value.trim()};
-  config.footer={...config.footer,watermark:footerWatermark.value,dateFormat:footerDateFormat.value,showDate:config.features.showDate!==false};
+  config.footer={...config.footer,watermark:footerWatermark.value,dateFormat:footerDateFormat.value};
   config.extraPrintPrice=Number(extraPrintPrice.value)||0;config.extraPrintMax=Number(extraPrintMax.value)||0;
   const v={};voucherText.value.split('\n').forEach(line=>{const[a,bb]=line.split('=');if(a&&a.trim())v[a.trim().toUpperCase()]=Number(bb)||0});config.vouchers=v;
   collectPackages();
   config.theme={...config.theme,bg:themeBg.value,accent:themeAccent.value,card:themeCard.value,text:themeText.value,style:themeStyle.value,dim:Number(themeDim.value)||0};
-  const f=Object.assign({},config.features);
-  document.querySelectorAll('#featureGrid [data-feat]').forEach(el=>{f[el.dataset.feat]=el.checked===true});
-  f.countdownTick=Math.max(300,Math.min(3000,Number(cfgTick.value)||700));
-  f.retakeMax=Math.max(0,Math.min(20,Number(cfgRetakeMax.value)||0));
-  config.features=f;
   config.duration=Math.max(1,Number(cfgDuration.value)||7);config.countdown=Math.max(1,Number(cfgCountdown.value)||3);config.idleSeconds=Math.max(15,Number(cfgIdle.value)||90);config.adminPin=cfgAdminPin.value.trim();
-  document.querySelectorAll('#effectList [data-fx]').forEach(el=>{const fx=config.effects.find(x=>x.id===el.dataset.fx);if(fx)fx.on=el.checked===true});
-  config.print={size:printSize.value,orientation:printOrientation.value,fit:printFit.value,copies:Math.max(1,Math.min(10,Number(printCopies.value)||1)),customW:Number(printCustomW.value)||102,customH:Number(printCustomH.value)||152};
-  config.printSize=config.print.size;
+  config.printSize=printSize.value||'4x6';
   config.hardware={...config.hardware,bridgeUrl:bridgeUrl.value.trim(),autoPrint:autoPrint.checked,printerName:printerName.value.trim(),cameraMode:cameraMode.value};
   config.camera={...config.camera,resolution:camResolution.value,facingMode:camFacing.value};
   config.midtrans={...config.midtrans,mode:mtMode.value,env:mtEnv.value,apiBase:mtApiBase.value.trim()};
@@ -416,7 +310,7 @@ function collectForm(){
 }
 
 function saveAll(){collectForm();if(persist())fillForm()}
-function reloadAll(){config=loadConfig();stickers=getJSON(STICKER_KEY,[])||[];frameItems=getJSON(FRAME_KEY,[])||[];fillForm();flash('DIMUAT')}
+function reloadAll(){config=loadConfig();frameItems=getJSON(FRAME_KEY,[])||[];fillForm();flash('DIMUAT')}
 
 function renderPackages(){
   packageList.innerHTML='';
@@ -472,74 +366,6 @@ function uploadBackground(e){const f=e.target.files&&e.target.files[0];if(!f)ret
 function clearBackgroundImage(){config.theme.backgroundImage='';collectForm();persist();renderBgPreview()}
 function uploadTo(e,targetId){const f=e.target.files&&e.target.files[0];if(!f)return;downscale(f,512,d=>{$(targetId).value=d;saveAll()});e.target.value=''}
 
-function renderFeatures(){
-  featureGrid.innerHTML='';
-  const allFeatures = {...featureLabels};
-  Object.keys(config.features).forEach(k => {
-    if(!allFeatures[k] && typeof config.features[k] === 'boolean'){
-      allFeatures[k] = k.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-    }
-  });
-
-  Object.keys(allFeatures).forEach(k=>{
-    if(typeof config.features[k] === 'boolean' || config.features[k] === undefined){
-      const l=document.createElement('label');
-      l.className='flex items-center justify-between gap-2 rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs';
-      l.innerHTML=`<span>${esc(allFeatures[k])}</span>`;
-      const i=document.createElement('input');i.type='checkbox';i.className='h-4 w-4';i.dataset.feat=k;i.checked=config.features[k]!==false;
-      l.appendChild(i);featureGrid.appendChild(l);
-    }
-  });
-}
-
-function renderEffects(){
-  effectList.innerHTML='';
-  config.effects.forEach((fx,i)=>{
-    const row=document.createElement('div');
-    row.className='flex items-center gap-3 rounded-xl bg-slate-950 border border-slate-800 p-3';
-    row.innerHTML=`<div class="h-10 w-10 rounded-lg shrink-0" style="background:linear-gradient(120deg,#f59e0b,#ec4899,#6366f1);filter:${fx.css==='none'?'none':esc(fx.css)}"></div>
-      <div class="flex-1 min-w-0"><p class="text-xs font-bold truncate">${esc(fx.name)}</p><p class="text-[10px] text-slate-500 truncate">${esc(fx.css)}</p></div>`;
-    const cb=document.createElement('input');cb.type='checkbox';cb.className='h-4 w-4';cb.dataset.fx=fx.id;cb.checked=fx.on!==false;
-    row.appendChild(cb);
-    if(!defaultEffects.some(d=>d.id===fx.id)){
-      const del=document.createElement('button');del.className='btn btn-danger py-1 px-2 text-[10px]';del.textContent='Hapus';del.onclick=()=>{config.effects.splice(i,1);renderEffects()};row.appendChild(del);
-    }
-    effectList.appendChild(row);
-  });
-}
-function previewEffect(){fxPreview.style.filter=fxCss.value.trim()||'none'}
-function addEffect(){
-  const name=fxName.value.trim(),css=fxCss.value.trim();
-  if(!name||!css)return alert('Nama dan CSS filter wajib diisi.');
-  config.effects.push({id:'fx'+Date.now().toString(36),name,desc:fxDesc.value.trim(),css,on:true});
-  fxName.value='';fxDesc.value='';fxCss.value='';
-  renderEffects();saveAll();
-}
-function resetEffects(){if(!confirm('Kembalikan daftar efek ke bawaan?'))return;config.effects=JSON.parse(JSON.stringify(defaultEffects));renderEffects();saveAll()}
-
-function renderStickers(){
-  stickerCount.textContent=stickers.length;statStickers.textContent=stickers.length;
-  stickerList.innerHTML=stickers.length?'':'<p class="text-[11px] text-slate-500 col-span-8">Belum ada stiker custom.</p>';
-  stickers.forEach((s,i)=>{
-    const d=document.createElement('div');
-    d.className='relative h-14 w-14 rounded-lg bg-slate-950 border border-slate-800 p-1';
-    d.innerHTML=`<img src="${s.src}" class="h-full w-full object-contain" alt="${esc(s.name||'')}">`;
-    const del=document.createElement('button');del.className='absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-600 text-white text-[10px] font-bold';del.textContent='×';
-    del.onclick=()=>{stickers.splice(i,1);persistStickers();renderStickers()};
-    d.appendChild(del);stickerList.appendChild(d);
-  });
-}
-function uploadStickers(e){
-  const files=Array.from(e.target.files||[]);if(!files.length)return;
-  const cat=(stickerCat.value||'Custom').trim()||'Custom';let pending=files.length;
-  files.forEach(f=>downscale(f,512,src=>{
-    stickers.push({id:'cst'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:f.name.replace(/\.[^.]+$/,'').slice(0,20),cat,src});
-    if(--pending===0){persistStickers();renderStickers();}
-  }));
-  e.target.value='';
-}
-function clearStickers(){if(!confirm('Hapus semua stiker custom?'))return;stickers=[];persistStickers();renderStickers()}
-
 function renderFrames(){
   frameCount.textContent=frameItems.length;statFrames.textContent=frameItems.length;
   frameList.innerHTML=frameItems.length?'':'<p class="text-[11px] text-slate-500 col-span-4">Belum ada frame upload.</p>';
@@ -563,7 +389,6 @@ function uploadFrames(e){
 }
 function clearFrames(){if(!confirm('Hapus semua frame upload?'))return;frameItems=[];persistFrames();renderFrames()}
 
-function toggleCustomSize(){customSizeWrap.classList.toggle('hidden',printSize.value!=='custom')}
 async function pingBridge(){
   const url=bridgeUrl.value.trim();
   if(!url)return bridgeStatus.textContent='Bridge URL kosong — kiosk akan pakai print browser.';
@@ -624,7 +449,7 @@ async function adminDownloadSoftfileFromDashboard(){
   finally{if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-download mr-2"></i>Download Softfile'}}
 }
 if(syncChannel){try{syncChannel.onmessage=()=>{renderStats();renderTx()}}catch(e){}}
-window.addEventListener('storage',e=>{if([HISTORY_KEY,FRAME_KEY,STICKER_KEY].includes(e.key)||String(e.key||'').startsWith('boothpro_cloud_')){renderStats();renderTx()}});
+window.addEventListener('storage',e=>{if([HISTORY_KEY,FRAME_KEY].includes(e.key)||String(e.key||'').startsWith('boothpro_cloud_')){renderStats();renderTx()}});
 function renderTx(){
   const h=getHistory().slice().reverse();
   txBody.innerHTML=h.length?'':'<tr><td colspan="7" class="py-4 text-slate-500">Belum ada transaksi.</td></tr>';
@@ -653,7 +478,6 @@ function importBackup(e){
       if(!confirm('Timpa konfigurasi kiosk di browser ini?'))return;
       localStorage.setItem(CONFIG_KEY_300,JSON.stringify(d.config));
       localStorage.setItem(CONFIG_KEY_212,JSON.stringify(d.config));
-      if(Array.isArray(d.stickers))localStorage.setItem(STICKER_KEY,JSON.stringify(d.stickers));
       if(Array.isArray(d.frames))localStorage.setItem(FRAME_KEY,JSON.stringify(d.frames));
       if(Array.isArray(d.history))localStorage.setItem(HISTORY_KEY,JSON.stringify(d.history));
       reloadAll();alert('Restore selesai.');

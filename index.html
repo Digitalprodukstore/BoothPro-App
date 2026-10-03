@@ -747,14 +747,11 @@ function renderFrameGallery(){if($('dashFrameCount'))$('dashFrameCount').innerTe
 function renderFrameMiniPreview(){const host=$('frameMiniPreview');if(!host)return;host.innerHTML='';const wrap=buildPreviewHTML('mini');host.appendChild(wrap);if(capturedPhotos.length){renderFrameAwarePreview(wrap,'mini')}else{host.innerHTML='<div class="text-xs text-zinc-500 text-center p-8">Belum ada hasil foto.</div>'}}
 function renderCaptureReview(){
  const host=$('captureReviewPreview');if(!host)return;host.innerHTML='';
+ bpEnsureSlotAssignments();
  if(!capturedPhotos.length){host.innerHTML='<div class="text-xs text-zinc-500 text-center p-8">Belum ada foto untuk ditampilkan.</div>';return}
  const wrap=buildPreviewHTML('capture');host.appendChild(wrap);
  if(window.BoothProC8?.preview)window.BoothProC8.preview(wrap,capturedPhotos.slice(),selectedFrameSrc);else renderFrameAwarePreview(wrap,'capture');
- setTimeout(()=>{
-  const grid=wrap.querySelector('.editor-grid');if(!grid)return;
-  [...grid.children].forEach((cell,slot)=>{cell.style.cursor=Number.isInteger(window.__BP_PHOTO_PICK__)?'pointer':'default';cell.title=Number.isInteger(window.__BP_PHOTO_PICK__)?'Tap untuk menempatkan Foto '+(window.__BP_PHOTO_PICK__+1)+' di posisi '+(slot+1):'Pilih foto di Hasil Jepretan terlebih dahulu';cell.onclick=e=>{e.preventDefault();e.stopPropagation();const picked=window.__BP_PHOTO_PICK__;if(Number.isInteger(picked))assignPhotoToSlot(slot,picked)}});
-  renderPhotoOrderControls();
- },0);
+ setTimeout(()=>{renderPhotoOrderControls()},0);
 }
 function renderEditor(){const host=$('editorPreview');if(!host)return;host.innerHTML='';const wrap=buildPreviewHTML('editor-locked');host.appendChild(wrap);Promise.resolve(renderFrameAwarePreview(wrap,'locked')).then(()=>{const css=getAppliedFilter();const c=host.querySelector('canvas');if(c)c.style.filter=css==='none'?'none':css;});renderFilterChoicesStep5();updateActiveFrameLabel();updateAdjLabels()}
 function renderEditorFrameQuickGrid(){const g=$('editorFrameQuickGrid');if(!g)return;g.innerHTML='';const frames=getFrameChoices();frames.forEach(f=>{const b=document.createElement('button');b.type='button';b.className='h-14 rounded-lg overflow-hidden border '+(selectedFrameId===f.id?'border-indigo-500':'border-zinc-700');b.title=f.name;b.onclick=()=>selectFrame(f);if(f.src)b.innerHTML='<img src="'+f.src+'" class="w-full h-full object-cover">';else b.innerHTML='<div class="w-full h-full" style="background:'+frameColor(f.id)+'"></div>';g.appendChild(b)})}
@@ -777,30 +774,81 @@ function selectFrame(f){
   try{if(typeof renderFrameMiniPreview==='function'&&capturedPhotos.length)renderFrameMiniPreview()}catch(e){}
   return true;
 }
+let bpSlotAssignments=Array.isArray(window.__BP_SLOT_ASSIGNMENTS__)?window.__BP_SLOT_ASSIGNMENTS__:[];
+
+function bpEnsureSlotAssignments(){
+  const n=Math.max(0,capturedPhotos.length||0);
+  const a=Array.isArray(bpSlotAssignments)?bpSlotAssignments:[];
+  const used=new Set();
+  const out=new Array(n).fill(null);
+  for(let i=0;i<n;i++){
+    const v=Number(a[i]);
+    if(Number.isInteger(v)&&v>=0&&v<n&&!used.has(v)){out[i]=v;used.add(v)}
+  }
+  // First session render: keep the tray untouched and leave slots empty.
+  bpSlotAssignments=out;
+  window.__BP_SLOT_ASSIGNMENTS__=out;
+  return out;
+}
+function bpSlotPhotos(){
+  const a=bpEnsureSlotAssignments();
+  return a.map(i=>Number.isInteger(i)?capturedPhotos[i]:null);
+}
+function bpResetSlotAssignments(){
+  bpSlotAssignments=new Array(Math.max(0,capturedPhotos.length||0)).fill(null);
+  window.__BP_SLOT_ASSIGNMENTS__=bpSlotAssignments;
+  window.__BP_PHOTO_PICK__=null;
+}
 function renderPhotoOrderControls(){
  const host=$('photoOrderControls');if(!host)return;host.innerHTML='';
  const photos=capturedPhotos.slice();if(!photos.length){host.innerHTML='<div class="text-xs text-zinc-500">Ambil foto terlebih dahulu.</div>';return}
- const selected=window.__BP_PHOTO_PICK__;
- const hint=document.createElement('div');hint.className='p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20';
- hint.innerHTML=selected==null?'<div class="text-xs font-bold text-white">① Pilih foto dari hasil jepretan</div><div class="text-[10px] text-zinc-500 mt-1">Tap foto di atas. Setelah terpilih, tap posisi foto pada preview frame.</div>':'<div class="text-xs font-bold text-white">② Tempatkan Foto '+(selected+1)+'</div><div class="text-[10px] text-zinc-500 mt-1">Tap kotak foto di preview frame untuk menentukan posisinya.</div>';
- host.appendChild(hint);
- const film=$('filmStripGallery');if(film){[...film.querySelectorAll('[data-capture-index]')].forEach(el=>{const on=Number(el.dataset.captureIndex)===selected;el.classList.toggle('ring-2',on);el.classList.toggle('ring-emerald-400',on);el.classList.toggle('ring-offset-2',on);})}
+ const selected=Number.isInteger(window.__BP_PHOTO_PICK__)?window.__BP_PHOTO_PICK__:null;
+ const a=bpEnsureSlotAssignments();
+ const assignedCount=a.filter(Number.isInteger).length;
+ const hint=document.createElement('div');
+ hint.className='bp-order-guide';
+ hint.innerHTML=selected==null
+  ? '<div class="bp-guide-icon">✦</div><div><div class="bp-guide-title">Susun foto ke frame</div><div class="bp-guide-copy">Tap salah satu foto di <b>Hasil Jepretan</b>, lalu tap kotak <b>“TAP DI SINI”</b> pada frame.</div></div>'
+  : '<div class="bp-guide-icon">↳</div><div><div class="bp-guide-title">Foto '+(selected+1)+' siap ditempatkan</div><div class="bp-guide-copy">Sekarang tap posisi frame yang ingin dipakai. Setelah masuk, foto bisa <b>digunakan untuk zoom & geser</b>.</div></div>';
+ const status=document.createElement('div');status.className='bp-order-status';
+ status.innerHTML='<span>'+assignedCount+' / '+photos.length+' foto tersusun</span><button type="button" id="bpResetArrangement">Reset susunan</button>';
+ host.appendChild(hint);host.appendChild(status);
+ status.querySelector('button').onclick=()=>{bpResetSlotAssignments();renderCaptureReview()};
+ const film=$('filmStripGallery');
+ if(film){
+  [...film.querySelectorAll('[data-capture-index]')].forEach(el=>{
+    const idx=Number(el.dataset.captureIndex),assigned=a.includes(idx),on=idx===selected;
+    el.classList.toggle('ring-2',on);el.classList.toggle('ring-emerald-400',on);el.classList.toggle('ring-offset-2',on);
+    el.classList.toggle('bp-tray-assigned',assigned);
+    const badge=el.querySelector('.bp-tray-assigned-badge');
+    if(badge)badge.remove();
+    if(assigned){
+      const b=document.createElement('div');b.className='bp-tray-assigned-badge';b.textContent='✓ DI FRAME';el.appendChild(b);
+    }
+    el.onclick=()=>{window.__BP_PHOTO_PICK__=idx;renderPhotoOrderControls();renderCaptureReview()};
+  });
+ }
 }
 function assignPhotoToSlot(slot,photoIndex){
-  if(!Number.isInteger(slot)||!Number.isInteger(photoIndex)||slot<0||photoIndex<0||slot>=capturedPhotos.length||photoIndex>=capturedPhotos.length)return;
-  if(slot===photoIndex){window.__BP_PHOTO_PICK__=null;renderPhotoOrderControls();return}
+  if(!Number.isInteger(slot)||!Number.isInteger(photoIndex)||slot<0||photoIndex<0)return;
+  const a=bpEnsureSlotAssignments();
+  if(slot>=a.length||photoIndex>=capturedPhotos.length)return;
+  const previous=a[slot];
+  const occupiedSlot=a.indexOf(photoIndex);
+  if(occupiedSlot>=0&&occupiedSlot!==slot)a[occupiedSlot]=previous==null?null:previous;
+  a[slot]=photoIndex;
+  bpSlotAssignments=a.slice();
+  window.__BP_SLOT_ASSIGNMENTS__=bpSlotAssignments;
+  window.__BP_PHOTO_PICK__=null;
   const api=window.__BP_C8__;
-  const tmp=capturedPhotos[slot];capturedPhotos[slot]=capturedPhotos[photoIndex];capturedPhotos[photoIndex]=tmp;
-  if(api&&Array.isArray(api.transforms)&&api.transforms.length===capturedPhotos.length){
-    const tt=api.transforms[slot];api.transforms[slot]=api.transforms[photoIndex];api.transforms[photoIndex]=tt;
-  }
-  renderFilmStrip();renderCaptureReview();
+  if(api?.setActiveSlot)api.setActiveSlot(slot);
+  renderCaptureReview();
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function loadImage(src){return new Promise((resolve,reject)=>{if(!src){reject(new Error('empty image'));return}const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('image load failed'));im.src=src})}
 function fitImageInRect(ctx,im,x,y,w,h,mode='cover'){const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;if(!iw||!ih)return;const scale=mode==='contain'?Math.min(w/iw,h/ih):Math.max(w/iw,h/ih);const dw=iw*scale,dh=ih*scale;ctx.drawImage(im,x+(w-dw)/2,y+(h-dh)/2,dw,dh)}
 async function detectTransparentHoles(frameSrc,targetW,targetH,needed){try{const im=await loadImage(frameSrc);const sw=360,sh=Math.max(180,Math.round(sw*(im.naturalHeight/im.naturalWidth||targetH/targetW)));const c=document.createElement('canvas');c.width=sw;c.height=sh;const x=c.getContext('2d',{willReadFrequently:true});x.clearRect(0,0,sw,sh);x.drawImage(im,0,0,sw,sh);const data=x.getImageData(0,0,sw,sh).data,transparent=new Uint8Array(sw*sh),seen=new Uint8Array(sw*sh),components=[];for(let y=0;y<sh;y++)for(let xx=0;xx<sw;xx++){const a=data[(y*sw+xx)*4+3];transparent[y*sw+xx]=a<55?1:0}const qx=new Int32Array(sw*sh),qy=new Int32Array(sw*sh);for(let sy=0;sy<sh;sy++)for(let sx=0;sx<sw;sx++){const si=sy*sw+sx;if(!transparent[si]||seen[si])continue;let head=0,tail=0,minX=sx,maxX=sx,minY=sy,maxY=sy,area=0,touchesEdge=false;qx[tail]=sx;qy[tail++]=sy;seen[si]=1;while(head<tail){const cx=qx[head],cy=qy[head++];area++;if(cx<minX)minX=cx;if(cx>maxX)maxX=cx;if(cy<minY)minY=cy;if(cy>maxY)maxY=cy;if(cx===0||cy===0||cx===sw-1||cy===sh-1)touchesEdge=true;const ns=[[cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]];for(const[nx,ny]of ns){if(nx<0||ny<0||nx>=sw||ny>=sh)continue;const ni=ny*sw+nx;if(transparent[ni]&&!seen[ni]){seen[ni]=1;qx[tail]=nx;qy[tail++]=ny}}}const bw=maxX-minX+1,bh=maxY-minY+1,ratio=(bw*bh)/(sw*sh),fill=area/Math.max(1,bw*bh);if(!touchesEdge&&area>=Math.max(36,sw*sh*0.0015)&&ratio>=0.006&&ratio<=0.72&&fill>=0.55)components.push({area,minX,minY,maxX,maxY})}components.sort((a,b)=>b.area-a.area);const minHoleArea=Math.max(36,sw*sh*0.0015);const candidates=components.filter(r=>r.area>=minHoleArea);if(candidates.length<needed)return null;/* M1.2: prefer the requested number of largest holes, then sort spatially. This prevents decorative transparent areas from stealing photo slots. */const selected=candidates.slice(0,needed).sort((a,b)=>a.minY-b.minY||a.minX-b.minX);const inset=Math.max(0,Math.min(.08,Number(config.frameFit?.safeInset)||0));return selected.map(r=>{let x0=r.minX/sw*targetW,y0=r.minY/sh*targetH,w=(r.maxX-r.minX+1)/sw*targetW,h=(r.maxY-r.minY+1)/sh*targetH;const ix=w*inset,iy=h*inset;return{x:x0+ix,y:y0+iy,w:Math.max(2,w-ix*2),h:Math.max(2,h-iy*2)}})}catch(e){return null}}
-async function drawFrameAwareComposition(canvas,includeFooter=true,photosArg=null,frameSrcArg=null){const photos=Array.isArray(photosArg)?photosArg:framePhotos;const frameSrc=typeof frameSrcArg==='string'?frameSrcArg:selectedFrameSrc;const c=canvas,ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);const appliedFilter=getAppliedFilter();const needed=Math.max(1,photos.length);const pad=c.width*.07,gap=c.width*.012,footer=c.height*.13;const isStrip=selectedLayoutType==='strip',cols=isStrip?1:2,rows=isStrip?Math.max(1,needed):Math.ceil(needed/2),usableH=c.height-pad*2-footer-gap*(rows-1),cellW=(c.width-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);photos.forEach((im,i)=>{if(!im)return;const r=Math.floor(i/cols),col=i%cols,x=pad+col*(cellW+gap),y=pad+r*(cellH+gap);ctx.save();ctx.beginPath();ctx.rect(x,y,cellW,cellH);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;fitImageInRect(ctx,im,x,y,cellW,cellH,'contain');ctx.restore()});ctx.filter='none';if(frameSrc){try{const frame=await loadImage(frameSrc);const holes=await detectTransparentHoles(frameSrc,c.width,c.height,needed);if(holes&&holes.length>=needed){ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);holes.forEach((r,i)=>{if(!photos[i])return;ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;/* M1: keep the entire captured photo inside the detected transparent hole; never crop/zoom into the frame artwork. */(function(){const t=window.__BP_C8__?.transforms?.[i]||{scale:1,x:0,y:0};const iw=photos[i].naturalWidth||photos[i].width,ih=photos[i].naturalHeight||photos[i].height;const base=Math.min(r.w/iw,r.h/ih),s=Math.max(.55,Math.min(3.5,Number(t.scale)||1)),dw=iw*base*s,dh=ih*base*s,ox=r.x+(r.w-dw)/2+(Number(t.x)||0)*r.w,oy=r.y+(r.h-dh)/2+(Number(t.y)||0)*r.h;ctx.drawImage(photos[i],ox,oy,dw,dh)})();ctx.restore()});ctx.filter='none'}ctx.drawImage(frame,0,0,c.width,c.height)}catch(e){}}if(includeFooter)drawPreviewFooterCanvas(ctx,c.width,c.height);return true}
+async function drawFrameAwareComposition(canvas,includeFooter=true,photosArg=null,frameSrcArg=null){const photos=Array.isArray(photosArg)?photosArg:(capturedPhotos.length?bpSlotPhotos():framePhotos);const frameSrc=typeof frameSrcArg==='string'?frameSrcArg:selectedFrameSrc;const c=canvas,ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);const appliedFilter=getAppliedFilter();const needed=Math.max(1,photos.length);const pad=c.width*.07,gap=c.width*.012,footer=c.height*.13;const isStrip=selectedLayoutType==='strip',cols=isStrip?1:2,rows=isStrip?Math.max(1,needed):Math.ceil(needed/2),usableH=c.height-pad*2-footer-gap*(rows-1),cellW=(c.width-pad*2-gap*(cols-1))/cols,cellH=usableH/rows;ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);photos.forEach((im,i)=>{if(!im)return;const r=Math.floor(i/cols),col=i%cols,x=pad+col*(cellW+gap),y=pad+r*(cellH+gap);ctx.save();ctx.beginPath();ctx.rect(x,y,cellW,cellH);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;fitImageInRect(ctx,im,x,y,cellW,cellH,'contain');ctx.restore()});ctx.filter='none';if(frameSrc){try{const frame=await loadImage(frameSrc);const holes=await detectTransparentHoles(frameSrc,c.width,c.height,needed);if(holes&&holes.length>=needed){ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle=frameBg;ctx.fillRect(0,0,c.width,c.height);holes.forEach((r,i)=>{if(!photos[i])return;ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();ctx.filter=appliedFilter==='none'?'none':appliedFilter;/* M1: keep the entire captured photo inside the detected transparent hole; never crop/zoom into the frame artwork. */(function(){const t=window.__BP_C8__?.transforms?.[i]||{scale:1,x:0,y:0};const iw=photos[i].naturalWidth||photos[i].width,ih=photos[i].naturalHeight||photos[i].height;const base=Math.min(r.w/iw,r.h/ih),s=Math.max(.55,Math.min(3.5,Number(t.scale)||1)),dw=iw*base*s,dh=ih*base*s,ox=r.x+(r.w-dw)/2+(Number(t.x)||0)*r.w,oy=r.y+(r.h-dh)/2+(Number(t.y)||0)*r.h;ctx.drawImage(photos[i],ox,oy,dw,dh)})();ctx.restore()});ctx.filter='none'}ctx.drawImage(frame,0,0,c.width,c.height)}catch(e){}}if(includeFooter)drawPreviewFooterCanvas(ctx,c.width,c.height);return true}
 let framePhotos=[];
 let previewRenderSeq=0;
 function getFooterSettings(){const f=config.footer||{};return{watermark:String(f.watermark??'⚡ BOOTHPRO'),showDate:f.showDate!==false,dateFormat:f.dateFormat||'id-short'}}
@@ -3558,6 +3606,19 @@ window.BoothProM36={addDashboardEntry,hydrateGallery};
 \n
 
 <!-- BP C8 INTERACTIVE FRAME ADJUSTMENT -->
+<style id="bp-photo-tray-slot-ux">
+.bp-order-guide{display:flex;align-items:center;gap:11px;padding:13px 14px;margin-bottom:9px;border:1px solid rgba(129,140,248,.28);border-radius:16px;background:linear-gradient(135deg,rgba(79,70,229,.18),rgba(24,24,27,.72));box-shadow:0 8px 24px rgba(0,0,0,.16)}
+.bp-guide-icon{width:32px;height:32px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:rgba(129,140,248,.18);color:#c4b5fd;font-size:18px;font-weight:900;flex:0 0 auto}
+.bp-guide-title{font-size:12px;font-weight:900;color:#fff}.bp-guide-copy{font-size:10px;line-height:1.45;color:#a1a1aa;margin-top:2px}.bp-guide-copy b{color:#e4e4e7}
+.bp-order-status{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px 9px;font-size:9px;font-weight:800;color:#71717a}
+.bp-order-status button{padding:5px 8px;border-radius:8px;border:1px solid #3f3f46;background:#18181b;color:#a1a1aa;font-size:9px;font-weight:800}
+.bp-tray-assigned{opacity:.72}.bp-tray-assigned-badge{position:absolute;left:5px;right:5px;bottom:5px;padding:4px 5px;border-radius:7px;background:rgba(16,185,129,.9);color:#fff;font-size:8px;font-weight:900;text-align:center;pointer-events:none}
+.bp-c8-slot-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:14px;text-align:center;z-index:26;pointer-events:none}
+.bp-c8-slot-empty>span{display:inline-flex;flex-direction:column;align-items:center;gap:5px;padding:10px 13px;border-radius:13px;border:1px solid rgba(255,255,255,.24);background:rgba(9,9,11,.76);box-shadow:0 8px 25px rgba(0,0,0,.3);backdrop-filter:blur(7px);color:#fff;font-size:10px;font-weight:900}
+.bp-c8-slot-empty i{font-size:15px;color:#a78bfa}.bp-c8-slot-empty small{font-size:8px;color:#a1a1aa;font-weight:700}
+.bp-c8-slot-number{position:absolute;left:7px;top:7px;z-index:28;width:23px;height:23px;border-radius:999px;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:900;pointer-events:none}
+.bp-c8-slot-filled-badge{position:absolute;left:7px;top:7px;z-index:28;padding:4px 7px;border-radius:999px;background:rgba(16,185,129,.88);color:#fff;font-size:8px;font-weight:900;pointer-events:none}
+</style>
 <style id="bp-c8-interactive-frame-style">
 .bp-c8-editor-stage{position:relative;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none}
 .bp-c8-photo-hit{position:absolute;border:1px solid transparent;border-radius:4px;touch-action:none;cursor:grab;z-index:24;background:rgba(255,255,255,0.001)}
@@ -3583,6 +3644,7 @@ function bpEnsureTransforms(n){
   return BP.transforms;
 }
 function bpResetTransforms(){
+  bpResetSlotAssignments();
   BP.transforms=[];
   BP.rects=[];
   BP.frameKey='';
@@ -3634,7 +3696,7 @@ async function bpGetRects(frameSrc,w,h,n){
 }
 async function bpDraw(canvas,photos,frameSrc,includeFooter){
   const ctx=canvas.getContext('2d');
-  const w=canvas.width,h=canvas.height,n=photos.length;
+  const w=canvas.width,h=canvas.height,n=Math.max(capturedPhotos.length||0,photos.length);
   const rects=await bpGetRects(frameSrc,w,h,n);
   bpEnsureTransforms(n);
   ctx.clearRect(0,0,w,h);
@@ -3666,7 +3728,10 @@ async function bpInteractivePreview(wrap,photos,frameSrc){
   canvas.width=naturalW;canvas.height=naturalH;canvas.className='absolute inset-0 w-full h-full block rounded-[10px]';
   stage.appendChild(canvas);wrap.appendChild(stage);
   const loaded=[];
-  for(const s of photos){try{loaded.push(await loadImage(s))}catch(e){}}
+  for(const s of photos){
+    if(!s){loaded.push(null);continue}
+    try{loaded.push(await loadImage(s))}catch(e){loaded.push(null)}
+  }
   if(token!==previewRenderSeq)return;
   const rects=await bpDraw(canvas,loaded,frameSrc,true);
   if(token!==previewRenderSeq)return;
@@ -3691,7 +3756,15 @@ async function bpInteractivePreview(wrap,photos,frameSrc){
     hit.style.top=(r.y/naturalH*100)+'%';
     hit.style.width=(r.w/naturalW*100)+'%';
     hit.style.height=(r.h/naturalH*100)+'%';
-    hit.title='Geser foto · cubit untuk zoom';
+    const assignedIndex=bpEnsureSlotAssignments()[i];
+    if(Number.isInteger(assignedIndex)){
+      const badge=document.createElement('div');badge.className='bp-c8-slot-filled-badge';badge.textContent='Foto '+(assignedIndex+1);hit.appendChild(badge);
+    }else{
+      const empty=document.createElement('div');empty.className='bp-c8-slot-empty';empty.innerHTML='<span><i class="fa-solid fa-hand-pointer"></i>TAP DI SINI<small>untuk menaruh foto</small></span>';hit.appendChild(empty);
+      const num=document.createElement('div');num.className='bp-c8-slot-number';num.textContent=String(i+1);hit.appendChild(num);
+      hit.style.borderColor='rgba(129,140,248,.28)';
+    }
+    hit.title=Number.isInteger(window.__BP_PHOTO_PICK__)?'Tap untuk menempatkan Foto '+(window.__BP_PHOTO_PICK__+1):'Tap foto di atas terlebih dahulu';
     hit.addEventListener('pointerdown',e=>{
       e.preventDefault();e.stopPropagation();
       const picked=window.__BP_PHOTO_PICK__;
@@ -3754,13 +3827,14 @@ async function bpInteractivePreview(wrap,photos,frameSrc){
 }
 window.BoothProC8={
   reset:bpResetTransforms,
-  preview:(wrap,photos,frameSrc)=>bpInteractivePreview(wrap,photos||capturedPhotos.slice(),frameSrc??selectedFrameSrc),
+  preview:(wrap,photos,frameSrc)=>bpInteractivePreview(wrap,bpSlotPhotos(),frameSrc??selectedFrameSrc),
   transforms:BP.transforms,
   getTransforms:()=>BP.transforms.map(x=>({...x})),
-  setTransform:(i,v)=>{const t=bpTransformFor(i);Object.assign(t,v||{})}
+  setTransform:(i,v)=>{const t=bpTransformFor(i);Object.assign(t,v||{})},
+  setActiveSlot:(i)=>{BP.activeIndex=Number(i)||0}
 };
 window.renderFrameAwarePreview=async function(wrap,id){
-  const photoSources=capturedPhotos.slice();
+  const photoSources=bpSlotPhotos();
   const frameSrcSnapshot=selectedFrameSrc;
   if(id==='editor'){
     await bpInteractivePreview(wrap,photoSources,frameSrcSnapshot);

@@ -521,6 +521,7 @@ function saveConfig(opts={}){
  localStorage.setItem(CONFIG_KEY,JSON.stringify(config));
  try{window.dispatchEvent(new CustomEvent('boothpro-config-updated',{detail:{source:'dashboard',at:Date.now()}}))}catch(e){}
  if(!opts.silent)showBoothProSavedToast();
+ // Local cache first for offline safety; Cloud is the shared source of truth when enabled.
  if(!opts.skipCloud && typeof scheduleBoothProCloudPush==='function')scheduleBoothProCloudPush();
 }
 function fmt(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n)}
@@ -4171,6 +4172,22 @@ function read(){for(const key of SESSION_KEYS){try{const s=JSON.parse(sessionSto
 window.boothProCloudSession=async function(){return read()};
 window.getBoothProSupabaseSession=window.boothProCloudSession;
 window.authSessionValid=async function(){const s=read();return !!(s&&s.access_token&&s.user&&s.user.id)};
+})();
+</script>
+<style id="bp-dashboard-controls-hardening">
+#dashboardModal{pointer-events:auto!important}
+#dashboardModal button,#dashboardModal input,#dashboardModal select,#dashboardModal textarea{position:relative;z-index:10001!important;pointer-events:auto!important;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+</style>
+<script id="bp-dashboard-cloud-live-sync">
+(function(){
+'use strict';
+let timer=null,busy=false;
+async function pullLive(){
+ if(busy||document.hidden||typeof getBoothProCloudConfig!=='function'||typeof pullBoothProCloud!=='function')return;
+ try{const c=getBoothProCloudConfig();if(!c.enabled||!c.autoPull)return;busy=true;await pullBoothProCloud(false)}catch(e){console.warn('BoothPro live cloud sync:',e)}finally{busy=false}
+}
+function start(){if(timer)clearInterval(timer);timer=setInterval(pullLive,10000);setTimeout(pullLive,1500)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 </script>
 </body>\n</html>

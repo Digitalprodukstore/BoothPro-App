@@ -4070,4 +4070,44 @@ window.selectFrame=function(f){
 })();
 </script>
 
+<style id="bp-cloud-sync-touch-target-fix">
+#dashboardModal button[data-bp-cloud-test],#dashboardModal button[data-bp-cloud-pull]{min-height:48px!important;min-width:150px!important;position:relative!important;z-index:100!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
+#dashboardModal .bp-cloud-actions{display:flex!important;flex-wrap:wrap!important;gap:10px!important;position:relative!important;z-index:100!important}
+@media(max-width:640px){#dashboardModal button[data-bp-cloud-test],#dashboardModal button[data-bp-cloud-pull]{flex:1 1 100%!important;width:100%!important}}
+</style>
+<script id="bp-cloud-sync-touch-target-script">
+(function(){
+'use strict';
+function fixCloudButtons(){
+  const modal=document.getElementById('dashboardModal');
+  if(!modal)return;
+  const buttons=[...modal.querySelectorAll('button')].filter(b=>{
+    const t=(b.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+    return t.includes('simpan')&&t.includes('cloud') || t.includes('ambil')&&t.includes('data cloud');
+  });
+  buttons.forEach(b=>{
+    const t=(b.textContent||'').toLowerCase();
+    b.dataset.bpCloudTest=t.includes('simpan')?'1':'';
+    b.dataset.bpCloudPull=t.includes('ambil')?'1':'';
+    b.style.minHeight='48px';
+    b.style.minWidth='150px';
+    b.style.position='relative';
+    b.style.zIndex='100';
+    b.style.pointerEvents='auto';
+    b.style.touchAction='manipulation';
+  });
+  buttons.forEach(b=>{
+    const p=b.parentElement;
+    if(p&&!p.dataset.bpCloudActions){
+      const siblings=[...p.children].filter(x=>x.tagName==='BUTTON'&&((x.textContent||'').toLowerCase().includes('cloud')|| (x.textContent||'').toLowerCase().includes('simpan')|| (x.textContent||'').toLowerCase().includes('ambil')));
+      if(siblings.length>=2){p.classList.add('bp-cloud-actions');p.dataset.bpCloudActions='1';}
+    }
+  });
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixCloudButtons);
+else fixCloudButtons();
+new MutationObserver(fixCloudButtons).observe(document.documentElement,{subtree:true,childList:true});
+setInterval(fixCloudButtons,1000);
+})();
+</script>
 </body>\n</html>

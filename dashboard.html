@@ -74,7 +74,7 @@ body{font-family:Inter,sans-serif}
   <button class="tab btn whitespace-nowrap" onclick="showTab('frames',this)">Frame</button>
   <button class="tab btn whitespace-nowrap" onclick="showTab('print',this)">Print</button>
   <button class="tab btn whitespace-nowrap" onclick="showTab('payment',this)">Pembayaran</button>
-  <button class="tab btn whitespace-nowrap" onclick="showTab('tx',this)">Transaksi</button>
+  <button class="tab btn whitespace-nowrap" onclick="showTab('softfile',this)">Soft File</button><button class="tab btn whitespace-nowrap" onclick="showTab('tx',this)">Transaksi</button>
   <button class="tab btn whitespace-nowrap" onclick="showTab('backup',this)">Backup</button>
 </nav>
 
@@ -271,6 +271,17 @@ body{font-family:Inter,sans-serif}
   </div>
 </section>
 
+
+<!-- ADMIN SOFT FILE CLOUD -->
+<section id="tab-softfile" class="panel p-5 space-y-3">
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <div><h2 class="font-bold">Admin Soft File · Cloud Session</h2><p class="text-[11px] text-slate-500">Membaca session manifest dari Supabase. File media tetap berada di Cloudinary.</p></div>
+    <button class="btn btn-primary" type="button" onclick="loadCloudSessions()">Muat Sesi Cloud</button>
+  </div>
+  <div class="overflow-x-auto"><table class="w-full text-xs"><thead class="text-slate-500 text-left"><tr><th class="py-2">Waktu</th><th>Booth</th><th>Session</th><th>Paket</th><th>Media</th><th>Status</th><th class="text-right">Aksi</th></tr></thead><tbody id="cloudSessionBody"><tr><td colspan="7" class="py-5 text-slate-500">Belum dimuat.</td></tr></tbody></table></div>
+  <p id="cloudSessionStatus" class="text-[10px] text-slate-500">Hubungkan Cloud terlebih dahulu.</p>
+</section>
+
 <!-- TRANSAKSI -->
 <section id="tab-tx" class="hidden panel p-5 space-y-3">
   <div class="flex justify-between items-center flex-wrap gap-2">
@@ -293,6 +304,7 @@ body{font-family:Inter,sans-serif}
 </section>
 </main>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 const CONFIG_KEY_300 = 'boothpro_config_v300';
 const CONFIG_KEY_212 = 'boothpro_config_v212';
@@ -642,6 +654,60 @@ function importBackup(e){
     }catch(err){alert('Gagal restore: '+err.message)}
   };
   r.readAsText(f);e.target.value='';
+}
+
+/* ============ ADMIN SOFT FILE CLOUD SESSION MANIFEST ============ */
+const BOOTHPRO_SESSION_TABLE='boothpro_session_manifest';
+let cloudSessions=[];
+function cloudSessionStatus(msg){const el=$('cloudSessionStatus');if(el)el.textContent=msg}
+function sessionUrl(url){return String(url||'').trim()}
+function sessionMediaLinks(x){return [['Foto',x.photo_url,'image'],['GIF',x.gif_url,'gif'],['Video',x.video_url,'video']].filter(a=>a[1])}
+function renderCloudSessions(){
+  const body=$('cloudSessionBody');if(!body)return;
+  body.innerHTML=cloudSessions.length?'':'<tr><td colspan="7" class="py-5 text-slate-500">Tidak ada session Cloud untuk akun ini.</td></tr>';
+  cloudSessions.forEach(x=>{
+    const tr=document.createElement('tr');tr.className='border-t border-slate-800 align-top';
+    const media=sessionMediaLinks(x).map(a=>'<a class="inline-block mr-1 mb-1 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700" target="_blank" rel="noopener" href="'+esc(sessionUrl(a[1]))+'">'+a[0]+'</a>').join('');
+    const status=esc(x.download_status||'pending');
+    tr.innerHTML='<td class="py-2 whitespace-nowrap">'+esc(new Date(x.created_at||Date.now()).toLocaleString('id-ID'))+'</td><td>'+esc(x.booth_id||'')+'</td><td class="font-mono">'+esc(x.session_id||'')+'</td><td>'+esc(x.package_name||'')+'</td><td>'+(media||'<span class="text-slate-600">—</span>')+'</td><td><span class="px-2 py-1 rounded-full bg-slate-800">'+status+'</span></td><td class="text-right whitespace-nowrap"><button class="btn py-1 px-2 mr-1" type="button" onclick="downloadCloudBundle('+JSON.stringify(String(x.id||''))+')">Download Bundle</button><button class="btn py-1 px-2" type="button" onclick="markCloudSessionDownloaded('+JSON.stringify(String(x.id||''))+')">Tandai Selesai</button></td>';
+    body.appendChild(tr);
+  });
+}
+async function loadCloudSessions(){
+  try{
+    if(!cloudSession)loadCloudSession();
+    if(!cloudSession?.user?.id)throw new Error('Hubungkan Cloud terlebih dahulu.');
+    const uid=encodeURIComponent(cloudSession.user.id);
+    const rows=await cloudRest(BOOTHPRO_SESSION_TABLE+'?user_id=eq.'+uid+'&select=id,booth_id,session_id,package_name,photo_url,gif_url,video_url,download_status,created_at,expires_at&order=created_at.desc&limit=100',{method:'GET',headers:{Prefer:'return=minimal'}});
+    cloudSessions=Array.isArray(rows)?rows:[];renderCloudSessions();cloudSessionStatus('✓ '+cloudSessions.length+' session Cloud dimuat.');return cloudSessions;
+  }catch(e){cloudSessions=[];renderCloudSessions();cloudSessionStatus('Gagal memuat session Cloud: '+(e.message||e));return []}
+}
+async function markCloudSessionDownloaded(id){
+  try{
+    if(!cloudSession)loadCloudSession();if(!cloudSession?.user?.id)throw new Error('Hubungkan Cloud terlebih dahulu.');
+    const safe=encodeURIComponent(String(id||''));if(!safe)throw new Error('ID session tidak valid.');
+    await cloudRest(BOOTHPRO_SESSION_TABLE+'?id=eq.'+safe,{method:'PATCH',body:JSON.stringify({download_status:'downloaded',downloaded_at:new Date().toISOString(),updated_at:new Date().toISOString()})});
+    const x=cloudSessions.find(a=>String(a.id)===String(id));if(x){x.download_status='downloaded';x.downloaded_at=new Date().toISOString()}renderCloudSessions();cloudSessionStatus('Status download diperbarui.');
+  }catch(e){cloudSessionStatus('Gagal update status: '+(e.message||e))}
+}
+async function downloadCloudBundle(id){
+  const x=cloudSessions.find(a=>String(a.id)===String(id));if(!x)return;
+  const links=sessionMediaLinks(x);if(!links.length)return cloudSessionStatus('Session ini belum memiliki media Cloud.');
+  if(!window.JSZip)return cloudSessionStatus('Modul ZIP belum tersedia. Muat ulang Dashboard lalu coba lagi.');
+  cloudSessionStatus('Menyiapkan bundle '+String(x.session_id||'')+'…');
+  try{
+    const zip=new JSZip();let added=0;
+    for(const a of links){
+      const label=a[0],url=a[1],type=a[2];
+      const res=await fetch(sessionUrl(url),{mode:'cors',cache:'no-store'});if(!res.ok)throw new Error(label+' HTTP '+res.status);
+      const blob=await res.blob();if(!blob.size)continue;
+      const ext=type==='gif'?'gif':type==='video'?'webm':'jpg';
+      zip.file(('0'+(added+1)).slice(-2)+'-'+label+'.'+ext,blob);added++;
+    }
+    if(!added)throw new Error('Tidak ada file yang berhasil diambil.');
+    const blob=await zip.generateAsync({type:'blob'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='BoothPro-'+String(x.session_id||'session')+'.zip';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    await markCloudSessionDownloaded(id);cloudSessionStatus('✓ Bundle berhasil dibuat dan status download ditandai selesai.');
+  }catch(e){cloudSessionStatus('Bundle gagal dibuat. Kemungkinan URL Cloudinary tidak mengizinkan fetch CORS; gunakan tombol media satu per satu. Detail: '+(e.message||e))}
 }
 
 fillForm();

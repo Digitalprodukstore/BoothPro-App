@@ -851,6 +851,16 @@ function clearPhotoFromSlot(slot){
   try{if(window.__BP_C8__?.transforms?.[slot])window.__BP_C8__.transforms[slot]={scale:1,x:0,y:0}}catch(e){}
   renderCaptureReview();
 }
+function bpRemovePhotoFromSlot(slot){
+  const a=bpEnsureSlotAssignments();
+  if(!Number.isInteger(slot)||slot<0||slot>=a.length)return;
+  a[slot]=null;
+  bpSlotAssignments=a.slice();
+  window.__BP_SLOT_ASSIGNMENTS__=bpSlotAssignments;
+  window.__BP_PHOTO_PICK__=null;
+  if(window.__BP_C8__?.setActiveSlot)window.__BP_C8__.setActiveSlot(slot);
+  renderCaptureReview();
+}
 function assignPhotoToSlot(slot,photoIndex){
   if(!Number.isInteger(slot)||!Number.isInteger(photoIndex)||slot<0||photoIndex<0)return;
   const a=bpEnsureSlotAssignments();
@@ -1919,13 +1929,13 @@ function openExtraPrint(){extraPrintQty=1;extraPrintPaid=false;if($('extraPrintQ
 function closeExtraPrint(){$('extraPrintModal').classList.add('hidden')}
 function renderExtraPrintPayment(){extraPrintQty=Math.max(1,Math.min(Number(config.extraPrintMax)||3,Number($('extraPrintQty')?.value)||1));const unit=Math.max(0,Number(config.extraPrintPrice)||0);if($('extraPrintUnit'))$('extraPrintUnit').innerText=fmt(unit);if($('extraPrintTotal'))$('extraPrintTotal').innerText=fmt(unit*extraPrintQty);if($('extraPrintNote'))$('extraPrintNote').innerText=config.qris?'Setelah pembayaran, centang konfirmasi lalu cetak.':'QRIS belum diatur di Dashboard.'}
 function confirmExtraPrintPayment(){if(!config.qris){alert('QRIS belum diatur. Upload QRIS merchant di Dashboard terlebih dahulu.');return}const unit=Math.max(0,Number(config.extraPrintPrice)||0),qty=Math.max(1,Math.min(Number(config.extraPrintMax)||3,Number($('extraPrintQty')?.value)||1)),total=unit*qty;if(total<=0){alert('Harga cetak tambahan belum diatur di Dashboard.');return}if(!$('extraPrintPaidCheck').checked){alert('Pembayaran QRIS sebesar '+fmt(total)+' harus diselesaikan terlebih dahulu.');return}extraPrintQty=qty;extraPrintPaid=true;closeExtraPrint();printExtraCopies(qty)}
-function printExtraCopies(qty){if(!finalCompositeDataUrl)return;const n=Math.max(1,Math.min(Number(config.extraPrintMax)||3,Number(qty)||1));if(config.hardware?.autoPrint&&config.hardware?.bridgeUrl){(async()=>{for(let j=0;j<n;j++){const ok=await printViaHardwareBridge(1);if(!ok){alert('Hardware bridge gagal. Cetak tambahan dihentikan.');return}}})();return}let i=0;const next=()=>{if(i>=n)return;i++;$('printImage').src=finalCompositeDataUrl;$('printRoot').style.display='flex';setTimeout(()=>window.print(),180);setTimeout(()=>{$('printRoot').style.display='none';setTimeout(next,350)},1800)};next()}
+function printExtraCopies(qty){if(!finalCompositeDataUrl)return;const n=Math.max(1,Math.min(Number(config.extraPrintMax)||3,Number(qty)||1));if(config.hardware?.bridgeUrl){(async()=>{for(let j=0;j<n;j++){const ok=await printViaHardwareBridge(1);if(!ok){alert('Hardware bridge gagal. Cetak tambahan dihentikan setelah '+j+' print.');return}}})();return}let i=0;const next=()=>{if(i>=n)return;i++;$('printImage').src=finalCompositeDataUrl;$('printRoot').style.display='flex';setTimeout(()=>window.print(),180);setTimeout(()=>{$('printRoot').style.display='none';setTimeout(next,350)},1800)};next()}
 
 function adminPreviewSoft(kind){
  const host=$('adminSoftPreview'),status=$('adminSoftPreviewStatus');if(!host||!status)return;
  host.classList.remove('hidden');host.innerHTML='';status.innerText='';
  if(kind==='photo'){
-  const src=capturedPhotos[0]||finalCompositeDataUrl;
+  const src=finalCompositeDataUrl||capturedPhotos[0];
   if(!src){status.innerText='Belum ada hasil foto pada sesi ini.';return}
   const im=document.createElement('img');im.src=src;im.className='w-full max-h-[420px] object-contain rounded-xl';host.appendChild(im);status.innerText='ADMIN ONLY · 1 foto untuk review';
   return;
@@ -3661,7 +3671,8 @@ window.BoothProM36={addDashboardEntry,hydrateGallery};
 .bp-c8-slot-empty>span{display:inline-flex;flex-direction:column;align-items:center;gap:5px;padding:10px 13px;border-radius:13px;border:1px solid rgba(255,255,255,.24);background:rgba(9,9,11,.76);box-shadow:0 8px 25px rgba(0,0,0,.3);backdrop-filter:blur(7px);color:#fff;font-size:10px;font-weight:900}
 .bp-c8-slot-empty i{font-size:15px;color:#a78bfa}.bp-c8-slot-empty small{font-size:8px;color:#a1a1aa;font-weight:700}
 .bp-c8-slot-number{position:absolute;left:7px;top:7px;z-index:28;width:23px;height:23px;border-radius:999px;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:900;pointer-events:none}
-.bp-c8-slot-filled-badge{position:absolute;left:7px;top:7px;z-index:28;padding:4px 7px;border-radius:999px;background:rgba(16,185,129,.88);color:#fff;font-size:8px;font-weight:900;pointer-events:none}
+.bp-c8-slot-filled-badge{position:absolute;left:7px;top:7px;z-index:28;display:flex;align-items:center;gap:4px;padding:4px 5px 4px 7px;border-radius:999px;background:rgba(16,185,129,.92);color:#fff;font-size:8px;font-weight:900;pointer-events:auto;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.bp-c8-slot-remove{width:18px;height:18px;border:0;border-radius:999px;background:rgba(0,0,0,.35);color:#fff;font-size:14px;line-height:16px;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation}
 </style>
 
 <style id="bp-photo-tray-selection-fix">
@@ -3811,7 +3822,7 @@ async function bpInteractivePreview(wrap,photos,frameSrc){
     hit.style.height=(r.h/naturalH*100)+'%';
     const assignedIndex=bpEnsureSlotAssignments()[i];
     if(Number.isInteger(assignedIndex)){
-      const badge=document.createElement('div');badge.className='bp-c8-slot-filled-badge';badge.textContent='Foto '+(assignedIndex+1);hit.appendChild(badge);
+      const badge=document.createElement('div');badge.className='bp-c8-slot-filled-badge';badge.innerHTML='<span>Foto '+(assignedIndex+1)+'</span><button type="button" class="bp-c8-slot-remove" aria-label="Hapus foto dari slot ini">×</button>';const rm=badge.querySelector('button');rm.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation()});rm.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();bpRemovePhotoFromSlot(i)});hit.appendChild(badge);
       const remove=document.createElement('button');remove.type='button';remove.className='bp-c8-slot-remove';remove.textContent='× Hapus';remove.title='Hapus foto dari slot ini';remove.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation()});remove.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();clearPhotoFromSlot(i)});hit.appendChild(remove);
     }else{
       const empty=document.createElement('div');empty.className='bp-c8-slot-empty';empty.innerHTML='<span><i class="fa-solid fa-hand-pointer"></i>TAP DI SINI<small>untuk menaruh foto</small></span>';hit.appendChild(empty);

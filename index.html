@@ -290,9 +290,9 @@ main{width:100%!important;max-width:100vw!important;min-width:0!important;overfl
  <div class="flex items-center justify-between gap-2"><h3 class="font-bold"><i class="fa-solid fa-shield-halved text-indigo-300 mr-1"></i>Review Soft File</h3><span class="text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/20">ADMIN ONLY</span></div>
  <p class="text-[10px] text-zinc-500 mt-1">Khusus pemilik/admin. Tidak ditampilkan pada halaman pelanggan/kiosk.</p>
  <div class="grid grid-cols-3 gap-2 mt-3">
-  <button type="button" onclick="adminPreviewSoft('photo')" class="px-2 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-bold"><i class="fa-solid fa-image block mb-1 text-indigo-300"></i>1 Foto</button>
-  <button type="button" onclick="adminPreviewSoft('gif')" class="px-2 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-bold"><i class="fa-solid fa-film block mb-1 text-pink-300"></i>1 GIF</button>
-  <button type="button" onclick="adminPreviewSoft('video')" class="px-2 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-bold"><i class="fa-solid fa-video block mb-1 text-emerald-300"></i>Live Video</button>
+  <div><button type="button" onclick="adminPreviewSoft('photo')" class="w-full px-2 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-bold"><i class="fa-solid fa-image block mb-1 text-indigo-300"></i>1 Foto</button><button type="button" onclick="adminDownloadSoft('photo')" class="w-full mt-1 px-2 py-2 rounded-lg bg-indigo-600/20 border border-indigo-500/20 text-[10px] font-bold text-indigo-200"><i class="fa-solid fa-download mr-1"></i>Download</button></div>
+  <div><button type="button" onclick="adminPreviewSoft('gif')" class="w-full px-2 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-bold"><i class="fa-solid fa-film block mb-1 text-pink-300"></i>1 GIF</button><button type="button" onclick="adminDownloadSoft('gif')" class="w-full mt-1 px-2 py-2 rounded-lg bg-pink-600/20 border border-pink-500/20 text-[10px] font-bold text-pink-200"><i class="fa-solid fa-download mr-1"></i>Download</button></div>
+  <div><button type="button" onclick="adminPreviewSoft('video')" class="w-full px-2 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-bold"><i class="fa-solid fa-video block mb-1 text-emerald-300"></i>Live Video</button><button type="button" onclick="adminDownloadSoft('video')" class="w-full mt-1 px-2 py-2 rounded-lg bg-emerald-600/20 border border-emerald-500/20 text-[10px] font-bold text-emerald-200"><i class="fa-solid fa-download mr-1"></i>Download</button></div>
  </div>
  <div id="adminSoftPreview" class="hidden mt-3 rounded-2xl bg-black border border-zinc-800 min-h-[220px] p-2"></div>
  <p id="adminSoftPreviewStatus" class="text-[10px] text-zinc-500 text-center mt-2"></p>
@@ -890,8 +890,21 @@ async function buildFilteredFinalComposite(){
   const base=await buildCompositeCanvas();
   return base;
 }
+function canvasFilterIsUsable(){
+  try{
+    const c=document.createElement('canvas'),ctx=c.getContext('2d');
+    if(!ctx||typeof ctx.filter==='undefined')return false;
+    ctx.filter='grayscale(1)';
+    return String(ctx.filter||'').includes('grayscale');
+  }catch(e){return false}
+}
 function syncPrintPreview(){
-  const img=$('printImage'); if(img&&finalCompositeDataUrl)img.src=finalCompositeDataUrl;
+  const img=$('printImage');
+  if(img&&finalCompositeDataUrl){
+    img.src=finalCompositeDataUrl;
+    /* Safari/iOS builds without CanvasRenderingContext2D.filter need a CSS fallback. */
+    img.style.filter=canvasFilterIsUsable()?'none':getAppliedFilter();
+  }
 }
 function buildPreviewHTML(id){const wrap=document.createElement('div');wrap.className='editor-frame shadow-2xl';wrap.style.width='min(100%,300px)';wrap.style.height='auto';wrap.style.maxWidth='300px';wrap.style.maxHeight='none';wrap.style.aspectRatio='2 / 3';wrap.style.overflow='hidden';wrap.style.background=frameBg;wrap.style.contain='layout paint';return wrap}
 /* ============ EDITOR CONTROLS ============ */
@@ -991,6 +1004,8 @@ async function printComposite(){
  const img=$('printImage');
  const root=$('printRoot');
  img.src=finalCompositeDataUrl;
+ /* Keep Step 5 and the physical browser print identical on engines where canvas filters are unavailable. */
+ img.style.filter=canvasFilterIsUsable()?'none':getAppliedFilter();
  root.style.display='flex';
  const cleanup=()=>{root.style.display='none';window.removeEventListener('afterprint',cleanup)};
  window.addEventListener('afterprint',cleanup);
@@ -1958,6 +1973,29 @@ function adminPreviewSoft(kind){
   if(finalGifDataUrl){show(finalGifDataUrl);return}
   status.innerText='Membuat GIF untuk review...';
   generateGifBlob().then(blob=>{finalGifDataUrl=URL.createObjectURL(blob);show(finalGifDataUrl)}).catch(e=>{status.innerText='GIF belum dapat dibuat: '+(e.message||e)});
+ }
+}
+function adminDownloadSoft(kind){
+ const safeId=String(sessionId||'session').replace(/[^a-z0-9_-]/gi,'-');
+ if(kind==='photo'){
+   const src=finalCompositeDataUrl||capturedPhotos[0];
+   if(!src){alert('Belum ada hasil foto pada sesi ini.');return}
+   const a=document.createElement('a');a.href=src;a.download='BoothPro-'+safeId+'-photo.jpg';document.body.appendChild(a);a.click();a.remove();return;
+ }
+ if(kind==='video'){
+   if(!sessionVideoUrl){alert('Live video sesi belum tersedia. Pastikan sesi belum di-reset.');return}
+   const a=document.createElement('a');a.href=sessionVideoUrl;a.download='BoothPro-'+safeId+'-live-video.webm';a.target='_blank';document.body.appendChild(a);a.click();a.remove();return;
+ }
+ if(kind==='gif'){
+   const finish=(url)=>{
+     const a=document.createElement('a');a.href=url;a.download='BoothPro-'+safeId+'-gif.gif';document.body.appendChild(a);a.click();a.remove();
+   };
+   if(finalGifDataUrl){finish(finalGifDataUrl);return}
+   const status=$('adminSoftPreviewStatus');if(status)status.innerText='Membuat GIF untuk download...';
+   generateGifBlob().then(blob=>{
+     finalGifDataUrl=URL.createObjectURL(blob);finish(finalGifDataUrl);
+     if(status)status.innerText='ADMIN ONLY · GIF siap didownload';
+   }).catch(e=>alert('GIF belum dapat dibuat: '+(e.message||e)));
  }
 }
 function saveDashboardDuration(){config.duration=Math.max(7,Math.min(60,Number($('dashDuration').value)||7));config.countdown=Math.max(1,Math.min(10,Number($('dashCountdown').value)||3));saveConfig();alert('Durasi '+config.duration+' menit · countdown '+config.countdown+' detik.')}

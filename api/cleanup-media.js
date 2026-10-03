@@ -61,7 +61,9 @@ module.exports = async function handler(req, res) {
   }
 
   const secret = process.env.BOOTHPRO_CLEANUP_SECRET;
-  if (!secret || req.headers['x-boothpro-cleanup-secret'] !== secret) {
+  const bearer = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  const supplied = req.headers['x-boothpro-cleanup-secret'] || bearer;
+  if (!secret || supplied !== secret) {
     return json(res, 401, { ok: false, error: 'Unauthorized' });
   }
 
@@ -81,7 +83,7 @@ module.exports = async function handler(req, res) {
     order: 'created_at.asc'
   });
   // Eligible rows are either expired, or successfully downloaded and past grace.
-  query.set('or', '(expires_at.lt.' + encodeURIComponent(now.toISOString()) + ',and(download_status.eq.downloaded,downloaded_at.lt.' + encodeURIComponent(graceCutoff) + '))');
+  query.set('or', '(expires_at.lt.' + now.toISOString() + ',and(download_status.eq.downloaded,downloaded_at.lt.' + graceCutoff + '))');
 
   const headers = {
     apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,

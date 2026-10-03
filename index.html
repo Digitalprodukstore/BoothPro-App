@@ -1836,6 +1836,27 @@ async function submitDashboardLogin(){
   loginStage='menyimpan data akun lokal';
   a.failedAttempts=0;a.lockUntil=0;
   saveConfig({skipCloud:true});
+
+  // Migrasi akun lokal lama ke Supabase Cloud bila akun Cloud belum ada.
+  // Tidak mengubah password lokal dan tidak menyimpan password ke config.
+  loginStage='mengaktifkan akun Cloud';
+  try{
+   const provisioned=await provisionSupabaseFromLocalAccount(email,p);
+   if(provisioned?.user?.id){
+    config.auth=config.auth||{};
+    config.auth.email=email;
+    config.cloudSync=config.cloudSync||{};
+    config.cloudSync.enabled=true;
+    config.cloudSync.autoPull=true;
+    config.cloudSync.autoPush=true;
+    config.cloudSync.workspaceId=provisioned.user.id;
+    config.cloudSync.lastAuthAt=Date.now();
+    saveConfig({skipCloud:true});
+    await pushBoothProCloud(true).catch(e=>console.warn('Initial Cloud config push:',e));
+    setCloudStatus('✓ Akun lokal berhasil diaktifkan ke Supabase Cloud.',true);
+   }
+  }catch(e){console.warn('BoothPro local-to-cloud migration:',e)}
+
   loginStage='menyimpan sesi login';
   const sessionSaved=setAuthSession();
   if(!sessionSaved)throw new Error('Sesi login tidak dapat dibuat.');

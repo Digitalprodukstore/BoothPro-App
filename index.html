@@ -202,7 +202,29 @@ input,select,textarea{border-radius:13px!important}button{transition:filter .15s
 @media(max-width:700px){main{padding-inline:12px!important}#step-welcome{min-height:calc(100vh - 110px);padding-top:28px!important}#step-welcome h1{font-size:2.55rem!important}#dashboardModal>.max-w-6xl{width:100%!important;max-height:96vh!important;border-radius:22px!important}#dashboardModal .dashboard-grid{max-height:68vh!important}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
-</head>
+<style id="boothpro-dashboard-v2">
+#dashboardModal{padding:0!important;background:rgba(3,4,8,.82)!important;backdrop-filter:blur(18px)!important;overflow:auto!important}
+#dashboardModal>.max-w-6xl{width:min(1500px,calc(100vw - 28px));min-height:calc(100vh - 28px);margin:14px auto!important;padding:0!important;border-radius:28px!important;overflow:hidden!important;background:linear-gradient(145deg,rgba(14,15,22,.98),rgba(8,9,14,.98))!important;border:1px solid rgba(255,255,255,.09)!important;box-shadow:0 40px 100px rgba(0,0,0,.6)!important}
+#dashboardModal>.max-w-6xl>div:first-child{position:sticky;top:0;z-index:30;padding:20px 24px!important;background:linear-gradient(180deg,rgba(18,19,28,.98),rgba(18,19,28,.88));border-bottom:1px solid rgba(255,255,255,.07);backdrop-filter:blur(16px)}
+#dashboardModal>.max-w-6xl>div:first-child h2{font-size:clamp(22px,3vw,30px)!important;letter-spacing:-.04em}
+#dashboardModal>.max-w-6xl>div:first-child>div>span{color:var(--bp-dash-accent,#a78bfa)!important}
+#dashboardModal>.max-w-6xl>div:first-child button{min-height:42px!important;padding-inline:16px!important;border:1px solid rgba(255,255,255,.08)!important}
+#dashboardModal>.max-w-6xl>.grid{grid-template-columns:minmax(0,1fr)!important;gap:0!important;margin-top:0!important;padding:22px 24px 34px!important}
+#dashboardModal>.max-w-6xl>.grid>div{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px!important;align-content:start}
+#dashboardModal>.max-w-6xl>.grid>div>.p-4{height:100%;min-width:0;border-radius:20px!important;padding:18px!important;background:linear-gradient(145deg,rgba(25,26,35,.92),rgba(15,16,23,.88))!important;border:1px solid rgba(255,255,255,.065)!important;box-shadow:0 12px 34px rgba(0,0,0,.16)!important}
+#dashboardModal>.max-w-6xl>.grid>div>.p-4:hover{border-color:color-mix(in srgb,var(--bp-dash-accent,#818cf8) 28%,rgba(255,255,255,.08))!important;box-shadow:0 16px 40px rgba(0,0,0,.24)!important}
+#dashboardModal>.max-w-6xl>.grid>div>.p-4 h3{font-size:14px!important;line-height:1.3!important}
+#dashboardModal>.max-w-6xl>.grid>div>.p-4 p{line-height:1.55!important}
+#dashboardModal input:not([type=file]):not([type=checkbox]):not([type=color]),#dashboardModal select,#dashboardModal textarea{min-height:42px!important;border-radius:12px!important;border-color:rgba(255,255,255,.09)!important;background:rgba(5,6,10,.72)!important}
+#dashboardModal button{position:relative;z-index:5;pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer}
+#dashboardModal button:not(.text-zinc-400):not([aria-label]){min-height:40px}
+#dashboardModal input[type=file]{pointer-events:auto!important}
+#dashboardModal input[type=checkbox]{accent-color:var(--bp-dash-accent,#818cf8)!important}
+#dashboardModal input[type=color]{cursor:pointer!important;border:1px solid rgba(255,255,255,.08)!important}
+#dashboardModal #frameGallery,#dashboardModal #dashFrameManager,#dashboardModal #dashFrameSlotManager{scrollbar-width:thin;scrollbar-color:#3f3f46 transparent}
+@media(max-width:900px){#dashboardModal>.max-w-6xl{width:calc(100vw - 16px);min-height:calc(100vh - 16px);margin:8px auto!important;border-radius:22px!important}#dashboardModal>.max-w-6xl>div:first-child{padding:16px!important}#dashboardModal>.max-w-6xl>.grid{padding:16px!important}#dashboardModal>.max-w-6xl>.grid>div{grid-template-columns:1fr!important}}
+@media(max-width:520px){#dashboardModal>.max-w-6xl{width:100vw;min-height:100vh;margin:0!important;border-radius:0!important}#dashboardModal>.max-w-6xl>div:first-child{padding:14px 15px!important}#dashboardModal>.max-w-6xl>.grid{padding:12px!important}#dashboardModal>.max-w-6xl>.grid>div{gap:12px!important}#dashboardModal>.max-w-6xl>.grid>div>.p-4{padding:15px!important;border-radius:17px!important}}
+</style></head>
 <body class="bg-zinc-900 text-zinc-100 min-h-screen flex flex-col overflow-x-hidden selection:bg-indigo-500 selection:text-white">
 <div id="flashLayer" class="fixed inset-0 bg-white pointer-events-none opacity-0 z-[100] transition-opacity duration-100"></div>
 <header class="border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-md sticky top-0 z-40 px-4 md:px-6 py-3 flex justify-between items-center">

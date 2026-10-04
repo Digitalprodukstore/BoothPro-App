@@ -451,7 +451,16 @@ async function cloudPush(){try{if(!cloudSession)loadCloudSession();if(!cloudSess
 function cloudLogout(){cloudSession=null;sessionStorage.removeItem('boothpro_cloud_session');cloudSetStatus('Sesi Cloud diputus. Local cache tetap tersedia.',false)}
 (function(){const x=loadCloudSession();if(x)setTimeout(()=>cloudSetStatus('Sesi Cloud aktif · '+(x.user?.email||x.user?.id),true),0)})();
 
-function saveAll(){collectForm();if(persist())fillForm()}
+function saveAll(){
+  collectForm();
+  if(!persist())return;
+  fillForm();
+  // Cloud is the shared source of truth when the Dashboard is connected.
+  // localStorage remains the local cache/offline fallback.
+  if(cloudSession?.user?.id){
+    cloudPush().catch(e=>cloudSetStatus('Push Cloud gagal: '+(e.message||e),false));
+  }
+}
 function reloadAll(){config=loadConfig();stickers=getJSON(STICKER_KEY,[])||[];frameItems=getJSON(FRAME_KEY,[])||[];fillForm();flash('DIMUAT')}
 
 function renderPackages(){

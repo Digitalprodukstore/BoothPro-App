@@ -1021,7 +1021,7 @@ async function syncCustomerSoftFile(){
  return customerSoftSyncPromise;
 }
 function openCustomerShare(kind){const form=$('customerShareForm');if(!form)return;form.classList.remove('hidden');const phone=$('customerSharePhone'),email=$('customerShareEmail'),send=$('customerShareSendBtn');phone.classList.toggle('hidden',kind!=='whatsapp');email.classList.toggle('hidden',kind!=='email');send.onclick=kind==='whatsapp'?shareCustomerWhatsApp:shareCustomerEmail;(kind==='whatsapp'?phone:email).focus()}
-async async function shareCustomerWhatsApp(){
+async function shareCustomerWhatsApp(){
  const popup=window.open('about:blank','_blank');
  const phone=normalizeCustomerPhone($('customerSharePhone')?.value||'');
  if(!phone){if(popup)popup.close();alert('Masukkan nomor WhatsApp pelanggan.');return}
@@ -4235,7 +4235,7 @@ async function bpInteractivePreview(wrap,photos,frameSrc){
 }
 window.BoothProC8={
   reset:bpResetTransforms,
-  preview:(wrap,photos,frameSrc)=>bpInteractivePreview(wrap,bpSlotPhotos(),frameSrc??selectedFrameSrc),
+  preview:(wrap,photos,frameSrc)=>bpInteractivePreview(wrap,Array.isArray(photos)?photos:bpSlotPhotos(),frameSrc??selectedFrameSrc),
   transforms:BP.transforms,
   getTransforms:()=>BP.transforms.map(x=>({...x})),
   setTransform:(i,v)=>{const t=bpTransformFor(i);Object.assign(t,v||{})},

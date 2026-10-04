@@ -1001,11 +1001,7 @@ const BP_FILTERS_STEP5=[{name:'Original',value:'none',desc:'Tanpa efek'},{name:'
      provisioned by Dashboard, but the customer action must not require
      opening Dashboard or pressing a Dashboard button first. */
   if(!config.cloudinary?.cloudName||!config.cloudinary?.uploadPreset){
-   try{
-    if(typeof pullBoothProCloud==='function'&&typeof getBoothProCloudConfig==='function'&&getBoothProCloudConfig().enabled){
-      await pullBoothProCloud(true);
-    }
-   }catch(e){console.warn('Customer cloud config pull:',e)}
+   try{await bootstrapBoothProCloudForCustomer()}catch(e){console.warn('Customer cloud bootstrap:',e)}
   }
   if(!config.cloudinary?.cloudName||!config.cloudinary?.uploadPreset){
    throw new Error('Cloudinary belum tersedia di perangkat ini. Dashboard hanya diperlukan untuk konfigurasi awal Cloud; setelah tersimpan, pelanggan tidak perlu membuka Dashboard.');
@@ -1521,6 +1517,25 @@ function getBoothProCloudConfig(){
  const a=getCommercialAuthConfig();
  const c=config.cloudSync||{};
  return {url:a.url,anon:a.anon,workspaceId:String(c.workspaceId||'').trim(),enabled:c.enabled===true,autoPull:c.autoPull!==false,autoPush:c.autoPush!==false};
+}
+async function bootstrapBoothProCloudForCustomer(){
+ const a=getCommercialAuthConfig();
+ if(!a.url||!a.anon)return null;
+ const session=await window.boothProCloudSession?.();
+ if(!session?.user?.id||!session?.access_token)return null;
+ const uid=session.user.id;
+ const path=BOOTHPRO_CLOUD_TABLE+'?user_id=eq.'+encodeURIComponent(uid)+'&select=config,version,updated_at&limit=1';
+ const rows=await bpSupabaseRest(a.url,a.anon,path,{method:'GET',prefer:'return=minimal',accessToken:session.access_token});
+ const row=Array.isArray(rows)?rows[0]:null;
+ if(!row?.config)return null;
+ const currentAuth=config.auth;
+ config=Object.assign({},config,row.config);
+ config.auth=currentAuth;
+ config.cloudSync=Object.assign({},config.cloudSync,{enabled:true,autoPull:true,autoPush:true,workspaceId:uid,lastSyncAt:Date.now()});
+ localStorage.setItem(CONFIG_KEY,JSON.stringify(config));
+ applyBrand();applyTheme();applyDashboardTheme();applyPrintSize();refreshPlanBadge();
+ try{await syncCloudFrames()}catch(e){console.warn('Customer frame cloud sync:',e)}
+ return row;
 }
 async function bpSupabaseRest(baseUrl,apiKey,path,opts={}){
  const base=String(baseUrl||'').trim().replace(/\/$/,'');

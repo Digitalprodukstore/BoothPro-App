@@ -1146,7 +1146,25 @@ async function uploadDataUrlToCloudinary(dataUrl,resourceType='image',options={}
    uploadedAt:new Date().toISOString()
  };
 }
-async function publishSessionCloud(){const status=$('cloudUploadStatus');if(status)status.innerText='Mengunggah soft file...';try{const result={sessionId,boothId:String(config.cloudSync?.boothId||config.cloudSync?.workspaceId||'BOOTH-DEFAULT'),photoUrl:null,photoPublicId:null,gifUrl:null,gifPublicId:null,videoUrl:null,videoPublicId:null,bundle:true};if(finalCompositeDataUrl){const up=await uploadDataUrlToCloudinary(finalCompositeDataUrl,'image');result.photoUrl=up.secure_url||up.url;result.photoPublicId=up.public_id||null}try{const gifBlob=await generateGifBlob();const gu=await uploadDataUrlToCloudinary(await blobToDataUrl(gifBlob),'image');result.gifUrl=gu.secure_url||gu.url;result.gifPublicId=gu.public_id||null;finalGifDataUrl=URL.createObjectURL(gifBlob)}catch(e){console.warn('GIF Cloudinary gagal',e)}if(sessionVideoBlob){try{const vr=await uploadDataUrlToCloudinary(await blobToDataUrl(sessionVideoBlob),'video');result.videoUrl=vr.secure_url||vr.url;result.videoPublicId=vr.public_id||null}catch(e){console.warn('Video Cloudinary gagal',e)}}if(config.shareBase){try{const rr=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});if(rr.ok){const j=await rr.json();result.shareUrl=j.shareUrl||j.bundleUrl||null}}catch(e){console.warn('Share API tidak tersedia',e)}}const manifestRow=await writeBoothProSessionManifest(result);result.manifestId=manifestRow?.id||null;localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));if(result.shareUrl||result.photoUrl){generateQR(result.shareUrl||result.photoUrl);if(status)status.innerText=result.shareUrl?'Bundling foto + GIF + video siap. QR siap dipindai.':'Foto/GIF tersinkron. Aktifkan Share API agar QR menjadi bundling.'}else if(status)status.innerText='Upload selesai; Share URL belum dikonfigurasi.';return result}catch(e){console.warn(e);if(status)status.innerText='Cloud belum aktif: '+e.message;return null}}async function writeBoothProSessionManifest(mediaResult){
+async function publishSessionCloud(){
+ const status=$('cloudUploadStatus');
+ if(status)status.innerText='Mengunggah soft file...';
+ try{
+  const result={sessionId,boothId:String(config.cloudSync?.boothId||config.cloudSync?.workspaceId||'BOOTH-DEFAULT'),photoUrl:null,photoPublicId:null,gifUrl:null,gifPublicId:null,videoUrl:null,videoPublicId:null,bundle:true};
+  const jobs=[];
+  if(finalCompositeDataUrl)jobs.push(uploadDataUrlToCloudinary(finalCompositeDataUrl,'image').then(up=>{result.photoUrl=up.secure_url||up.url;result.photoPublicId=up.public_id||null}));
+  if(capturedPhotos.length)jobs.push((async()=>{try{const gifBlob=await generateGifBlob();const gu=await uploadDataUrlToCloudinary(await blobToDataUrl(gifBlob),'image');result.gifUrl=gu.secure_url||gu.url;result.gifPublicId=gu.public_id||null;finalGifDataUrl=URL.createObjectURL(gifBlob)}catch(e){console.warn('GIF Cloudinary gagal',e)}})());
+  if(sessionVideoBlob)jobs.push((async()=>{try{const vr=await uploadDataUrlToCloudinary(await blobToDataUrl(sessionVideoBlob),'video');result.videoUrl=vr.secure_url||vr.url;result.videoPublicId=vr.public_id||null}catch(e){console.warn('Video Cloudinary gagal',e)}})());
+  const settled=await Promise.allSettled(jobs);
+  if(settled.length&&settled[0].status==='rejected')throw settled[0].reason||new Error('Upload foto final gagal.');
+  if(config.shareBase){try{const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),10000);const rr=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result),signal:controller.signal});clearTimeout(timeout);if(rr.ok){const j=await rr.json();result.shareUrl=j.shareUrl||j.bundleUrl||null}}catch(e){console.warn('Share API tidak tersedia:',e?.name==='AbortError'?'timeout':e)}}
+  try{const manifestRow=await writeBoothProSessionManifest(result);result.manifestId=manifestRow?.id||null}catch(e){console.warn('Session manifest skipped:',e)}
+  localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
+  if(result.shareUrl||result.photoUrl){generateQR(result.shareUrl||result.photoUrl);if(status)status.innerText=result.shareUrl?'Bundling foto + GIF + video siap. QR siap dipindai.':'Foto/GIF tersinkron. Aktifkan Share API agar QR menjadi bundling.'}else if(status)status.innerText='Upload selesai; Share URL belum dikonfigurasi.';
+  return result;
+ }catch(e){console.warn('publishSessionCloud:',e);if(status)status.innerText='Cloud belum aktif: '+e.message;return null}
+}
+async function writeBoothProSessionManifest(mediaResult){
  try{
   const c=getBoothProCloudConfig(); if(!c.enabled) return null;
   const session=await window.boothProCloudSession(); if(!session?.user?.id) return null;

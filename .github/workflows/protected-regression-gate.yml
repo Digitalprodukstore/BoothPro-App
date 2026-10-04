@@ -1,0 +1,47 @@
+name: BoothPro Protected Regression Gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protected-regression-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout BoothPro-App
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout BoothPro-Control
+        uses: actions/checkout@v4
+        with:
+          repository: Digitalprodukstore/BoothPro-Control
+          path: control
+          token: ${{ secrets.BOOTHPRO_QA_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Detect changed feature scope
+        id: scope
+        shell: bash
+        run: |
+          files=$(git diff --name-only origin/main...HEAD | tr '\n' ' ')
+          features=""
+          case "$files" in *index.html*) features="FRAME-001,FRAME-002,TRANSFORM-001,CAMERA-001,REVIEW-001,FILTER-001,PRINT-001,OUTPUT-001,ADMIN-001,RESET-001";; esac
+          echo "features=$features" >> "$GITHUB_OUTPUT"
+
+      - name: Run baseline guard
+        working-directory: control
+        env:
+          BOOTHPRO_APP_SHA: ${{ github.sha }}
+          BOOTHPRO_CHANGED_FEATURES: ${{ steps.scope.outputs.features }}
+          BOOTHPRO_EVIDENCE_STATUS: ${{ vars.BOOTHPRO_EVIDENCE_STATUS }}
+        run: npm run guard:baseline

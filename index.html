@@ -1346,6 +1346,14 @@ async function pullBoothProCloud(manual=false){
  }finally{boothProCloudPullBusy=false}
 }
 async function initBoothProCloudSync(){
+ // Cloud is the shared source of truth. A fresh kiosk must bootstrap by booth_id
+ // before checking its local cloudSync flag; localStorage remains cache/offline fallback.
+ try{
+  if(typeof bootstrapBoothProPublicConfig==='function'){
+   const boot=await bootstrapBoothProPublicConfig();
+   if(boot){try{await syncCloudFrames()}catch(e){console.warn('BoothPro Cloud frame bootstrap:',e)};return}
+  }
+ }catch(e){console.warn('BoothPro public cloud bootstrap:',e)}
  const c=getBoothProCloudConfig();if(!c.enabled||!c.autoPull)return;
  try{await pullBoothProCloud(false);await syncCloudFrames()}catch(e){console.warn('BoothPro Cloud pull:',e)}
 }

@@ -29,6 +29,10 @@ jobs:
         with:
           node-version: 22
 
+      - name: Read app SHA
+        id: app_sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Detect changed feature scope
         id: scope
         shell: bash
@@ -41,7 +45,7 @@ jobs:
       - name: Run baseline guard
         working-directory: control
         env:
-          BOOTHPRO_APP_SHA: ${{ github.sha }}
+          BOOTHPRO_APP_SHA: ${{ steps.app_sha.outputs.sha }}
           BOOTHPRO_CHANGED_FEATURES: ${{ steps.scope.outputs.features }}
           BOOTHPRO_EVIDENCE_STATUS: ${{ vars.BOOTHPRO_EVIDENCE_STATUS }}
         run: npm run guard:baseline

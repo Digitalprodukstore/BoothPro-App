@@ -856,7 +856,12 @@ function bpEnsureSlotAssignments(){
     const v=Number(a[i]);
     if(Number.isInteger(v)&&v>=0&&v<n&&!used.has(v)){out[i]=v;used.add(v)}
   }
-  // First session render: keep the tray untouched and leave slots empty.
+  // C8 baseline: show the captured photos immediately in slot order.
+  // The customer can then tap a tray photo and tap any frame slot to remap/swap it.
+  // This keeps the preview useful on first render while preserving manual mapping.
+  if(!out.some(Number.isInteger) && n){
+    for(let i=0;i<n;i++)out[i]=i;
+  }
   bpSlotAssignments=out;
   window.__BP_SLOT_ASSIGNMENTS__=out;
   return out;

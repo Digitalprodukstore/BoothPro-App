@@ -1156,21 +1156,75 @@ async function uploadDataUrlToCloudinary(dataUrl,resourceType='image',options={}
 }
 async function publishSessionCloud(){
  const status=$('cloudUploadStatus');
- if(status)status.innerText='Mengunggah soft file...';
+ if(status)status.innerText='Mengunggah foto final...';
  try{
   const result={sessionId,boothId:String(config.cloudSync?.boothId||config.cloudSync?.workspaceId||'BOOTH-DEFAULT'),photoUrl:null,photoPublicId:null,gifUrl:null,gifPublicId:null,videoUrl:null,videoPublicId:null,bundle:true};
-  const jobs=[];
-  if(finalCompositeDataUrl)jobs.push(uploadDataUrlToCloudinary(finalCompositeDataUrl,'image').then(up=>{result.photoUrl=up.secure_url||up.url;result.photoPublicId=up.public_id||null}));
-  if(capturedPhotos.length)jobs.push((async()=>{try{const gifBlob=await generateGifBlob();const gu=await uploadDataUrlToCloudinary(await blobToDataUrl(gifBlob),'image');result.gifUrl=gu.secure_url||gu.url;result.gifPublicId=gu.public_id||null;finalGifDataUrl=URL.createObjectURL(gifBlob)}catch(e){console.warn('GIF Cloudinary gagal',e)}})());
-  if(sessionVideoBlob)jobs.push((async()=>{try{const vr=await uploadDataUrlToCloudinary(await blobToDataUrl(sessionVideoBlob),'video');result.videoUrl=vr.secure_url||vr.url;result.videoPublicId=vr.public_id||null}catch(e){console.warn('Video Cloudinary gagal',e)}})());
-  const settled=await Promise.allSettled(jobs);
-  if(settled.length&&settled[0].status==='rejected')throw settled[0].reason||new Error('Upload foto final gagal.');
-  if(config.shareBase){try{const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),10000);const rr=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result),signal:controller.signal});clearTimeout(timeout);if(rr.ok){const j=await rr.json();result.shareUrl=j.shareUrl||j.bundleUrl||null}}catch(e){console.warn('Share API tidak tersedia:',e?.name==='AbortError'?'timeout':e)}}
-  try{const manifestRow=await writeBoothProSessionManifest(result);result.manifestId=manifestRow?.id||null}catch(e){console.warn('Session manifest skipped:',e)}
+  // P0: foto final harus menjadi media pertama yang siap. GIF/video tidak boleh memblokir QR/WA/Email.
+  if(finalCompositeDataUrl){
+    const up=await uploadDataUrlToCloudinary(finalCompositeDataUrl,'image');
+    result.photoUrl=up.secure_url||up.url;
+    result.photoPublicId=up.public_id||null;
+  }else{
+    throw new Error('Foto final belum tersedia.');
+  }
+
+  // Publish/share hanya setelah foto final siap.
+  if(config.shareBase){
+    try{
+      const controller=new AbortController();
+      const timeout=setTimeout(()=>controller.abort(),10000);
+      const rr=await fetch(config.shareBase.replace(/\/$/,'')+'/api/session',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(result),
+        signal:controller.signal
+      });
+      clearTimeout(timeout);
+      if(rr.ok){
+        const j=await rr.json();
+        result.shareUrl=j.shareUrl||j.bundleUrl||null;
+      }
+    }catch(e){
+      console.warn('Share API tidak tersedia:',e?.name==='AbortError'?'timeout':e);
+    }
+  }
+
+  // Simpan hasil foto sekarang agar QR/customer share tidak menunggu media tambahan.
   localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
-  if(result.shareUrl||result.photoUrl){generateQR(result.shareUrl||result.photoUrl);if(status)status.innerText=result.shareUrl?'Bundling foto + GIF + video siap. QR siap dipindai.':'Foto/GIF tersinkron. Aktifkan Share API agar QR menjadi bundling.'}else if(status)status.innerText='Upload selesai; Share URL belum dikonfigurasi.';
+  if(result.shareUrl||result.photoUrl)generateQR(result.shareUrl||result.photoUrl);
+  if(status)status.innerText=result.shareUrl?'✓ Foto final siap. QR/Share siap. GIF + video diproses di background.':'✓ Foto final tersinkron. QR foto siap.';
+
+  // Background: jangan pernah di-await oleh tombol customer.
+  const backgroundMedia=(async()=>{
+    if(capturedPhotos.length){
+      try{
+        const gifBlob=await generateGifBlob();
+        const gu=await uploadDataUrlToCloudinary(await blobToDataUrl(gifBlob),'image');
+        result.gifUrl=gu.secure_url||gu.url;
+        result.gifPublicId=gu.public_id||null;
+        finalGifDataUrl=URL.createObjectURL(gifBlob);
+        localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
+        try{await writeBoothProSessionManifest(result)}catch(e){console.warn('Manifest GIF update skipped:',e)}
+      }catch(e){console.warn('GIF Cloudinary gagal:',e)}
+    }
+    if(sessionVideoBlob){
+      try{
+        const vr=await uploadDataUrlToCloudinary(await blobToDataUrl(sessionVideoBlob),'video');
+        result.videoUrl=vr.secure_url||vr.url;
+        result.videoPublicId=vr.public_id||null;
+        localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
+        try{await writeBoothProSessionManifest(result)}catch(e){console.warn('Manifest video update skipped:',e)}
+      }catch(e){console.warn('Video Cloudinary gagal:',e)}
+    }
+    try{await writeBoothProSessionManifest(result)}catch(e){console.warn('Session manifest skipped:',e)}
+  })();
+  window.__BP_SOFTFILE_BACKGROUND__=backgroundMedia;
   return result;
- }catch(e){console.warn('publishSessionCloud:',e);if(status)status.innerText='Cloud belum aktif: '+e.message;return null}
+ }catch(e){
+  console.warn('publishSessionCloud:',e);
+  if(status)status.innerText='Cloud belum aktif: '+e.message;
+  return null;
+ }
 }
 async function writeBoothProSessionManifest(mediaResult){
  try{
@@ -4116,7 +4170,7 @@ async function bpDraw(canvas,photos,frameSrc,includeFooter){
   if(includeFooter&&typeof drawPreviewFooterCanvas==='function')drawPreviewFooterCanvas(ctx,w,h);
   return rects;
 }
-async function bpInteractivePreview(wrap,photos,frameSrc){
+async async function bpInteractivePreview(wrap,photos,frameSrc){
   const token=++previewRenderSeq;
   let naturalW=600,naturalH=900;
   if(frameSrc){
@@ -4235,7 +4289,7 @@ async function bpInteractivePreview(wrap,photos,frameSrc){
 }
 window.BoothProC8={
   reset:bpResetTransforms,
-  preview:(wrap,photos,frameSrc)=>bpInteractivePreview(wrap,Array.isArray(photos)?photos:bpSlotPhotos(),frameSrc??selectedFrameSrc),
+  preview:(wrap,photos,frameSrc)=>bpInteractivePreview(wrap,bpSlotPhotos(),frameSrc??selectedFrameSrc),
   transforms:BP.transforms,
   getTransforms:()=>BP.transforms.map(x=>({...x})),
   setTransform:(i,v)=>{const t=bpTransformFor(i);Object.assign(t,v||{})},

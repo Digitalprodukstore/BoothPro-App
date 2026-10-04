@@ -1588,9 +1588,18 @@ async function pullBoothProCloud(manual=false){
   return row;
  }finally{boothProCloudPullBusy=false}
 }
+let boothProCloudPullTimer=null;
 async function initBoothProCloudSync(){
  const c=getBoothProCloudConfig();if(!c.enabled||!c.autoPull)return;
  try{await pullBoothProCloud(false);await syncCloudFrames()}catch(e){console.warn('BoothPro Cloud pull:',e)}
+ // Keep kiosk configuration fresh from the Cloud source of truth.
+ // localStorage remains cache/offline fallback only.
+ clearInterval(boothProCloudPullTimer);
+ boothProCloudPullTimer=setInterval(async()=>{
+  const live=getBoothProCloudConfig();
+  if(!live.enabled||!live.autoPull)return;
+  try{await pullBoothProCloud(false)}catch(e){console.warn('BoothPro Cloud periodic pull:',e)}
+ },10000);
 }
 async function saveCommercialAuthSettings(){const url=($('dashSupabaseUrl')?.value||'').trim(),anon=($('dashSupabaseAnon')?.value||'').trim();await testAndSaveSupabaseAuthConfig(url,anon,$('dashSupabaseStatus'),document.querySelector('[onclick="saveCommercialAuthSettings()"]'))}
 async function saveRecoverySupabaseConfig(){const url=($('authRecoverySupabaseUrl')?.value||'').trim(),anon=($('authRecoverySupabaseAnon')?.value||'').trim();const ok=await testAndSaveSupabaseAuthConfig(url,anon,$('authRecoverySupabaseStatus'),$('authRecoverySaveSupabaseBtn'));if(ok)updateRecoverySupabaseState()}

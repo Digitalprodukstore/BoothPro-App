@@ -735,7 +735,7 @@ function renderTimer(){const m=Math.floor(sessionSecondsLeft/60),s=sessionSecond
 function takePhoto(){if(sessionSecondsLeft<=0||capturedPhotos.length>=requiredPhotosCount||countdownTimer)return;const btn=$('shutterBtn'),overlay=$('countdownOverlay'),ct=$('countdownText');btn.disabled=true;overlay.classList.remove('hidden');let count=Math.max(1,Number(config.countdown)||3);ct.innerText=count;countdownTimer=setInterval(()=>{count--;if(count>0){ct.innerText=count}else{clearInterval(countdownTimer);countdownTimer=null;overlay.classList.add('hidden');const flash=$('flashLayer');flash.style.opacity='1';setTimeout(()=>flash.style.opacity='0',150);captureCurrentFrame()}},700)}
 function getAppliedFilter(){const parts=[];if(currentFilter&&currentFilter!=='none')parts.push(currentFilter);if(adjState.brightness!==100)parts.push(`brightness(${adjState.brightness}%)`);if(adjState.contrast!==100)parts.push(`contrast(${adjState.contrast}%)`);if(adjState.saturate!==100)parts.push(`saturate(${adjState.saturate}%)`);return parts.length?parts.join(' '):'none'}
 function captureCurrentFrame(){let imgData='';if(useSimulation){const c=document.createElement('canvas');c.width=640;c.height=480;const x=c.getContext('2d'),h=Math.floor(Math.random()*360);x.fillStyle=`hsl(${h},65%,45%)`;x.fillRect(0,0,c.width,c.height);x.fillStyle='#fff';x.font='bold 30px sans-serif';x.textAlign='center';x.fillText(`Pose ${capturedPhotos.length+1}`,320,240);imgData=c.toDataURL('image/jpeg',.9)}else{const video=$('webcam');if(!video.videoWidth||!video.videoHeight){$('cameraMessage').innerText='Kamera belum siap. Tunggu preview lalu coba lagi.';$('cameraPlaceholder').classList.remove('hidden');$('shutterBtn').disabled=false;return}const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;const x=c.getContext('2d');if(mirrorOn){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(video,0,0,c.width,c.height);imgData=c.toDataURL('image/jpeg',.9)}capturedPhotos.push(imgData);updateGalleryPreviews();renderCaptureReview();if(capturedPhotos.length>=requiredPhotosCount){try{window.BoothProDelivery?.stopRecording()}catch(e){}}$('shutterBtn').disabled=capturedPhotos.length>=requiredPhotosCount;if(capturedPhotos.length>=requiredPhotosCount)$('nextToFrameBtn').disabled=false;updateStatusBadge()}
-function updateGalleryPreviews(){$('capturedCount').innerText=capturedPhotos.length;const g=$('filmStripGallery');g.innerHTML='';capturedPhotos.forEach((src,idx)=>{const item=document.createElement('div');item.className='relative bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden aspect-[4/3]';const im=document.createElement('img');im.src=src;im.className='w-full h-full object-cover';const b=document.createElement('div');b.className='absolute top-1 left-1 bg-black/70 rounded-md text-[10px] px-1.5 py-0.5 font-bold';b.textContent='#'+(idx+1);const del=document.createElement('button');del.className='absolute top-1 right-1 h-7 w-7 rounded-full bg-red-600/90 text-white';del.title='Hapus / retake';del.innerHTML='<i class="fa-solid fa-trash text-[11px]"></i>';del.onclick=()=>deleteCaptured(idx);item.append(im,b,del);g.appendChild(item)})}
+function updateGalleryPreviews(){$('capturedCount').innerText=capturedPhotos.length;const g=$('filmStripGallery');g.innerHTML='';capturedPhotos.forEach((src,idx)=>{const item=document.createElement('button');item.type='button';item.dataset.captureIndex=String(idx);item.className='relative bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden aspect-[4/3] text-left touch-manipulation bp-tray-photo';const im=document.createElement('img');im.src=src;im.className='w-full h-full object-cover';const b=document.createElement('div');b.className='absolute top-1 left-1 bg-black/70 rounded-md text-[10px] px-1.5 py-0.5 font-bold';b.textContent='#'+(idx+1);const del=document.createElement('button');del.type='button';del.className='absolute top-1 right-1 h-7 w-7 rounded-full bg-red-600/90 text-white z-20';del.title='Hapus / retake';del.innerHTML='<i class="fa-solid fa-trash text-[11px]"></i>';del.onclick=e=>{e.preventDefault();e.stopPropagation();deleteCaptured(idx)};item.append(im,b,del);g.appendChild(item)})}
 function deleteCaptured(idx){if(retakeCount>=3){alert('Batas retake 3 kali sudah tercapai.');return}capturedPhotos.splice(idx,1);retakeCount++;$('retakeCount').innerText=retakeCount;$('nextToFrameBtn').disabled=true;$('shutterBtn').disabled=false;updateGalleryPreviews();renderCaptureReview();updateStatusBadge()}
 /* ============ FRAMES & PREVIEW ============ */
 function builtinCategoryForIndex(i){const cats=['VINTAGE','MODERN','MINIMAL','PASTEL','BOLD'];return cats[Math.floor(i/10)]||'MODERN'}
@@ -747,8 +747,8 @@ function getFrameChoices(){const base=[{id:'plain-white',name:'White',src:'',cat
 function setFrameCategoryFilter(v){frameCategoryFilter=v||'all';renderFrameGallery()}
 function renderFrameGallery(){if($('dashFrameCount'))$('dashFrameCount').innerText=frameGallery.length+' frame upload tersimpan · '+getBuiltinFrames().length+' frame bawaan aktif';const g=$('frameGallery');if(!g)return;g.innerHTML='';renderDirectBuiltinGallery(g,false);renderFrameCategoryIndex(g,false);renderFrameMiniPreview()}
 function renderFrameMiniPreview(){const host=$('frameMiniPreview');if(!host)return;host.innerHTML='';const wrap=buildPreviewHTML('mini');host.appendChild(wrap);if(capturedPhotos.length){renderFrameAwarePreview(wrap,'mini')}else{host.innerHTML='<div class="text-xs text-zinc-500 text-center p-8">Belum ada hasil foto.</div>'}}
-function renderCaptureReview(){const host=$('captureReviewPreview');if(!host)return;host.innerHTML='';const wrap=buildPreviewHTML('capture');host.appendChild(wrap);if(capturedPhotos.length){renderFrameAwarePreview(wrap,'capture')}else{host.innerHTML='<div class="text-xs text-zinc-500 text-center p-8">Belum ada foto untuk ditampilkan.</div>'}}
-function renderEditor(){const host=$('editorPreview');if(!host)return;host.innerHTML='';const wrap=buildPreviewHTML('editor');host.appendChild(wrap);renderFrameAwarePreview(wrap,'editor');renderStickerOverlay()}
+function renderCaptureReview(){const host=$('captureReviewPreview');if(!host)return;host.innerHTML='';if(!capturedPhotos.length){host.innerHTML='<div class="text-xs text-zinc-500 text-center p-8">Belum ada foto untuk ditampilkan.</div>';return}bpEnsureSlotAssignments();const wrap=buildPreviewHTML('capture');host.appendChild(wrap);if(window.BoothProC8?.preview)window.BoothProC8.preview(wrap,capturedPhotos.slice(),selectedFrameSrc);else renderFrameAwarePreview(wrap,'capture');setTimeout(()=>{renderPhotoOrderControls()},0)}
+function renderEditor(){const host=$('editorPreview');if(!host)return;host.innerHTML='';const wrap=buildPreviewHTML('editor');host.appendChild(wrap);if(window.BoothProC8?.preview)window.BoothProC8.preview(wrap,capturedPhotos.slice(),selectedFrameSrc);else renderFrameAwarePreview(wrap,'editor');renderFilterChoicesStep5();updateActiveFrameLabel();updateAdjLabels()}
 function renderEditorFrameQuickGrid(){const g=$('editorFrameQuickGrid');if(!g)return;g.innerHTML='';const frames=getFrameChoices();frames.forEach(f=>{const b=document.createElement('button');b.type='button';b.className='h-14 rounded-lg overflow-hidden border '+(selectedFrameId===f.id?'border-indigo-500':'border-zinc-700');b.title=f.name;b.onclick=()=>selectFrame(f);if(f.src)b.innerHTML='<img src="'+f.src+'" class="w-full h-full object-cover">';else b.innerHTML='<div class="w-full h-full" style="background:'+frameColor(f.id)+'"></div>';g.appendChild(b)})}
 function startCaptureFromFrame(){if(!selectedFrameId){alert('Pilih frame terlebih dahulu.');return}goToStep(4)}
 let bpFrameRenderTimer=null;
@@ -769,6 +769,103 @@ function selectFrame(f){
   try{if(typeof renderFrameMiniPreview==='function'&&capturedPhotos.length)renderFrameMiniPreview()}catch(e){}
   return true;
 }
+let bpSlotAssignments=Array.isArray(window.__BP_SLOT_ASSIGNMENTS__)?window.__BP_SLOT_ASSIGNMENTS__:[];
+
+function bpEnsureSlotAssignments(){
+  const n=Math.max(0,capturedPhotos.length||0);
+  const a=Array.isArray(bpSlotAssignments)?bpSlotAssignments:[];
+  const used=new Set();
+  const out=new Array(n).fill(null);
+  for(let i=0;i<n;i++){
+    const v=Number(a[i]);
+    if(Number.isInteger(v)&&v>=0&&v<n&&!used.has(v)){out[i]=v;used.add(v)}
+  }
+  // C8 baseline: show the captured photos immediately in slot order.
+  // The customer can then tap a tray photo and tap any frame slot to remap/swap it.
+  // This keeps the preview useful on first render while preserving manual mapping.
+  if(!out.some(Number.isInteger) && n){
+    for(let i=0;i<n;i++)out[i]=i;
+  }
+  bpSlotAssignments=out;
+  window.__BP_SLOT_ASSIGNMENTS__=out;
+  return out;
+}
+function bpSlotPhotos(){
+  const a=bpEnsureSlotAssignments();
+  return a.map(i=>Number.isInteger(i)?capturedPhotos[i]:null);
+}
+function bpResetSlotAssignments(){
+  bpSlotAssignments=new Array(Math.max(0,capturedPhotos.length||0)).fill(null);
+  window.__BP_SLOT_ASSIGNMENTS__=bpSlotAssignments;
+  window.__BP_PHOTO_PICK__=null;
+}
+function renderPhotoOrderControls(){
+ const host=$('photoOrderControls');if(!host)return;host.innerHTML='';
+ const photos=capturedPhotos.slice();if(!photos.length){host.innerHTML='<div class="text-xs text-zinc-500">Ambil foto terlebih dahulu.</div>';return}
+ const selected=Number.isInteger(window.__BP_PHOTO_PICK__)?window.__BP_PHOTO_PICK__:null;
+ const a=bpEnsureSlotAssignments();
+ const assignedCount=a.filter(Number.isInteger).length;
+ const hint=document.createElement('div');
+ hint.className='bp-order-guide';
+ hint.innerHTML=selected==null
+  ? '<div class="bp-guide-icon">✦</div><div><div class="bp-guide-title">Susun foto ke frame</div><div class="bp-guide-copy">Tap salah satu foto di <b>Hasil Jepretan</b>, lalu tap kotak <b>“TAP DI SINI”</b> pada frame.</div></div>'
+  : '<div class="bp-guide-icon">↳</div><div><div class="bp-guide-title">Foto '+(selected+1)+' siap ditempatkan</div><div class="bp-guide-copy">Sekarang tap posisi frame yang ingin dipakai. Setelah masuk, foto bisa <b>digunakan untuk zoom & geser</b>.</div></div>';
+ const status=document.createElement('div');status.className='bp-order-status';
+ status.innerHTML='<span>'+assignedCount+' / '+photos.length+' foto tersusun</span><button type="button" id="bpResetArrangement">Reset susunan</button>';
+ host.appendChild(hint);host.appendChild(status);
+ status.querySelector('button').onclick=()=>{bpResetSlotAssignments();renderCaptureReview()};
+ const film=$('filmStripGallery');
+ if(film){
+  [...film.querySelectorAll('[data-capture-index]')].forEach(el=>{
+    const idx=Number(el.dataset.captureIndex),assigned=a.includes(idx),on=idx===selected;
+    el.classList.toggle('ring-2',on);el.classList.toggle('ring-emerald-400',on);el.classList.toggle('ring-offset-2',on);el.classList.toggle('bp-photo-picked',on);
+    el.classList.toggle('bp-tray-assigned',assigned);
+    const badge=el.querySelector('.bp-tray-assigned-badge');
+    if(badge)badge.remove();
+    if(assigned){
+      const b=document.createElement('div');b.className='bp-tray-assigned-badge';b.textContent='✓ DI FRAME';el.appendChild(b);
+    }
+    el.onclick=()=>{window.__BP_PHOTO_PICK__=idx;renderPhotoOrderControls();renderCaptureReview()};
+  });
+ }
+}
+function clearPhotoFromSlot(slot){
+  if(!Number.isInteger(slot)||slot<0)return;
+  const a=bpEnsureSlotAssignments();
+  if(slot>=a.length)return;
+  a[slot]=null;
+  bpSlotAssignments=a.slice();
+  window.__BP_SLOT_ASSIGNMENTS__=bpSlotAssignments;
+  window.__BP_PHOTO_PICK__=null;
+  try{if(window.__BP_C8__?.transforms?.[slot])window.__BP_C8__.transforms[slot]={scale:1,x:0,y:0}}catch(e){}
+  renderCaptureReview();
+}
+function bpRemovePhotoFromSlot(slot){
+  const a=bpEnsureSlotAssignments();
+  if(!Number.isInteger(slot)||slot<0||slot>=a.length)return;
+  a[slot]=null;
+  bpSlotAssignments=a.slice();
+  window.__BP_SLOT_ASSIGNMENTS__=bpSlotAssignments;
+  window.__BP_PHOTO_PICK__=null;
+  if(window.__BP_C8__?.setActiveSlot)window.__BP_C8__.setActiveSlot(slot);
+  renderCaptureReview();
+}
+function assignPhotoToSlot(slot,photoIndex){
+  if(!Number.isInteger(slot)||!Number.isInteger(photoIndex)||slot<0||photoIndex<0)return;
+  const a=bpEnsureSlotAssignments();
+  if(slot>=a.length||photoIndex>=capturedPhotos.length)return;
+  const previous=a[slot];
+  const occupiedSlot=a.indexOf(photoIndex);
+  if(occupiedSlot>=0&&occupiedSlot!==slot)a[occupiedSlot]=previous==null?null:previous;
+  a[slot]=photoIndex;
+  bpSlotAssignments=a.slice();
+  window.__BP_SLOT_ASSIGNMENTS__=bpSlotAssignments;
+  window.__BP_PHOTO_PICK__=null;
+  const api=window.__BP_C8__;
+  if(api?.setActiveSlot)api.setActiveSlot(slot);
+  renderCaptureReview();
+}
+
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function loadImage(src){return new Promise((resolve,reject)=>{if(!src){reject(new Error('empty image'));return}const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('image load failed'));im.src=src})}
 function fitImageInRect(ctx,im,x,y,w,h,mode='cover'){const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;if(!iw||!ih)return;const scale=mode==='contain'?Math.min(w/iw,h/ih):Math.max(w/iw,h/ih);const dw=iw*scale,dh=ih*scale;ctx.drawImage(im,x+(w-dw)/2,y+(h-dh)/2,dw,dh)}

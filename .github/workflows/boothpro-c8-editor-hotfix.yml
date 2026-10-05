@@ -1,0 +1,54 @@
+name: BoothPro C8 Editor Hotfix
+
+on:
+  push:
+    branches:
+      - fix/c8-frame-composer-baseline
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-editor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: fix/c8-frame-composer-baseline
+
+      - name: Unlock interactive C8 editor
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index-legacy.html')
+          s = p.read_text(encoding='utf-8')
+          replacements = {
+              "buildPreviewHTML('editor-locked')": "buildPreviewHTML('editor')",
+              "renderFrameAwarePreview(wrap,'locked')": "renderFrameAwarePreview(wrap,'editor')",
+              'Foto dan frame sudah dikunci. Di halaman ini hanya pilih efek/filter.': 'Atur foto di dalam frame: geser untuk memindahkan, cubit dua jari untuk zoom, lalu pilih efek/filter.',
+              '<i class="fa-solid fa-lock mr-1"></i>Frame & posisi terkunci': '<i class="fa-solid fa-hand-pointer mr-1"></i>Frame & posisi bisa disesuaikan',
+          }
+          before = s
+          for old, new in replacements.items():
+              s = s.replace(old, new)
+          if s == before:
+              print('No source changes required; patch may already be applied.')
+          else:
+              p.write_text(s, encoding='utf-8')
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet -- index-legacy.html; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index-legacy.html
+          git commit -m 'fix: enable interactive C8 frame composer'
+          git push origin HEAD:fix/c8-frame-composer-baseline

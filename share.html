@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09090b">
+<title>BoothPro · Soft File</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#09090b;color:#f4f4f5}.media-card{background:rgba(24,24,27,.82);border:1px solid rgba(255,255,255,.08);border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.28)}button,a{touch-action:manipulation}.hidden{display:none!important}</style>
+</head>
+<body class="min-h-screen">
+<main class="max-w-3xl mx-auto px-4 py-8 md:py-12">
+<header class="text-center mb-8"><div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-zinc-300">📸 BOOTHPRO</div><h1 class="text-3xl md:text-5xl font-black tracking-tight mt-4">Soft File Foto Anda</h1><p id="subtitle" class="text-zinc-400 text-sm mt-3">Memuat hasil sesi…</p></header>
+<div id="loading" class="media-card p-8 text-center"><div class="animate-pulse text-zinc-400">Menyiapkan soft file…</div></div>
+<div id="error" class="hidden media-card p-8 text-center"><div class="text-red-300 font-bold">Soft file tidak dapat dibuka</div><p id="errorText" class="text-zinc-500 text-sm mt-2"></p></div>
+<section id="content" class="hidden space-y-5">
+<div class="media-card p-4 md:p-5"><div class="flex items-center justify-between gap-3 mb-4"><div><div class="text-xs uppercase tracking-widest text-zinc-500">Foto Final</div><div id="packageName" class="font-bold mt-1">BoothPro</div></div><a id="photoDownload" class="px-4 py-2.5 rounded-xl bg-white text-zinc-900 text-xs font-black" download>Download Foto</a></div><div class="rounded-2xl bg-black/40 p-2"><img id="photo" class="w-full max-h-[760px] object-contain rounded-xl" alt="Foto final BoothPro"></div></div>
+<div id="gifCard" class="media-card p-4 md:p-5 hidden"><div class="flex items-center justify-between gap-3 mb-4"><div><div class="text-xs uppercase tracking-widest text-zinc-500">GIF / Loop</div><div class="font-bold mt-1">Momen bergerak</div></div><a id="gifDownload" class="px-4 py-2.5 rounded-xl bg-violet-500 text-white text-xs font-black" download>Download GIF</a></div><div class="rounded-2xl bg-black/40 p-2"><img id="gif" class="w-full max-h-[600px] object-contain rounded-xl" alt="GIF BoothPro"></div></div>
+<div id="videoCard" class="media-card p-4 md:p-5 hidden"><div class="flex items-center justify-between gap-3 mb-4"><div><div class="text-xs uppercase tracking-widest text-zinc-500">Live Session</div><div class="font-bold mt-1">Video sesi foto</div></div><a id="videoDownload" class="px-4 py-2.5 rounded-xl bg-emerald-500 text-zinc-950 text-xs font-black" download>Download Video</a></div><video id="video" class="w-full max-h-[600px] rounded-xl bg-black" controls playsinline></video></div>
+<div class="text-center text-[11px] text-zinc-600 pt-2">Link soft file BoothPro · Media dapat tersedia sampai masa retensi berakhir.</div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const sid=new URLSearchParams(location.search).get('session')||'';
+function showError(msg){$('loading').classList.add('hidden');$('content').classList.add('hidden');$('error').classList.remove('hidden');$('errorText').textContent=msg||'Link tidak valid atau media sudah tidak tersedia.'}
+function showContent(s){$('loading').classList.add('hidden');$('content').classList.remove('hidden');$('packageName').textContent=s.package_name||'BoothPro';$('subtitle').textContent='Hasil sesi foto Anda sudah siap.';if(s.photo_url){$('photo').src=s.photo_url;$('photoDownload').href=s.photo_url}else showError('Foto final belum tersedia.');if(s.gif_url){$('gifCard').classList.remove('hidden');$('gif').src=s.gif_url;$('gifDownload').href=s.gif_url}else $('gifCard').classList.add('hidden');if(s.video_url){$('videoCard').classList.remove('hidden');$('video').src=s.video_url;$('videoDownload').href=s.video_url}else $('videoCard').classList.add('hidden')}
+async function load(){if(!sid){showError('Session ID tidak ditemukan pada link.');return}try{const r=await fetch('/api/session?session='+encodeURIComponent(sid),{cache:'no-store'});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'Soft file tidak ditemukan.');showContent(d.session)}catch(e){showError(e.message||'Soft file tidak dapat dimuat.')}}
+load();
+</script>
+</body></html>

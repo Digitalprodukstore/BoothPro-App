@@ -8,6 +8,8 @@ try{
 (function(){
  'use strict';
  window.__BP_ENTRY_MODE__='kiosk';
+ var originalOpenDashboard=window.openDashboard;
+ window.openDashboard=function(){ return false; };
  function forceKiosk(){
    try{
      if(typeof closeDashboard==='function') closeDashboard();
@@ -17,7 +19,7 @@ try{
      document.querySelectorAll('[id^="step-"]').forEach(function(el){ if(el.id==='step-welcome') el.classList.remove('hidden'); else el.classList.add('hidden'); });
    }catch(e){}
  }
- setTimeout(forceKiosk,0);
+ forceKiosk();
  setTimeout(forceKiosk,100);
  setTimeout(forceKiosk,500);
  setTimeout(forceKiosk,1500);

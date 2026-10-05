@@ -1,0 +1,1 @@
+BoothPro C8 editor hotfix trigger. The workflow patches the existing locked editor to use the interactive C8 composer without changing the baseline architecture.

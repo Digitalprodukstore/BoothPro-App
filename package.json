@@ -1,0 +1,7 @@
+{
+  "name": "boothpro",
+  "private": true,
+  "scripts": {
+    "build": "cp index.html public/index.html"
+  }
+}

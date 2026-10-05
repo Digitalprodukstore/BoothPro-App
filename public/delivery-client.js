@@ -7,6 +7,8 @@
   BP.videoBlob = null;
   BP.videoStartedAt = 0;
   BP.videoMaxTimer = null;
+  BP.finalCompositeDataUrl = null;
+  BP.setFinalComposite = function(data){ BP.finalCompositeDataUrl=data||null; };
   BP.deliveryBusy = false;
   BP.assets = { photoUrl:null, gifUrl:null, videoUrl:null };
 
@@ -112,9 +114,10 @@
     return BP.assets.videoUrl;
   }
   async function prepareAssets(){
-    if(!finalCompositeDataUrl) throw new Error('Foto final belum siap');
+    const finalData=BP.finalCompositeDataUrl;
+    if(!finalData) throw new Error('Foto final belum siap');
     if(!BP.assets.photoUrl){
-      const up=await uploadDataUrlToCloudinary(finalCompositeDataUrl,'image');
+      const up=await uploadDataUrlToCloudinary(finalData,'image');
       BP.assets.photoUrl=up.secure_url||up.url;
     }
     if(!BP.assets.gifUrl && typeof generateGifBlob==='function'){
@@ -162,33 +165,6 @@
     finally{BP.deliveryBusy=false;}
   };
 
-  const originalStartWebcam=window.startWebcam;
-  if(typeof originalStartWebcam==='function'){
-    window.startWebcam=async function(){
-      const result=await originalStartWebcam.apply(this,arguments);
-      try{if(window.streamInstance && !window.useSimulation) BP.startRecording(window.streamInstance);}catch(e){}
-      return result;
-    };
-  }
-  const originalCapture=window.captureCurrentFrame;
-  if(typeof originalCapture==='function'){
-    window.captureCurrentFrame=function(){
-      const result=originalCapture.apply(this,arguments);
-      try{
-        if(Array.isArray(window.capturedPhotos) && typeof window.requiredPhotosCount==='number' &&
-           window.capturedPhotos.length>=window.requiredPhotosCount){ setTimeout(BP.stopRecording,250); }
-      }catch(e){}
-      return result;
-    };
-  }
-  const originalGoToStep=window.goToStep;
-  if(typeof originalGoToStep==='function'){
-    window.goToStep=function(step){
-      const result=originalGoToStep.apply(this,arguments);
-      if(Number(step)>=7) setTimeout(ensurePanel,50);
-      return result;
-    };
-  }
   document.addEventListener('DOMContentLoaded',function(){setTimeout(ensurePanel,100);});
   setTimeout(ensurePanel,500);
 })();

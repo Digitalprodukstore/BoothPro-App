@@ -261,6 +261,14 @@ html,body{max-width:100%;overflow-x:hidden!important}
  #dashboardModal>.max-w-6xl{width:100%!important;border-radius:22px!important}
 }
 </style>
+<style id="bp-dashboard-scroll-final">
+#dashboardModal{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;overflow:hidden!important;overflow-x:hidden!important;padding:8px!important;display:block!important;touch-action:none!important}
+#dashboardModal>.max-w-6xl{width:min(1500px,100%)!important;height:calc(100dvh - 16px)!important;max-height:calc(100dvh - 16px)!important;min-height:0!important;margin:0 auto!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior-y:contain!important;touch-action:pan-y!important}
+#dashboardModal>.max-w-6xl>.grid{min-height:max-content!important;height:auto!important;overflow:visible!important}
+#dashboardModal>.max-w-6xl>.grid>div{min-height:0!important;height:auto!important;overflow:visible!important}
+#dashboardModal>.max-w-6xl>div:first-child{position:sticky!important;top:0!important;z-index:30!important}
+@media(max-width:520px){#dashboardModal{padding:0!important}#dashboardModal>.max-w-6xl{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important}}
+</style>
 </head>
 <body class="bg-zinc-900 text-zinc-100 min-h-screen flex flex-col overflow-x-hidden selection:bg-indigo-500 selection:text-white">
 <div id="flashLayer" class="fixed inset-0 bg-white pointer-events-none opacity-0 z-[100] transition-opacity duration-100"></div>

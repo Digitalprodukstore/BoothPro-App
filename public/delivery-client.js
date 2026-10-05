@@ -60,6 +60,17 @@
     else{n.textContent='LIVE VIDEO opsional';n.className='text-[10px] text-zinc-500';}
   };
 
+  function ensurePhotoOrderControlsHost(){
+    if(el('photoOrderControls')) return true;
+    const preview=el('captureReviewPreview');
+    if(!preview || !preview.parentElement) return false;
+    const host=document.createElement('div');
+    host.id='photoOrderControls';
+    host.className='w-full mt-4';
+    preview.parentElement.insertBefore(host,preview);
+    return true;
+  }
+
   function ensurePanel(){
     if(el('bpDeliveryPanel')) return;
     const resultCandidates=['#step-output','#step-result','#step-final','#step-share'];
@@ -76,17 +87,17 @@
     panel.innerHTML=
       '<div class="flex items-center justify-between gap-3">'+
         '<div><div class="font-bold">Kirim Soft File Langsung</div><p class="text-xs text-zinc-500 mt-1">Foto final + GIF + video sesi dikirim sebagai media/file.</p></div>'+
-        '<span id="bpVideoIndicator" class="text-[10px] text-zinc-500">LIVE VIDEO opsional</span>'+
-      '</div>'+
+        '<span id="bpVideoIndicator" class="text-[10px] text-zinc-500">LIVE VIDEO opsional</span>'+ 
+      '</div>'+ 
       '<div class="grid md:grid-cols-2 gap-3 mt-4">'+
         '<div><label class="text-xs text-zinc-400">WhatsApp</label><input id="bpWaPhone" inputmode="tel" autocomplete="tel" class="mt-1 w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-3 text-sm" placeholder="08xxxxxxxxxx"></div>'+
         '<div><label class="text-xs text-zinc-400">Email</label><input id="bpEmail" type="email" autocomplete="email" class="mt-1 w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-3 text-sm" placeholder="customer@email.com"></div>'+
-      '</div>'+
+      '</div>'+ 
       '<div class="grid grid-cols-2 gap-2 mt-3">'+
-        '<button id="bpSendWa" type="button" class="py-3 rounded-xl bg-emerald-600 font-bold text-sm">Kirim WhatsApp</button>'+
-        '<button id="bpSendEmail" type="button" class="py-3 rounded-xl bg-indigo-600 font-bold text-sm">Kirim Email</button>'+
-      '</div>'+
-      '<p id="bpDeliveryStatus" class="text-xs mt-3 text-zinc-400"></p>'+
+        '<button id="bpSendWa" type="button" class="py-3 rounded-xl bg-emerald-600 font-bold text-sm">Kirim WhatsApp</button>'+ 
+        '<button id="bpSendEmail" type="button" class="py-3 rounded-xl bg-indigo-600 font-bold text-sm">Kirim Email</button>'+ 
+      '</div>'+ 
+      '<p id="bpDeliveryStatus" class="text-xs mt-3 text-zinc-400"></p>'+ 
       '<p class="text-[10px] text-zinc-600 mt-2">Jika pengiriman langsung belum dikonfigurasi, QR Soft File tetap tersedia sebagai fallback.</p>';
     host.appendChild(panel);
     el('bpSendWa').onclick=()=>BP.sendWhatsApp();
@@ -165,6 +176,11 @@
     finally{BP.deliveryBusy=false;}
   };
 
-  document.addEventListener('DOMContentLoaded',function(){setTimeout(ensurePanel,100);});
+  document.addEventListener('DOMContentLoaded',function(){
+    ensurePhotoOrderControlsHost();
+    setTimeout(ensurePhotoOrderControlsHost,100);
+    setTimeout(ensurePanel,100);
+  });
+  setTimeout(ensurePhotoOrderControlsHost,500);
   setTimeout(ensurePanel,500);
 })();

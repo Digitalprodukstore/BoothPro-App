@@ -4289,11 +4289,18 @@ async function bpInteractivePreview(wrap,photos,frameSrc){
       hit.classList.add('bp-active');
       try{hit.setPointerCapture(e.pointerId)}catch(err){}
       if(!BP.gesture)BP.gesture={};
-      BP.gesture[i]=BP.gesture[i]||{points:new Map(),start:null};
-      BP.gesture[i].points.set(e.pointerId,{x:e.clientX,y:e.clientY});
-      const pts=[...BP.gesture[i].points.values()];
+      const g=BP.gesture[i]||{points:new Map(),start:null,pinch:null};
+      BP.gesture[i]=g;
+      g.points.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      const pts=[...g.points.values()];
       const t=bpTransformFor(i);
-      BP.gesture[i].start={scale:t.scale,x:t.x,y:t.y,mid:pts[0],dist:0};
+      if(pts.length===1){
+        g.pinch=null;
+        g.start={scale:t.scale,x:t.x,y:t.y,mid:pts[0],dist:0};
+      }else{
+        const a=pts[0],b=pts[1];
+        g.pinch={baseScale:t.scale,baseX:t.x,baseY:t.y,mid:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},dist:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y))};
+      }
     });
     hit.addEventListener('pointermove',async e=>{
       const g=BP.gesture?.[i];if(!g)return;
@@ -4321,7 +4328,7 @@ async function bpInteractivePreview(wrap,photos,frameSrc){
     const end=e=>{
       const g=BP.gesture?.[i];if(!g)return;
       g.points.delete(e.pointerId);
-      if(g.points.size===0){delete BP.gesture[i];hit.classList.remove('bp-active')}
+      if(g.points.size===0){delete BP.gesture[i];hit.classList.remove('bp-active');g.pinch=null}
       else if(g.points.size===1){
         const p=[...g.points.values()][0],t=bpTransformFor(i);
         g.start={scale:t.scale,x:t.x,y:t.y,mid:p,dist:0};g.pinch=null;

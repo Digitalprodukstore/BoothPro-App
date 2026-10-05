@@ -224,6 +224,15 @@ input,select,textarea{border-radius:13px!important}button{transition:filter .15s
 #dashboardModal #frameGallery,#dashboardModal #dashFrameManager,#dashboardModal #dashFrameSlotManager{scrollbar-width:thin;scrollbar-color:#3f3f46 transparent}
 @media(max-width:900px){#dashboardModal>.max-w-6xl{width:calc(100vw - 16px);min-height:calc(100vh - 16px);margin:8px auto!important;border-radius:22px!important}#dashboardModal>.max-w-6xl>div:first-child{padding:16px!important}#dashboardModal>.max-w-6xl>.grid{padding:16px!important}#dashboardModal>.max-w-6xl>.grid>div{grid-template-columns:1fr!important}}
 @media(max-width:520px){#dashboardModal>.max-w-6xl{width:100vw;min-height:100vh;margin:0!important;border-radius:0!important}#dashboardModal>.max-w-6xl>div:first-child{padding:14px 15px!important}#dashboardModal>.max-w-6xl>.grid{padding:12px!important}#dashboardModal>.max-w-6xl>.grid>div{gap:12px!important}#dashboardModal>.max-w-6xl>.grid>div>.p-4{padding:15px!important;border-radius:17px!important}}
+</style><style id="boothpro-dashboard-scroll-hardening">
+html,body{overscroll-behavior-y:auto}
+#dashboardModal{overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior:contain!important;pointer-events:auto!important}
+#dashboardModal>.max-w-6xl{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;touch-action:auto!important}
+#dashboardModal>.max-w-6xl>.grid{height:auto!important;min-height:0!important;overflow:visible!important}
+#dashboardModal>.max-w-6xl>.grid>div{height:auto!important;min-height:0!important;overflow:visible!important}
+#dashboardModal .dashboard-grid{max-height:none!important;overflow:visible!important}
+#dashboardModal [class*="overflow-hidden"]{max-height:none!important}
+@media(max-width:900px){#dashboardModal{padding:8px!important}#dashboardModal>.max-w-6xl{width:100%!important;margin:0!important}}
 </style></head>
 <body class="bg-zinc-900 text-zinc-100 min-h-screen flex flex-col overflow-x-hidden selection:bg-indigo-500 selection:text-white">
 <div id="flashLayer" class="fixed inset-0 bg-white pointer-events-none opacity-0 z-[100] transition-opacity duration-100"></div>

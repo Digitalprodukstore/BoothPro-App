@@ -4,7 +4,9 @@ try{
  const r=await fetch('/index-legacy.html?bp-kiosk='+Date.now(),{cache:'no-store'});
  if(!r.ok) throw new Error('BoothPro Kiosk gagal dimuat ('+r.status+')');
  let html=await r.text();
- const kioskCss=String.raw`<style id="bp-kiosk-hard-isolation">#dashboardModal,#dashboardAuthModal{display:none!important;visibility:hidden!important;pointer-events:none!important}</style>`;\n html=html.replace(/<\\/head>/i,kioskCss+"<\\/head>");\n const guard=String.raw`<script id="bp-kiosk-entry-guard">
+ const kioskCss=String.raw`<style id="bp-kiosk-hard-isolation">#dashboardModal,#dashboardAuthModal{display:none!important;visibility:hidden!important;pointer-events:none!important}</style>`;
+ html=html.replace(/<\\/head>/i,kioskCss+"<\\/head>");
+ const guard=String.raw`<script id="bp-kiosk-entry-guard">
 (function(){
  'use strict';
  window.__BP_ENTRY_MODE__='kiosk';

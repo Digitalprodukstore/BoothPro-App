@@ -5,7 +5,7 @@ try{
  if(!r.ok) throw new Error('BoothPro Kiosk gagal dimuat ('+r.status+')');
  let html=await r.text();
  const kioskCss=String.raw`<style id="bp-kiosk-hard-isolation">#dashboardModal,#dashboardAuthModal{display:none!important;visibility:hidden!important;pointer-events:none!important}</style>`;
- html=html.replace(/<\\/head>/i,kioskCss+"<\\/head>");
+ html=html.replace("</head>",kioskCss+"</head>");
  const guard=String.raw`<script id="bp-kiosk-entry-guard">
 (function(){
  'use strict';

@@ -2,8 +2,8 @@
 
 **Locked candidate:** 2026-10-05  
 **Source branch:** `fix/c8-frame-composer-baseline`  
-**Commit:** `669ba51a1d5e1f426bf4605024bf1a20add3beee`  
-**Vercel preview:** `https://booth-pro-jvvrem4gy-risakil.vercel.app/`  
+**Commit:** `703b621be39d2fbee05a39d938d9b5c07cc47559`  
+**Vercel preview:** `https://booth-pro-orhymbqq6-risakil.vercel.app/`  
 **Production:** `https://booth-pro-app.vercel.app/` — DO NOT MODIFY during stabilization.
 
 ## Rule

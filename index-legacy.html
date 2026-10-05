@@ -236,14 +236,29 @@ html,body{overscroll-behavior-y:auto}
 @media(max-width:900px){#dashboardModal{padding:8px!important}#dashboardModal>.max-w-6xl{width:100%!important;margin:0!important}}
 </style>
 <style id="bp-dashboard-scroll-hotfix">
-/* Dashboard: one reliable vertical scroll surface on touch + desktop. */
-html,body{max-width:100%}
-#dashboardModal{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;max-height:100dvh!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;padding:14px!important;box-sizing:border-box!important}
-#dashboardModal>.max-w-6xl{position:relative!important;width:min(1500px,100%)!important;max-width:1500px!important;min-height:0!important;max-height:none!important;margin:0 auto!important;overflow:visible!important}
-#dashboardModal>.max-w-6xl>.grid{min-height:0!important}
+/* Dashboard: single, reliable scroll surface. Keep the modal itself scrollable; never trap the page inside a fixed-height child. */
+html,body{max-width:100%;overflow-x:hidden!important}
+#dashboardModal{
+ position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;max-height:none!important;
+ display:block!important;overflow-x:hidden!important;overflow-y:scroll!important;
+ -webkit-overflow-scrolling:touch!important;overscroll-behavior-y:contain!important;
+ touch-action:pan-y!important;padding:14px!important;box-sizing:border-box!important;
+}
+#dashboardModal>.max-w-6xl{
+ position:relative!important;display:block!important;width:min(1500px,100%)!important;max-width:1500px!important;
+ height:auto!important;min-height:0!important;max-height:none!important;margin:0 auto!important;
+ overflow:visible!important;transform:none!important;
+}
+#dashboardModal>.max-w-6xl>.grid{
+ display:grid!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;
+}
+#dashboardModal>.max-w-6xl>.grid>div{
+ height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;
+}
+#dashboardModal .dashboard-grid{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important}
 @media(max-width:700px){
-  #dashboardModal{padding:8px!important}
-  #dashboardModal>.max-w-6xl{min-height:0!important;border-radius:22px!important}
+ #dashboardModal{padding:8px!important}
+ #dashboardModal>.max-w-6xl{width:100%!important;border-radius:22px!important}
 }
 </style>
 </head>

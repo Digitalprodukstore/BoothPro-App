@@ -1,0 +1,27 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoothPro Dashboard</title></head><body><div style="font-family:system-ui;padding:24px">Memuat BoothPro Dashboard…</div><script>
+(async()=>{
+try{
+ const r=await fetch('/index-legacy.html?bp-dashboard='+Date.now(),{cache:'no-store'});
+ if(!r.ok) throw new Error('BoothPro Dashboard gagal dimuat ('+r.status+')');
+ let html=await r.text();
+ const guard=String.raw`<script id="bp-dashboard-entry-guard">
+(function(){
+ 'use strict';
+ window.__BP_ENTRY_MODE__='dashboard';
+ function forceDashboard(){
+   try{
+     if(typeof openDashboard==='function') openDashboard();
+     var modal=document.getElementById('dashboardModal');
+     if(modal){modal.classList.remove('hidden');modal.style.display='block';modal.setAttribute('aria-hidden','false');}
+   }catch(e){}
+ }
+ setTimeout(forceDashboard,0);setTimeout(forceDashboard,250);setTimeout(forceDashboard,1000);
+})();
+<\/script>`;
+ const at=html.toLowerCase().lastIndexOf('</body>');
+ if(at<0) throw new Error('BoothPro Dashboard tidak memiliki body penutup');
+ html=html.slice(0,at)+guard+html.slice(at);
+ document.open();document.write(html);document.close();
+}catch(e){document.body.innerHTML='<pre style="padding:24px;color:#fca5a5">'+String(e&&e.stack||e).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))+'</pre>'}
+})();
+</script></body></html>

@@ -1,0 +1,60 @@
+name: BoothPro Route & Regression Guard
+
+on:
+  push:
+    branches:
+      - fix/c8-frame-composer-baseline
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  route-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify canonical entry files
+        run: |
+          test -f kiosk/index.html
+          test -f dashboard/index.html
+          grep -q 'BoothPro Kiosk' kiosk/index.html
+          grep -q '__BP_ENTRY_MODE__=.kiosk.' kiosk/index.html
+          grep -q 'BoothPro Dashboard' dashboard/index.html
+          grep -q '__BP_ENTRY_MODE__=.dashboard.' dashboard/index.html
+
+      - name: Verify kiosk cannot open dashboard
+        run: |
+          grep -q 'window.openDashboard=function(){ return false; };' kiosk/index.html
+          grep -q 'dashboardModal' kiosk/index.html
+          grep -q 'resetToHome' kiosk/index.html
+
+      - name: Verify legacy engine and C8 composer remain present
+        run: |
+          test -f index-legacy.html
+          grep -q 'BoothProC8' index-legacy.html
+          grep -q "id==='editor'" index-legacy.html
+          grep -q 'pointerdown' index-legacy.html
+          grep -q 'touches' index-legacy.html
+
+      - name: Verify kiosk camera/session foundation remains present
+        run: |
+          grep -q 'getUserMedia' index-legacy.html
+          grep -q 'screenCapture' index-legacy.html
+          grep -q 'screenWelcome' index-legacy.html
+
+      - name: Verify no Pictlord contamination
+        run: |
+          if grep -Rni --exclude-dir=.git 'pictlord' kiosk dashboard index.html index-legacy.html; then
+            echo 'FAIL: Pictlord reference detected in BoothPro runtime entry files.'
+            exit 1
+          fi
+
+      - name: Report contract
+        run: |
+          echo 'PASS: Kiosk/Dashboard route contract and critical BoothPro regression markers are present.'

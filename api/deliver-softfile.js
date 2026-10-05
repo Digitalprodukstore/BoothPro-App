@@ -31,7 +31,7 @@ async function getManifest(sid){
  if(row.expires_at&&Date.now()>Date.parse(row.expires_at))throw new Error('Soft file sudah kedaluwarsa.');
  return row;
 }
-function ensureUrl(v,name){const u=clean(v);if(!u||!/^https?:\\/\\//i.test(u))throw new Error(name+' belum tersedia atau URL tidak valid.');return u}
+function ensureUrl(v,name){const u=clean(v);if(!u||!/^https?:\/\//i.test(u))throw new Error(name+' belum tersedia atau URL tidak valid.');return u}
 
 async function sendWhatsApp(to,message,media){
  const token=required('WHATSAPP_ACCESS_TOKEN');
@@ -84,12 +84,12 @@ module.exports=async function handler(req,res){
   const message=clean(body.message);
   if(channel==='whatsapp'){
    const to=phone(body.phone);
-   if(!/^62\\d{8,15}$/.test(to))return json(res,400,{ok:false,error:'Nomor WhatsApp harus format Indonesia 62xxxxxxxxxx.'});
+   if(!/^62\d{8,15}$/.test(to))return json(res,400,{ok:false,error:'Nomor WhatsApp harus format Indonesia 62xxxxxxxxxx.'});
    const result=await sendWhatsApp(to,message,media);
    return json(res,200,{ok:true,channel:'whatsapp',sent:result.length});
   }
   const email=clean(body.email);
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return json(res,400,{ok:false,error:'Alamat email tidak valid.'});
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return json(res,400,{ok:false,error:'Alamat email tidak valid.'});
   const result=await sendEmail(email,message,media,sid);
   return json(res,200,{ok:true,channel:'email',id:result?.id||null});
  }catch(e){return json(res,500,{ok:false,error:e.message||String(e)})}

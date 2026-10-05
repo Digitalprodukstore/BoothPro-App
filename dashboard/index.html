@@ -15,7 +15,9 @@ try{
      if(modal){modal.classList.remove('hidden');modal.style.display='block';modal.setAttribute('aria-hidden','false');}
    }catch(e){}
  }
- setTimeout(forceDashboard,0);setTimeout(forceDashboard,250);setTimeout(forceDashboard,1000);
+ forceDashboard();
+ setTimeout(forceDashboard,250);
+ setTimeout(forceDashboard,1000);
 })();
 <\/script>`;
  const at=html.toLowerCase().lastIndexOf('</body>');

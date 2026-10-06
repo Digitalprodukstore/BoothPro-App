@@ -1,39 +1,13 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BoothPro</title></head><body><div style="font-family:system-ui;padding:24px">Memuat BoothPro…</div><script>
-(async()=>{
-try{
- const r=await fetch('/index-legacy.html?bp='+Date.now(),{cache:'no-store'}); if(!r.ok)throw new Error('BoothPro engine gagal dimuat ('+r.status+')');
- let html=await r.text();
- const patch=String.raw`<script id="bp-authoritative-c8-composer">
-(function(){
-'use strict';
-const BP=window.__BP_C8__=window.__BP_C8__||{transforms:[],rects:[],frameKey:'',activeIndex:0,gesture:{}};
-function ensure(n){n=Math.max(0,Number(n)||0);while(BP.transforms.length<n)BP.transforms.push({scale:1,x:0,y:0});if(BP.transforms.length>n)BP.transforms.length=n;return BP.transforms}
-function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
-function drawFast(canvas,photos,frame,rects){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=window.frameBg||'#fff';ctx.fillRect(0,0,canvas.width,canvas.height);const filter=typeof getAppliedFilter==='function'?getAppliedFilter():'none';ensure(rects.length);photos.forEach((im,i)=>{const r=rects[i],t=BP.transforms[i];if(!im||!r)return;const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height,base=Math.min(r.w/iw,r.h/ih),s=clamp(Number(t.scale)||1,.55,3.5),dw=iw*base*s,dh=ih*base*s,ox=r.x+(r.w-dw)/2+(Number(t.x)||0)*r.w,oy=r.y+(r.h-dh)/2+(Number(t.y)||0)*r.h;ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();ctx.filter=filter==='none'?'none':filter;ctx.drawImage(im,ox,oy,dw,dh);ctx.restore()});if(frame){ctx.filter='none';ctx.drawImage(frame,0,0,canvas.width,canvas.height)}if(typeof drawPreviewFooterCanvas==='function')drawPreviewFooterCanvas(ctx,canvas.width,canvas.height)}
-async function preview(wrap,photos,frameSrc){
- const token=(window.__BP_C8_RENDER_TOKEN__||0)+1;window.__BP_C8_RENDER_TOKEN__=token;
- let fw=600,fh=900,frame=null;try{if(frameSrc){frame=await loadImage(frameSrc);fh=Math.max(300,Math.round(fw*((frame.naturalHeight||900)/(frame.naturalWidth||600))));if(fh>1200){fh=1200;fw=Math.max(300,Math.round(fh*((frame.naturalWidth||600)/(frame.naturalHeight||900))))}}}catch(e){}
- if(token!==window.__BP_C8_RENDER_TOKEN__)return;
- const srcs=Array.isArray(photos)?photos:[];const loaded=[];for(const src of srcs){if(!src){loaded.push(null);continue}try{loaded.push(await loadImage(src))}catch(e){loaded.push(null)}}
- if(token!==window.__BP_C8_RENDER_TOKEN__)return;
- const n=loaded.length;let rects=[];try{rects=await bpGetRects(frameSrc,fw,fh,n)}catch(e){}
- if(!rects||rects.length<n){rects=[];const pad=fw*.07,gap=fw*.012,footer=fh*.13,cols=selectedLayoutType==='strip'?1:2,rows=selectedLayoutType==='strip'?Math.max(1,n):Math.ceil(n/2),usableH=fh-pad*2-footer-gap*(rows-1),cw=(fw-pad*2-gap*(cols-1))/cols,ch=usableH/rows;for(let i=0;i<n;i++){const rr=Math.floor(i/cols),cc=i%cols;rects.push({x:pad+cc*(cw+gap),y:pad+rr*(ch+gap),w:cw,h:ch})}}
- BP.rects=rects;ensure(n);wrap.style.aspectRatio=fw+'/'+fh;wrap.innerHTML='';const stage=document.createElement('div');stage.style.cssText='position:relative;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none';const canvas=document.createElement('canvas');canvas.width=fw;canvas.height=fh;canvas.style.cssText='position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:10px';stage.appendChild(canvas);wrap.appendChild(stage);drawFast(canvas,loaded,frame,rects);
- const layer=document.createElement('div');layer.style.cssText='position:absolute;inset:0;z-index:30;touch-action:none';stage.appendChild(layer);
- const selected=()=>Number.isInteger(window.__BP_PHOTO_PICK__)?window.__BP_PHOTO_PICK__:null;
- const assignment=()=>typeof bpEnsureSlotAssignments==='function'?bpEnsureSlotAssignments():[];
- rects.forEach((r,i)=>{const hit=document.createElement('div');hit.dataset.slot=String(i);hit.style.cssText='position:absolute;left:'+(r.x/fw*100)+'%;top:'+(r.y/fh*100)+'%;width:'+(r.w/fw*100)+'%;height:'+(r.h/fh*100)+'%;z-index:31;border:1px solid rgba(129,140,248,.22);border-radius:5px;touch-action:none;user-select:none';const ai=assignment()[i];const badge=document.createElement('div');badge.style.cssText='position:absolute;left:6px;top:6px;z-index:4;padding:4px 7px;border-radius:999px;background:rgba(0,0,0,.72);color:#fff;font:800 9px system-ui;pointer-events:none';badge.textContent=Number.isInteger(ai)?'Foto '+(ai+1):'TAP DI SINI';hit.appendChild(badge);
- const state={points:new Map(),base:null,pinch:null};
- const redraw=()=>{drawFast(canvas,loaded,frame,rects)};
- hit.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();const pick=selected();if(Number.isInteger(pick)){if(typeof assignPhotoToSlot==='function')assignPhotoToSlot(i,pick);return}try{hit.setPointerCapture(e.pointerId)}catch(_){}state.points.set(e.pointerId,{x:e.clientX,y:e.clientY});const t=ensure(i+1)[i];state.base={x:t.x,y:t.y,scale:t.scale,anchor:{x:e.clientX,y:e.clientY}};state.pinch=null;BP.activeIndex=i});
- hit.addEventListener('pointermove',e=>{if(!state.points.size)return;e.preventDefault();state.points.set(e.pointerId,{x:e.clientX,y:e.clientY});const pts=[...state.points.values()],t=ensure(i+1)[i],sr=stage.getBoundingClientRect();if(pts.length===1){t.x=clamp(state.base.x+(pts[0].x-state.base.anchor.x)/sr.width,-1.5,1.5);t.y=clamp(state.base.y+(pts[0].y-state.base.anchor.y)/sr.height,-1.5,1.5)}else{const a=pts[0],b=pts[1],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2},dist=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));if(!state.pinch)state.pinch={dist,scale:t.scale,x:t.x,y:t.y,mid};t.scale=clamp(state.pinch.scale*(dist/state.pinch.dist),.55,3.5);t.x=clamp(state.pinch.x+(mid.x-state.pinch.mid.x)/sr.width,-1.5,1.5);t.y=clamp(state.pinch.y+(mid.y-state.pinch.mid.y)/sr.height,-1.5,1.5)}redraw()});
- const end=e=>{state.points.delete(e.pointerId);if(state.points.size===0){state.base=null;state.pinch=null}else if(state.points.size===1){const p=[...state.points.values()][0],t=ensure(i+1)[i];state.base={x:t.x,y:t.y,scale:t.scale,anchor:{x:p.x,y:p.y}};state.pinch=null}try{if(hit.hasPointerCapture(e.pointerId))hit.releasePointerCapture(e.pointerId)}catch(_){} };hit.addEventListener('pointerup',end);hit.addEventListener('pointercancel',end);layer.appendChild(hit)});
- const hint=document.createElement('div');hint.style.cssText='position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:40;padding:6px 9px;border-radius:999px;background:rgba(0,0,0,.72);color:#fff;font:800 9px system-ui;pointer-events:none';hint.textContent='Pilih foto → tap slot • geser • cubit zoom';stage.appendChild(hint);setTimeout(()=>{hint.style.opacity='0';hint.style.transition='opacity .5s'},2600);
-}
-window.BoothProC8=window.BoothProC8||{};window.BoothProC8.preview=preview;window.BoothProC8.transforms=BP.transforms;window.BoothProC8.getTransforms=()=>BP.transforms.map(x=>({...x}));window.BoothProC8.setTransform=(i,v)=>Object.assign(ensure(i+1)[i],v||{});
-})();
-<\/script>`;
- const marker='</body>'; const at=html.toLowerCase().lastIndexOf(marker); if(at<0)throw new Error('BoothPro engine tidak memiliki body penutup'); html=html.slice(0,at)+patch+html.slice(at); document.open();document.write(html);document.close();
-}catch(e){document.body.innerHTML='<pre style="padding:24px;color:#fca5a5">'+String(e&&e.stack||e).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))+'</pre>'}
-})();
-</script></body></html>
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BoothPro</title>
+<meta http-equiv="refresh" content="0;url=/kiosk/">
+</head>
+<body>
+<script>location.replace('/kiosk/');</script>
+<noscript><a href="/kiosk/">Buka BoothPro Kiosk</a></noscript>
+</body>
+</html>

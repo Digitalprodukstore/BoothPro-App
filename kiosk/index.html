@@ -4,7 +4,7 @@ try{
  const r=await fetch('/index-legacy.html?bp-kiosk='+Date.now(),{cache:'no-store'});
  if(!r.ok) throw new Error('BoothPro Kiosk gagal dimuat ('+r.status+')');
  let html=await r.text();
- const kioskCss=String.raw`<style id="bp-kiosk-hard-isolation">#dashboardModal,#dashboardAuthModal{display:none!important;visibility:hidden!important;pointer-events:none!important}</style>`;
+ const kioskCss=String.raw`<style id="bp-kiosk-hard-isolation">#dashboardModal,#dashboardAuthModal{display:none!important;visibility:hidden!important;pointer-events:none!important}</style><script src="/boothpro-hotfix-c9.js?c9=1"><\/script>`;
  html=html.replace("</head>",kioskCss+"</head>");
  const guard=String.raw`<script id="bp-kiosk-entry-guard">
 (function(){
@@ -36,15 +36,9 @@ try{
  setTimeout(blockDashboard,1500);
  setInterval(function(){
    try{
-     if(typeof window.openDashboard!=='function' || !window.openDashboard.__bpKioskBlocked){
-       var f=function(){ blockDashboard(); return false; }; f.__bpKioskBlocked=true; window.openDashboard=f;
-     }
-     if(typeof window.openDashboardUnlocked!=='function' || !window.openDashboardUnlocked.__bpKioskBlocked){
-       var u=function(){ blockDashboard(); return false; }; u.__bpKioskBlocked=true; window.openDashboardUnlocked=u;
-     }
-     if(typeof window.openDashboardAuth!=='function' || !window.openDashboardAuth.__bpKioskBlocked){
-       var a=function(){ blockDashboard(); return false; }; a.__bpKioskBlocked=true; window.openDashboardAuth=a;
-     }
+     if(typeof window.openDashboard!=='function' || !window.openDashboard.__bpKioskBlocked){var f=function(){ blockDashboard(); return false; }; f.__bpKioskBlocked=true; window.openDashboard=f;}
+     if(typeof window.openDashboardUnlocked!=='function' || !window.openDashboardUnlocked.__bpKioskBlocked){var u=function(){ blockDashboard(); return false; }; u.__bpKioskBlocked=true; window.openDashboardUnlocked=u;}
+     if(typeof window.openDashboardAuth!=='function' || !window.openDashboardAuth.__bpKioskBlocked){var a=function(){ blockDashboard(); return false; }; a.__bpKioskBlocked=true; window.openDashboardAuth=a;}
      blockDashboard();
    }catch(e){}
  },500);

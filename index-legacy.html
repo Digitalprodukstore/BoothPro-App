@@ -289,7 +289,7 @@ html,body{max-width:100%;overflow-x:hidden!important}
 <!-- 4 CAMERA -->
 <section id="step-capture" class="hidden w-full max-w-6xl animate-fadeIn"><div class="flex flex-wrap justify-between items-center gap-3 mb-4"><div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 03</span><h2 class="text-2xl font-extrabold mt-1">Sesi Take Foto</h2><p class="text-zinc-400 text-sm mt-1">Ambil semua foto sesuai paket. Frame pilihan awal akan menjadi referensi preview, lalu Anda masih bisa menyesuaikannya setelah sesi selesai.</p></div><div id="sessionTimer" class="px-4 py-2 rounded-full bg-zinc-950 border border-zinc-800 font-mono font-bold">07:00</div></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2 flex flex-col gap-4"><div class="relative bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden aspect-[4/3] flex items-center justify-center shadow-2xl"><video id="webcam" class="w-full h-full object-cover scale-x-[-1]" autoplay playsinline muted></video><div id="cameraPlaceholder" class="absolute inset-0 bg-zinc-900 flex flex-col items-center justify-center space-y-3 z-10"><div class="h-14 w-14 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400 animate-pulse"><i class="fa-solid fa-video-slash text-xl"></i></div><p id="cameraMessage" class="text-zinc-400 text-sm font-medium">Membuka akses kamera...</p><button onclick="startWebcam(true)" class="mt-2 text-xs text-indigo-400 underline">Gunakan Kamera Simulasi jika gagal</button></div><div id="countdownOverlay" class="hidden absolute inset-0 bg-black/40 flex items-center justify-center z-20"><span id="countdownText" class="text-8xl md:text-9xl font-black">3</span></div><div class="absolute top-4 left-4 z-20 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs"><i class="fa-solid fa-circle text-red-500 text-[10px] animate-pulse mr-1"></i> LIVE VIEW</div></div><div class="bg-zinc-950 border border-zinc-800 p-4 rounded-2xl flex flex-wrap justify-between items-center gap-3"><div class="text-xs md:text-sm text-zinc-400">Foto: <span id="capturedCount" class="font-bold text-white">0</span> / <span id="maxPhotosCount">4</span> · Retake: <span id="retakeCount">0</span>/3</div><div class="flex items-center gap-3 flex-wrap"><div id="zoomWrap" class="hidden items-center gap-2"><i class="fa-solid fa-magnifying-glass text-xs text-zinc-500"></i><input id="zoomRange" type="range" min="1" max="3" step="0.1" value="1" class="w-24"></div><button onclick="toggleMirror()" title="Mirror" class="px-3 py-3 rounded-xl bg-zinc-800 text-zinc-300 hover:text-white text-sm"><i class="fa-solid fa-arrows-left-right"></i></button><button id="shutterBtn" onclick="takePhoto()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2 text-sm disabled:opacity-40 disabled:pointer-events-none"><i class="fa-solid fa-circle-dot"></i> Ambil Gambar</button></div></div></div><div class="bg-zinc-950 border border-zinc-800 p-5 rounded-3xl flex flex-col"><div class="flex items-center justify-between gap-2 mb-3"><h3 class="font-bold text-white text-lg"><i class="fa-solid fa-film text-indigo-400 mr-2"></i>Hasil Jepretan</h3><span class="text-[9px] text-zinc-500">Tap foto untuk memilih</span></div><div id="filmStripGallery" class="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1"></div><div class="mt-5 pt-5 border-t border-zinc-800"><div class="text-xs uppercase tracking-widest text-indigo-400 font-bold mb-1">Susun Foto ke Frame</div><p class="text-[10px] text-zinc-500 mb-3">Foto tetap di atas. Tap foto yang ingin dipakai, lalu tap posisi di preview frame di bawah.</p><div id="photoOrderControls" class="mb-4"></div><div id="captureReviewPreview" class="capture-review-shell mx-auto"></div><p class="text-[10px] text-zinc-600 text-center mt-2">Di preview frame: geser foto atau cubit dua jari untuk menyesuaikan.</p></div><button id="nextToFrameBtn" disabled onclick="goToStep(5)" class="mt-4 w-full py-3.5 bg-zinc-800 text-zinc-500 font-bold rounded-xl disabled:opacity-50 disabled:pointer-events-none"><i class="fa-solid fa-check mr-2"></i>Sudah Sesuai · Lanjut</button></div></div></section>
 <!-- 5 FRAME ADJUSTMENT + FILTER --><section id="step-frame" class="hidden w-full max-w-6xl animate-fadeIn"><div class="flex flex-wrap justify-between items-end gap-3 mb-5"><div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 04</span><h2 class="text-3xl font-extrabold mt-2">Final Foto</h2><p class="text-zinc-400 text-sm mt-1">Atur foto di dalam frame: geser untuk memindahkan, cubit dua jari untuk zoom, lalu pilih efek/filter.</p></div><div class="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 font-bold"><i class="fa-solid fa-hand-pointer mr-1"></i>Frame & posisi bisa disesuaikan</div></div><div class="grid lg:grid-cols-[minmax(0,1.55fr)_minmax(300px,.8fr)] gap-5"><div class="bg-zinc-950 border border-zinc-800 p-4 md:p-6 rounded-3xl flex items-center justify-center min-h-[520px] overflow-hidden"><div id="editorPreview" class="preview-shell w-full max-w-[620px]"></div></div><div class="bg-zinc-950 border border-zinc-800 p-5 rounded-3xl safe-scroll"><label class="text-xs font-semibold text-zinc-400 uppercase">Efek / Filter</label><p class="text-[10px] text-zinc-500 mt-1">Filter diterapkan ke hasil final dan print.</p><div id="filterChoicesStep5" class="grid grid-cols-2 gap-2 mt-3"></div><button type="button" onclick="finishEditing()" class="w-full mt-5 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl font-bold">OK, Lanjut Print & Soft File <i class="fa-solid fa-arrow-right ml-1"></i></button></div></div></section></section><!-- 6 EDITOR LEGACY --><section id="step-editor" class="hidden" aria-hidden="true"></section>
-<!-- 7 FINAL / DELIVERY --><section id="step-final" class="hidden w-full max-w-6xl animate-fadeIn"><div class="text-center mb-5"><div class="h-16 w-16 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl"><i class="fa-solid fa-circle-check"></i></div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 05</span><h2 class="text-3xl font-extrabold mt-3">Print & Soft File</h2><p id="finalSessionText" class="text-zinc-400 text-sm mt-1">Hasil final siap dicetak dan dikirim.</p></div><div class="grid lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,.75fr)] gap-5"><div class="space-y-5"><div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex justify-center min-h-[520px]"><div id="finalPreview" class="preview-shell w-full max-w-[620px]"></div></div><div id="deliveryBrandingPanel" class="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 md:p-5"><div class="font-bold"><i class="fa-solid fa-display text-indigo-400 mr-2"></i>Live Session / Branding</div><p class="text-[10px] text-zinc-500 mt-1">Area tayang untuk live session, coffeeshop, sponsor, atau partner.</p><div id="deliveryBrandingContent" class="mt-3 rounded-2xl overflow-hidden bg-zinc-900 min-h-[150px] flex items-center justify-center"></div></div></div><div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 space-y-4"><div class="text-xs text-zinc-500">ID Sesi</div><div id="sessionIdDisplay" class="font-mono text-indigo-300 font-bold mt-1"></div><button type="button" onclick="printComposite()" class="w-full min-h-[58px] py-4 px-4 rounded-xl bg-white text-zinc-900 font-bold text-base relative z-[80] pointer-events-auto touch-manipulation"><i class="fa-solid fa-print mr-1"></i>Cetak <span id="printCountLabel"></span></button><button type="button" onclick="openExtraPrint()" class="w-full min-h-[54px] py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm relative z-[80] pointer-events-auto touch-manipulation"><i class="fa-solid fa-plus mr-1"></i>Tambah Print Foto</button><p class="text-[10px] text-zinc-500 text-center -mt-2">Bayar QRIS sesuai jumlah print tambahan sebelum mencetak.</p><div class="border-t border-zinc-800 pt-4"><div class="font-bold">Kirim Soft File</div><p class="text-[10px] text-zinc-500 mt-1">Pilih WhatsApp atau Email, lalu masukkan tujuan pengiriman.</p><button type="button" onclick="openCustomerShare('whatsapp')" class="w-full mt-3 py-3.5 rounded-xl bg-emerald-600 font-bold text-sm"><i class="fa-brands fa-whatsapp mr-2"></i>WhatsApp</button><button type="button" onclick="openCustomerShare('email')" class="w-full mt-2 py-3.5 rounded-xl bg-blue-600 font-bold text-sm"><i class="fa-solid fa-envelope mr-2"></i>Email</button><div id="customerShareForm" class="hidden mt-3 p-3 rounded-xl bg-zinc-900 border border-zinc-800"><input id="customerSharePhone" inputmode="tel" class="hidden w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-sm" placeholder="Nomor WhatsApp pelanggan"><input id="customerShareEmail" type="email" class="hidden w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-sm" placeholder="Email pelanggan"><button id="customerShareSendBtn" type="button" class="mt-2 w-full py-3 rounded-xl bg-indigo-600 font-bold text-sm">Kirim Soft File</button><p id="customerShareStatus" class="text-[10px] text-zinc-500 text-center mt-2"></p></div></div><div class="border-t border-zinc-800 pt-4"><div class="font-bold">QR Cadangan</div><p class="text-[10px] text-zinc-500 mt-1">Jalur utama adalah kirim langsung ke WhatsApp atau Email. QR ini hanya cadangan.</p><div id="qrBox" class="mt-3 bg-white rounded-2xl p-3 w-full min-h-[250px] flex items-center justify-center overflow-hidden"></div><p id="qrNote" class="text-[10px] text-zinc-500 text-center mt-2"></p><p id="cloudUploadStatus" class="text-[10px] text-zinc-500 text-center mt-2"></p></div><button type="button" onclick="resetToHome()" class="w-full py-3 rounded-xl bg-zinc-800 text-zinc-300 font-bold">Selesai / Sesi Baru</button></div></div></div></section></main>
+<!-- 7 FINAL / DELIVERY --><section id="step-final" class="hidden w-full max-w-6xl animate-fadeIn"><div class="text-center mb-5"><div class="h-16 w-16 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl"><i class="fa-solid fa-circle-check"></i></div><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 05</span><h2 class="text-3xl font-extrabold mt-3">Print & Soft File</h2><p id="finalSessionText" class="text-zinc-400 text-sm mt-1">Hasil final siap dicetak dan dikirim.</p></div><div class="grid lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,.75fr)] gap-5"><div class="space-y-5"><div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 flex justify-center min-h-[520px]"><div id="finalPreview" class="preview-shell w-full max-w-[620px]"></div></div><div id="deliveryBrandingPanel" class="bg-zinc-950 border border-zinc-800 rounded-3xl p-4 md:p-5"><div class="font-bold"><i class="fa-solid fa-display text-indigo-400 mr-2"></i>Live Session / Branding</div><p class="text-[10px] text-zinc-500 mt-1">Area tayang untuk live session, coffeeshop, sponsor, atau partner.</p><div id="deliveryBrandingContent" class="mt-3 rounded-2xl overflow-hidden bg-zinc-900 min-h-[150px] flex items-center justify-center"></div></div></div><div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5 space-y-4"><div class="text-xs text-zinc-500">ID Sesi</div><div id="sessionIdDisplay" class="font-mono text-indigo-300 font-bold mt-1"></div><button type="button" onclick="printComposite()" class="w-full min-h-[58px] py-4 px-4 rounded-xl bg-white text-zinc-900 font-bold text-base relative z-[80] pointer-events-auto touch-manipulation"><i class="fa-solid fa-print mr-1"></i>Cetak <span id="printCountLabel"></span></button><button type="button" onclick="openExtraPrint()" class="w-full min-h-[54px] py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm relative z-[80] pointer-events-auto touch-manipulation"><i class="fa-solid fa-plus mr-1"></i>Tambah Print Foto</button><p class="text-[10px] text-zinc-500 text-center -mt-2">Bayar QRIS sesuai jumlah print tambahan sebelum mencetak.</p><div class="border-t border-zinc-800 pt-4"><div class="font-bold">Kirim Soft File</div><p class="text-[10px] text-zinc-500 mt-1">Pilih WhatsApp atau Email, lalu masukkan tujuan pengiriman.</p><button type="button" onclick="syncCustomerSoftFile()" class="w-full mt-3 py-3.5 rounded-xl bg-violet-600 font-bold text-sm"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>Sinkronkan Soft File</button><button type="button" onclick="openCustomerShare('whatsapp')" class="w-full mt-3 py-3.5 rounded-xl bg-emerald-600 font-bold text-sm"><i class="fa-brands fa-whatsapp mr-2"></i>WhatsApp</button><button type="button" onclick="openCustomerShare('email')" class="w-full mt-2 py-3.5 rounded-xl bg-blue-600 font-bold text-sm"><i class="fa-solid fa-envelope mr-2"></i>Email</button><div id="customerShareForm" class="hidden mt-3 p-3 rounded-xl bg-zinc-900 border border-zinc-800"><input id="customerSharePhone" inputmode="tel" class="hidden w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-sm" placeholder="Nomor WhatsApp pelanggan"><input id="customerShareEmail" type="email" class="hidden w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-sm" placeholder="Email pelanggan"><button id="customerShareSendBtn" type="button" class="mt-2 w-full py-3 rounded-xl bg-indigo-600 font-bold text-sm">Kirim Soft File</button><p id="customerShareStatus" class="text-[10px] text-zinc-500 text-center mt-2"></p></div></div><div class="border-t border-zinc-800 pt-4"><div class="font-bold">QR Soft File</div><p class="text-[10px] text-zinc-500 mt-1">Satu QR untuk foto final + GIF + video/live session bila tersedia.</p><div id="qrBox" class="mt-3 bg-white rounded-2xl p-3 w-full min-h-[250px] flex items-center justify-center overflow-hidden"></div><p id="qrNote" class="text-[10px] text-zinc-500 text-center mt-2"></p><p id="cloudUploadStatus" class="text-[10px] text-zinc-500 text-center mt-2"></p></div><button type="button" onclick="resetToHome()" class="w-full py-3 rounded-xl bg-zinc-800 text-zinc-300 font-bold">Selesai / Sesi Baru</button></div></div></div></section></main>
 <footer class="border-t border-zinc-800 bg-zinc-950 px-6 py-3 text-center text-[11px] text-zinc-600">BoothPro v3.0 PRO · Midtrans QRIS · Camera HD · Retake · Frame Gallery · Editor PRO · Print WiFi/Bridge · Soft File Cloud</footer>
 <!-- DASHBOARD MODAL -->
 
@@ -602,12 +602,7 @@ function activateLicenseFromDash(){const k=$('dashLicenseKey').value;if(!validat
 function deactivateLicense(){if(!confirm('Reset lisensi ke mode FREE/trial?'))return;license.activated=false;license.key='';saveLicense();refreshPlanBadge();applyWatermarkGate();$('licenseStatusText').innerText=licenseStatusText()}
 function applyWatermarkGate(){if(!isPro()){config.footer=Object.assign({},config.footer,{watermark:'📸 MADE WITH BOOTHPRO FREE',showDate:true});saveConfig()}else if(!license.key){/* keep user setting */}renderCaptureReview();renderFrameMiniPreview();renderEditor()}
 /* ============ CONFIG ============ */
-function loadConfig(){try{const saved=JSON.parse(localStorage.getItem(CONFIG_KEY)||localStorage.getItem(LEGACY_CONFIG_KEY)||'{}');const c=structuredClone(defaultConfig);Object.assign(c,saved);c.auth=Object.assign({},defaultConfig.auth,saved.auth||{});c.theme=Object.assign({},defaultConfig.theme,saved.theme||{});c.dashboardTheme=Object.assign({},defaultConfig.dashboardTheme,saved.dashboardTheme||{});c.shareTools=Object.assign({},defaultConfig.shareTools,saved.shareTools||{});c.cloudSync=Object.assign({},defaultConfig.cloudSync,saved.cloudSync||{});c.cloudinary=Object.assign({},defaultConfig.cloudinary,saved.cloudinary||{});c.camera=Object.assign({},defaultConfig.camera,saved.camera||{});c.midtrans=Object.assign({},defaultConfig.midtrans,saved.midtrans||{});c.hardware=Object.assign({},defaultConfig.hardware,saved.hardware||{});c.brand=Object.assign({},defaultConfig.brand,saved.brand||{});c.footer=Object.assign({},defaultConfig.footer,saved.footer||{});c.frameStyle=Object.assign({},defaultConfig.frameStyle,saved.frameStyle||{});c.frameLibrary=Object.assign({},defaultConfig.frameLibrary,saved.frameLibrary||{});c.frameLibrary.disabledBuiltins=Array.isArray(c.frameLibrary.disabledBuiltins)?c.frameLibrary.disabledBuiltins:[];c.frameCategories=Object.assign({},defaultConfig.frameCategories,saved.frameCategories||{});c.frameOverrides=Object.assign({},defaultConfig.frameOverrides,saved.frameOverrides||{});c.frameSlots=Array.isArray(saved.frameSlots)?saved.frameSlots:structuredClone(defaultConfig.frameSlots);c.frameSlots=Array.from({length:12},(_,i)=>Object.assign({},defaultConfig.frameSlots[i],c.frameSlots[i]||{}));
-  // Runtime safety: an incomplete cached/cloud config must never blank the customer package step.
-  if(!Array.isArray(c.packages)||!c.packages.length)c.packages=structuredClone(defaultConfig.packages);
-  c.packages=c.packages.filter(p=>p&&p.id&&Number.isFinite(Number(p.price))&&Number(p.photos)>0);
-  if(!c.packages.length)c.packages=structuredClone(defaultConfig.packages);
-  return c}catch(e){return structuredClone(defaultConfig)}}
+function loadConfig(){try{const saved=JSON.parse(localStorage.getItem(CONFIG_KEY)||localStorage.getItem(LEGACY_CONFIG_KEY)||'{}');const c=structuredClone(defaultConfig);Object.assign(c,saved);c.auth=Object.assign({},defaultConfig.auth,saved.auth||{});c.theme=Object.assign({},defaultConfig.theme,saved.theme||{});c.dashboardTheme=Object.assign({},defaultConfig.dashboardTheme,saved.dashboardTheme||{});c.shareTools=Object.assign({},defaultConfig.shareTools,saved.shareTools||{});c.cloudSync=Object.assign({},defaultConfig.cloudSync,saved.cloudSync||{});c.cloudinary=Object.assign({},defaultConfig.cloudinary,saved.cloudinary||{});c.camera=Object.assign({},defaultConfig.camera,saved.camera||{});c.midtrans=Object.assign({},defaultConfig.midtrans,saved.midtrans||{});c.hardware=Object.assign({},defaultConfig.hardware,saved.hardware||{});c.brand=Object.assign({},defaultConfig.brand,saved.brand||{});c.footer=Object.assign({},defaultConfig.footer,saved.footer||{});c.frameStyle=Object.assign({},defaultConfig.frameStyle,saved.frameStyle||{});c.frameLibrary=Object.assign({},defaultConfig.frameLibrary,saved.frameLibrary||{});c.frameLibrary.disabledBuiltins=Array.isArray(c.frameLibrary.disabledBuiltins)?c.frameLibrary.disabledBuiltins:[];c.frameCategories=Object.assign({},defaultConfig.frameCategories,saved.frameCategories||{});c.frameOverrides=Object.assign({},defaultConfig.frameOverrides,saved.frameOverrides||{});c.frameSlots=Array.isArray(saved.frameSlots)?saved.frameSlots:structuredClone(defaultConfig.frameSlots);c.frameSlots=Array.from({length:12},(_,i)=>Object.assign({},defaultConfig.frameSlots[i],c.frameSlots[i]||{}));return c}catch(e){return structuredClone(defaultConfig)}}
 const FRAME_DB_NAME='BoothProFrameDB_v1',FRAME_DB_STORE='frames';
 let frameCategoryFilter='all';
 function loadFrames(){try{const raw=JSON.parse(localStorage.getItem(FRAME_KEY)||'[]');return Array.isArray(raw)?raw:[]}catch(e){return[]}}
@@ -1072,22 +1067,28 @@ async function syncCustomerSoftFile(){
 }
 function openCustomerShare(kind){const form=$('customerShareForm');if(!form)return;form.classList.remove('hidden');const phone=$('customerSharePhone'),email=$('customerShareEmail'),send=$('customerShareSendBtn');phone.classList.toggle('hidden',kind!=='whatsapp');email.classList.toggle('hidden',kind!=='email');send.onclick=kind==='whatsapp'?shareCustomerWhatsApp:shareCustomerEmail;(kind==='whatsapp'?phone:email).focus()}
 async function deliverCustomerSoftFile(channel){
- const status=$('customerShareStatus'),send=$('customerShareSendBtn');
+ const status=$('customerShareStatus'), send=$('customerShareSendBtn');
  if(send){send.disabled=true;send.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Mengirim...'}
- if(status)status.innerText='Menyiapkan 3 soft file untuk pengiriman langsung...';
+ if(status)status.innerText='Menyiapkan soft file untuk pengiriman langsung...';
  try{
-  const phone=channel==='whatsapp'?normalizeCustomerPhone($('customerSharePhone')?.value||''):'';
-  const email=channel==='email'?String($('customerShareEmail')?.value||'').trim():'';
-  if(channel==='whatsapp'&&!/^62\\d{8,15}$/.test(phone))throw new Error('Nomor WhatsApp tidak valid.');
-  if(channel==='email'&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))throw new Error('Email tidak valid.');
-  if(typeof window.boothProAutoSyncSoftFile!=='function')throw new Error('Modul Soft File langsung belum aktif.');
-  const bundle=await window.boothProAutoSyncSoftFile();
-  if(!bundle?.sessionId)throw new Error('Session Soft File belum siap.');
-  const target=channel==='whatsapp'?phone:email;
-  const r=await fetch('/api/send-direct-media',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:bundle.sessionId,customerName:'',deliveryMethod:channel,target}),cache:'no-store'});
+  let d=customerShareData();
+  if(!d.photoUrl||!customerSoftSyncResult){await syncCustomerSoftFile();d=customerShareData()}
+  const media={
+   sessionId:d.sid,
+   phone:channel==='whatsapp'?normalizeCustomerPhone($('customerSharePhone')?.value||''):'',
+   email:channel==='email'?String($('customerShareEmail')?.value||'').trim():'',
+   message:d.message||'Soft file BoothPro Anda sudah siap.',
+   photoUrl:String(customerSoftSyncResult?.photoUrl||d.photoUrl||'').trim(),
+   gifUrl:String(customerSoftSyncResult?.gifUrl||'').trim(),
+   videoUrl:String(customerSoftSyncResult?.videoUrl||'').trim()
+  };
+  if(channel==='whatsapp'&&!media.phone)throw new Error('Masukkan nomor WhatsApp pelanggan.');
+  if(channel==='email'&&!media.email)throw new Error('Masukkan email pelanggan.');
+  if(!media.photoUrl)throw new Error('Foto final belum tersedia. Sinkronkan Soft File terlebih dahulu.');
+  const r=await fetch('/api/deliver-softfile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel,sessionId:media.sessionId,phone:media.phone,email:media.email,message:media.message,photoUrl:media.photoUrl,gifUrl:media.gifUrl,videoUrl:media.videoUrl})});
   const out=await r.json().catch(()=>null);
   if(!r.ok||!out?.ok)throw new Error(out?.error||'Pengiriman soft file gagal.');
-  if(status)status.innerText=channel==='whatsapp'?'✓ 3 soft file berhasil dikirim langsung ke WhatsApp.':'✓ 3 soft file berhasil dikirim sebagai attachment ke email.';
+  if(status)status.innerText=channel==='whatsapp'?'✓ Foto + media berhasil dikirim ke WhatsApp pelanggan.':'✓ Foto + media berhasil dikirim ke email pelanggan.';
  }catch(e){
   if(status)status.innerText='Pengiriman gagal · '+(e.message||e);
   alert('Kirim Soft File: '+(e.message||e));
@@ -1179,11 +1180,7 @@ async function printComposite(){
  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
  setTimeout(cleanup,10000);
 }
-function generateQR(overrideUrl){const q=$('qrBox');if(!q)return;q.innerHTML='';const holder=document.createElement('div');holder.style.cssText='width:220px;height:220px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:12px;overflow:hidden';q.appendChild(holder);let payload=String(overrideUrl||'').trim();const base=(config.softBase||'').trim(),share=(config.shareBase||'').trim();if(!payload&&share){payload=share.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId||'session');if($('qrNote'))$('qrNote').innerText='QR mengarah ke halaman share/backend.'}else if(!payload&&base){payload=base.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId||'session');if($('qrNote'))$('qrNote').innerText='QR memakai endpoint soft file Dashboard.'}else if(!payload){payload=location.href.split('#')[0]+'#session='+encodeURIComponent(sessionId||'local');if($('qrNote'))$('qrNote').innerText='QR lokal aktif. Setelah Cloud/Share tersambung, QR akan memakai link bundling.'}try{if(typeof QRCode==='undefined')throw new Error('QRCode library belum termuat');new QRCode(holder,{text:payload,width:210,height:210,correctLevel:QRCode.CorrectLevel.M})}catch(e){holder.innerText='QR belum dapat dibuat. '+(e.message||e)}}function generateGifBlob(){
-  if(window.__BP_GIF_BLOB_PROMISE__) return window.__BP_GIF_BLOB_PROMISE__;
-  window.__BP_GIF_BLOB_PROMISE__=(async()=>{return new Promise((resolve,reject)=>{if(!capturedPhotos.length)return reject(new Error('Tidak ada foto'));if(typeof GIF==='undefined')return reject(new Error('Generator GIF belum termuat'));const width=240,height=180;const gif=new GIF({workers:2,quality:28,width,height,workerScript:'/gif.worker.js'});let pending=capturedPhotos.length,settled=false,started=false;const appliedFilter=getAppliedFilter();const fail=e=>{if(!settled){settled=true;try{gif.abort?.()}catch(err){}reject(e)}};const start=()=>{if(started||settled)return;started=true;try{gif.render()}catch(e){fail(e)}};gif.on('finished',blob=>{if(!settled){settled=true;resolve(blob)}});gif.on('abort',()=>fail(new Error('GIF worker dihentikan.')));capturedPhotos.forEach(src=>{const im=new Image();im.onload=()=>{if(settled)return;try{const c=document.createElement('canvas');c.width=width;c.height=height;const x=c.getContext('2d',{willReadFrequently:false});x.save();x.filter=appliedFilter==='none'?'none':appliedFilter;const scale=Math.max(width/im.width,height/im.height),dw=im.width*scale,dh=im.height*scale;x.drawImage(im,(width-dw)/2,(height-dh)/2,dw,dh);x.restore();const add=()=>{if(settled)return;gif.addFrame(c,{delay:500,copy:true});pending--;if(pending===0)start()};if(selectedFrameSrc){const ov=new Image();ov.onload=()=>{try{x.drawImage(ov,0,0,width,height)}catch(e){}add()};ov.onerror=add;ov.src=selectedFrameSrc}else add()}catch(e){fail(e)}};im.onerror=()=>fail(new Error('Gagal membaca foto untuk GIF'));im.src=src})})}})();
-  try{const blob=await window.__BP_GIF_BLOB_PROMISE__; if(blob?.size){finalGifDataUrl=finalGifDataUrl||URL.createObjectURL(blob)} return blob}catch(e){window.__BP_GIF_BLOB_PROMISE__=null;throw e}
-}
+function generateQR(overrideUrl){const q=$('qrBox');if(!q)return;q.innerHTML='';const holder=document.createElement('div');holder.style.cssText='width:220px;height:220px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:12px;overflow:hidden';q.appendChild(holder);let payload=String(overrideUrl||'').trim();const base=(config.softBase||'').trim(),share=(config.shareBase||'').trim();if(!payload&&share){payload=share.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId||'session');if($('qrNote'))$('qrNote').innerText='QR mengarah ke halaman share/backend.'}else if(!payload&&base){payload=base.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId||'session');if($('qrNote'))$('qrNote').innerText='QR memakai endpoint soft file Dashboard.'}else if(!payload){payload=location.href.split('#')[0]+'#session='+encodeURIComponent(sessionId||'local');if($('qrNote'))$('qrNote').innerText='QR lokal aktif. Setelah Cloud/Share tersambung, QR akan memakai link bundling.'}try{if(typeof QRCode==='undefined')throw new Error('QRCode library belum termuat');new QRCode(holder,{text:payload,width:210,height:210,correctLevel:QRCode.CorrectLevel.M})}catch(e){holder.innerText='QR belum dapat dibuat. '+(e.message||e)}}function generateGifBlob(){return new Promise((resolve,reject)=>{if(!capturedPhotos.length)return reject(new Error('Tidak ada foto'));if(typeof GIF==='undefined')return reject(new Error('Generator GIF belum termuat'));const width=240,height=180;const gif=new GIF({workers:2,quality:28,width,height,workerScript:'/gif.worker.js'});let pending=capturedPhotos.length,settled=false,started=false;const appliedFilter=getAppliedFilter();const fail=e=>{if(!settled){settled=true;try{gif.abort?.()}catch(err){}reject(e)}};const start=()=>{if(started||settled)return;started=true;try{gif.render()}catch(e){fail(e)}};gif.on('finished',blob=>{if(!settled){settled=true;resolve(blob)}});gif.on('abort',()=>fail(new Error('GIF worker dihentikan.')));capturedPhotos.forEach(src=>{const im=new Image();im.onload=()=>{if(settled)return;try{const c=document.createElement('canvas');c.width=width;c.height=height;const x=c.getContext('2d',{willReadFrequently:false});x.save();x.filter=appliedFilter==='none'?'none':appliedFilter;const scale=Math.max(width/im.width,height/im.height),dw=im.width*scale,dh=im.height*scale;x.drawImage(im,(width-dw)/2,(height-dh)/2,dw,dh);x.restore();const add=()=>{if(settled)return;gif.addFrame(c,{delay:500,copy:true});pending--;if(pending===0)start()};if(selectedFrameSrc){const ov=new Image();ov.onload=()=>{try{x.drawImage(ov,0,0,width,height)}catch(e){}add()};ov.onerror=add;ov.src=selectedFrameSrc}else add()}catch(e){fail(e)}};im.onerror=()=>fail(new Error('Gagal membaca foto untuk GIF'));im.src=src})})}
 function downloadGif(){if(finalGifDataUrl){const a=document.createElement('a');a.href=finalGifDataUrl;a.download=`BoothPro-${sessionId}-loop.gif`;a.click();return}generateGifBlob().then(blob=>{finalGifDataUrl=URL.createObjectURL(blob);const a=document.createElement('a');a.href=finalGifDataUrl;a.download=`BoothPro-${sessionId}-loop.gif`;a.click()}).catch(e=>alert(e.message||'GIF gagal dibuat.'))}
 function downloadSessionReport(){const p=config.packages.find(x=>x.id===selectedPackageId)||{};const report={app:'BoothPro',version:'3.0',session_id:sessionId,started_at:sessionStartedAt,completed_at:new Date().toISOString(),package:p.name||'',price:p.price||0,payment_method:lastPaymentMethod,photos:capturedPhotos.length,prints:p.prints||1,retakes:retakeCount,filter:currentFilter,frame:selectedFrameId,stickers:stickers.map(s=>s.emoji)};const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`BoothPro-${sessionId}-report.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 /* ============ HISTORY ============ */
@@ -1251,10 +1248,19 @@ async function publishSessionCloud(){
   if(result.shareUrl||result.photoUrl)generateQR(result.shareUrl||result.photoUrl);
   if(status)status.innerText=result.shareUrl?'✓ Foto final siap. QR/Share siap. GIF + video diproses di background.':'✓ Foto final tersinkron. QR foto siap.';
 
-  // Background delivery: GIF berat TIDAK dibuat di sini.
-  // Direct Soft File memakai generator GIF ringan di boothpro-hotfix-digital-delivery.js
-  // agar proses final tidak kembali tertahan oleh generator GIF legacy.
+  // Background: jangan pernah di-await oleh tombol customer.
   const backgroundMedia=(async()=>{
+    if(capturedPhotos.length){
+      try{
+        const gifBlob=await generateGifBlob();
+        const gu=await uploadDataUrlToCloudinary(await blobToDataUrl(gifBlob),'image');
+        result.gifUrl=gu.secure_url||gu.url;
+        result.gifPublicId=gu.public_id||null;
+        finalGifDataUrl=URL.createObjectURL(gifBlob);
+        localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
+        try{await writeBoothProSessionManifest(result)}catch(e){console.warn('Manifest GIF update skipped:',e)}
+      }catch(e){console.warn('GIF Cloudinary gagal:',e)}
+    }
     if(sessionVideoBlob){
       try{
         const vr=await uploadDataUrlToCloudinary(await blobToDataUrl(sessionVideoBlob),'video');
@@ -3874,64 +3880,6 @@ if(typeof window.openDashboardUnlocked==='function'){
 </script>
 
 
-<!-- BOOTHPRO START CLICK HARDENING 2026-10-06 -->
-<style id="bp-start-click-hardening">
-#step-welcome{position:relative;z-index:50!important;pointer-events:auto!important}
-#step-welcome>button[onclick="goToStep(2)"]{
-  position:relative!important;
-  z-index:100!important;
-  pointer-events:auto!important;
-  touch-action:manipulation!important;
-  cursor:pointer!important;
-}
-.hidden{pointer-events:none!important}
-#attractOverlay.hidden,#dashboardAuthModal.hidden,#dashboardModal.hidden,#historyModal.hidden,#licenseModal.hidden,#extraPrintModal.hidden{
-  pointer-events:none!important;
-}
-</style>
-<script id="bp-start-click-hardening-script">
-(function(){
-'use strict';
-function bootStartButton(){
-  const btn=document.querySelector('#step-welcome button[onclick="goToStep(2)"]');
-  if(!btn)return;
-  btn.type='button';
-  btn.style.pointerEvents='auto';
-  btn.style.touchAction='manipulation';
-  btn.dataset.bpStartReady='1';
-  if(btn.__bpStartBound)return;
-  btn.__bpStartBound=true;
-  const run=(ev)=>{
-    ev?.preventDefault?.();
-    ev?.stopImmediatePropagation?.();
-    try{
-      const attract=document.getElementById('attractOverlay');
-      if(attract){attract.classList.add('hidden');attract.classList.remove('flex');}
-      if(typeof window.goToStep==='function'){
-        window.goToStep(2);
-      }else{
-        document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
-        const pkg=document.getElementById('step-package');
-        if(pkg)pkg.classList.remove('hidden');
-      }
-    }catch(err){
-      console.error('BoothPro START click failed:',err);
-      try{
-        document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
-        const pkg=document.getElementById('step-package');
-        if(pkg)pkg.classList.remove('hidden');
-      }catch(fallbackErr){console.error('BoothPro START fallback failed:',fallbackErr);}
-    }
-  };
-  btn.addEventListener('click',run,{capture:true});
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootStartButton,{once:true});
-else bootStartButton();
-setTimeout(bootStartButton,250);
-setTimeout(bootStartButton,1000);
-})();
-</script>
-
 <!-- M3.7 CLOUD FRAME VISUAL DELIVERY FIX -->
 <style id="m37-cloud-frame-visual-style">
 .bpM37-frame-loading{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#71717a;font-size:10px}
@@ -4535,47 +4483,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 <script id="bp-digital-delivery-state-bridge">(function(){'use strict';window.BoothProDeliveryState=function(){return {sessionId:typeof sessionId==='string'?sessionId:'',finalCompositeDataUrl:typeof finalCompositeDataUrl==='string'?finalCompositeDataUrl:'',finalGifDataUrl:typeof finalGifDataUrl==='string'?finalGifDataUrl:'',capturedPhotos:Array.isArray(capturedPhotos)?capturedPhotos.slice():[],sessionVideoBlob:sessionVideoBlob||null,sessionVideoMime:sessionVideoBlob?.type||''};};})();</script>
-<script id="bp-kiosk-direct-bootstrap">
-(function(){
-  'use strict';
-  var kiosk=new URLSearchParams(location.search).get('kiosk')==='1'||location.pathname==='/kiosk'||location.pathname==='/kiosk/';
-  if(!kiosk)return;
-  window.__BP_ENTRY_MODE__='kiosk';
-  var css=document.createElement('style');css.id='bp-kiosk-direct-isolation';css.textContent='#dashboardModal,#dashboardAuthModal{display:none!important;visibility:hidden!important;pointer-events:none!important}';document.head.appendChild(css);
-  function blockDashboard(){
-    try{
-      if(typeof closeDashboard==='function')closeDashboard();
-      if(typeof closeDashboardAuth==='function')closeDashboardAuth();
-      ['dashboardModal','dashboardAuthModal'].forEach(function(id){var el=document.getElementById(id);if(el){el.classList.add('hidden');el.style.display='none';el.setAttribute('aria-hidden','true')}})
-    }catch(e){}
-  }
-  function forceInitial(){
-    try{
-      document.querySelectorAll('[id^="step-"]').forEach(function(el){el.id==='step-welcome'?el.classList.remove('hidden'):el.classList.add('hidden')});
-      blockDashboard();
-    }catch(e){}
-  }
-  function bindStart(){
-    try{
-      var b=document.querySelector('#step-welcome button[onclick*="goToStep"]');
-      if(!b||b.__bpKioskStartBound)return;
-      b.__bpKioskStartBound=true;b.type='button';b.style.pointerEvents='auto';b.style.touchAction='manipulation';
-      b.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();try{if(typeof goToStep==='function')goToStep(2)}catch(err){console.error('BoothPro kiosk start failed',err)}},true);
-    }catch(e){}
-  }
-  function load(src){
-    return new Promise(function(resolve,reject){var s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=function(){reject(new Error('Gagal memuat '+src))};document.head.appendChild(s)});
-  }
-  forceInitial();
-  Promise.all([
-    load('/boothpro-hotfix-c9.js?kiosk=1'),
-    load('/boothpro-hotfix-digital-delivery.js?kiosk=1')
-  ]).catch(function(e){console.error('BoothPro kiosk hotfix load:',e)}).finally(function(){
-    forceInitial();bindStart();setTimeout(bindStart,100);setTimeout(bindStart,500);setTimeout(bindStart,1500);
-  });
-  window.openDashboard=function(){blockDashboard();return false};
-  window.openDashboardUnlocked=window.openDashboard;
-  window.openDashboardAuth=window.openDashboard;
-  setInterval(function(){blockDashboard();bindStart()},1000);
-})();
-</script></body>\n</html>
+<script src="/boothpro-hotfix-c9.js"></script>
+<script src="/boothpro-hotfix-digital-delivery.js"></script>
+</body>\n</html>

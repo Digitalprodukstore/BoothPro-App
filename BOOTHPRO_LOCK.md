@@ -2,7 +2,7 @@
 
 **Locked candidate:** 2026-10-06  
 **Source branch:** `chore/boothpro-cleanup-2026-10-06`  
-**Commit:** `3c3776506c92272abbd5cbf8dc85f4628cec5e7a`  
+**Commit:** `c9030ab2b2424ac22041b081bee5038480208646`  
 **Preview:** `https://booth-pro-7sau3hp1r-risakil.vercel.app/`  
 **Production:** `https://booth-pro-app.vercel.app/` — DO NOT MODIFY during stabilization.
 

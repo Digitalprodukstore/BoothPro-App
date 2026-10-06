@@ -48,7 +48,7 @@ module.exports=async function(req,res){
   const files=[
    {path:s.photo_path,name:'BOOTHPRO-Foto-Final.png',label:'Foto Final'},
    {path:s.gif_path,name:'BOOTHPRO-GIF.gif',label:'GIF'},
-   {path:s.video_path,name:'BOOTHPRO-Live-Session.mp4',label:'Video'}
+   {path:s.video_path,name:'BOOTHPRO-Live-Session.'+(s.video_path.toLowerCase().endsWith('.webm')?'webm':'mp4'),label:'Video'}
   ];
   await update(sid,{customer_name:name,delivery_method:method,whatsapp:method==='whatsapp'?phone(target):s.whatsapp,email:method==='email'?target:s.email,delivery_status:'sending'});
   if(method==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target))throw new Error('Email tidak valid.');

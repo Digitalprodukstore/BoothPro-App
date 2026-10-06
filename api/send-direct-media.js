@@ -15,7 +15,7 @@ async function update(sid,patch){
 }
 function bundleUrl(req,sid){
  const configured=clean(process.env.BOOTHPRO_PUBLIC_ORIGIN)||((req.headers['x-forwarded-proto']||'https')+'://'+(req.headers['x-forwarded-host']||req.headers.host));
- return configured.replace(/\/$/,'')+'/share.html?session='+encodeURIComponent(sid);
+ return configured.replace(/\/$/,'')+'/download/?id='+encodeURIComponent(sid);
 }
 async function sendBrevo(to,name,url){
  const key=env('BREVO_API_KEY'),from=env('BREVO_FROM_EMAIL');

@@ -27,84 +27,8 @@
     return true;
   }
 
-  function resolveSessionId(){
-    let sid='';
-    try{sid=String(document.getElementById('sessionIdDisplay')?.textContent||'').trim()}catch(e){}
-    if(sid)return sid;
-    try{
-      const keys=Object.keys(localStorage).filter(k=>k.indexOf('boothpro_cloud_')===0);
-      if(keys.length)return keys[keys.length-1].slice('boothpro_cloud_'.length);
-    }catch(e){}
-    return '';
-  }
-  function softFileData(){
-    const sid=resolveSessionId();
-    let data=null;
-    try{data=JSON.parse(localStorage.getItem('boothpro_cloud_'+sid)||'null')}catch(e){}
-    const shareUrl=String(data?.shareUrl||'').trim();
-    const photoUrl=String(data?.photoUrl||'').trim();
-    const gifUrl=String(data?.gifUrl||'').trim();
-    const videoUrl=String(data?.videoUrl||'').trim();
-    const url=shareUrl||photoUrl;
-    return {sid,shareUrl,photoUrl,gifUrl,videoUrl,url,message:'Halo! Soft file foto BoothPro Anda sudah siap. Silakan buka link berikut.'};
-  }
-  function phone(v){let n=String(v||'').replace(/\D/g,'');if(n.startsWith('0'))n='62'+n.slice(1);return n}
-  function fallbackReason(text){return /api.?key|access.?token|resend|whatsapp api|not configured|belum dikonfigurasi|401|403|unauthor/i.test(String(text||''))}
-
-  async function deliverFallback(channel){
-    const status=document.getElementById('customerShareStatus');
-    const d=softFileData();
-    if(!d.url)throw new Error('Link soft file belum tersedia. Sinkronkan Soft File terlebih dahulu.');
-    if(channel==='whatsapp'){
-      const to=phone(document.getElementById('customerSharePhone')?.value||'');
-      if(!/^62\d{8,15}$/.test(to))throw new Error('Nomor WhatsApp harus format Indonesia 62xxxxxxxxxx.');
-      const text=encodeURIComponent(d.message+'\n\n'+d.url+'\nID Sesi: '+(d.sid||'-'));
-      const target='https://wa.me/'+to+'?text='+text;
-      const w=window.open('about:blank','_blank');
-      if(w){try{w.opener=null;w.location.href=target}catch(e){window.location.href=target}}else window.location.href=target;
-      if(status)status.innerText='✓ WhatsApp dibuka sebagai fallback. Pengiriman otomatis server belum aktif.';
-      return true;
-    }
-    const email=String(document.getElementById('customerShareEmail')?.value||'').trim();
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('Alamat email tidak valid.');
-    const subject=encodeURIComponent('Soft File Foto BoothPro '+(d.sid||''));
-    const body=encodeURIComponent(d.message+'\n\n'+d.url+'\nID Sesi: '+(d.sid||'-'));
-    window.location.href='mailto:'+encodeURIComponent(email)+'?subject='+subject+'&body='+body;
-    if(status)status.innerText='✓ Aplikasi email dibuka sebagai fallback. Pengiriman otomatis server belum aktif.';
-    return true;
-  }
-
-  function installCustomerDelivery(){
-    if(window.__BP_C9_DELIVERY__)return true;
-    const originalOpen=window.openCustomerShare;
-    if(typeof originalOpen!=='function')return false;
-    window.openCustomerShare=function(kind){
-      originalOpen(kind);
-      const syncBtn=document.querySelector('[onclick="syncCustomerSoftFile()"]');
-      if(syncBtn)syncBtn.style.display='none';
-      const send=document.getElementById('customerShareSendBtn');
-      if(!send)return;
-      send.onclick=async function(){
-        const status=document.getElementById('customerShareStatus');send.disabled=true;
-        try{
-          if(typeof window.syncCustomerSoftFile==='function')await window.syncCustomerSoftFile();
-          const d=softFileData();
-          if(!d.url)throw new Error('Link soft file belum tersedia setelah sinkronisasi.');
-          const payload={channel:kind,sessionId:d.sid,phone:kind==='whatsapp'?phone(document.getElementById('customerSharePhone')?.value||''):'',email:kind==='email'?String(document.getElementById('customerShareEmail')?.value||'').trim():'',message:d.message,photoUrl:d.photoUrl,gifUrl:d.gifUrl,videoUrl:d.videoUrl};
-          const r=await fetch('/api/deliver-softfile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'});
-          const out=await r.json().catch(()=>null);
-          if(r.ok&&out?.ok){if(status)status.innerText=kind==='whatsapp'?'✓ BOOTHPRO mengirim notifikasi WhatsApp berisi link 3 soft file.':'✓ BOOTHPRO mengirim email berisi link 3 soft file.';return}
-          const msg=String(out?.error||('HTTP '+r.status));
-          if(fallbackReason(msg)){await deliverFallback(kind);return}
-          throw new Error(msg);
-        }catch(e){
-          if(fallbackReason(e?.message)){try{await deliverFallback(kind);return}catch(fb){e=fb}}
-          if(status)status.innerText='Pengiriman gagal · '+(e?.message||e);
-        }finally{send.disabled=false;}
-      };
-    };
-    window.__BP_C9_DELIVERY__=true;return true;
-  }
-  function install(){return installDuplicatePhotoAssignment()&&installCustomerDelivery()}
+  // C9 is limited to frame-slot assignment. Direct Soft File delivery is owned by
+  // boothpro-hotfix-digital-delivery.js and /api/send-direct-media.
+  function install(){return installDuplicatePhotoAssignment()}
   if(!install()){let tries=0;const t=setInterval(function(){if(install()||++tries>80)clearInterval(t)},100)}
 })();

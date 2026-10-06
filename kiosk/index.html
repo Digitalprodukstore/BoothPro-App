@@ -6,7 +6,7 @@ try{
  let html=await r.text();
  const kioskCss=`<style id="bp-kiosk-hard-isolation">#dashboardModal,#dashboardAuthModal{display:none!important;visibility:hidden!important;pointer-events:none!important}</style><script src="/boothpro-hotfix-c9.js?c9=1"><\/script><script src="/boothpro-hotfix-digital-delivery.js?dd=1"><\/script>`;
  html=html.replace('</head>',kioskCss+'</head>');
- const guard=`<script id="bp-kiosk-entry-guard">
+ const guard=\`<script id="bp-kiosk-entry-guard">
 (function(){
  'use strict';
  window.__BP_ENTRY_MODE__='kiosk';
@@ -23,14 +23,32 @@ try{
  function forceKioskInitial(){
    try{
      blockDashboard();
-     if(typeof resetToHome==='function') resetToHome();
      document.querySelectorAll('[id^="step-"]').forEach(function(el){ if(el.id==='step-welcome') el.classList.remove('hidden'); else el.classList.add('hidden'); });
+   }catch(e){}
+ }
+ function bindStartButton(){
+   try{
+     var b=document.querySelector('#step-welcome button[onclick*="goToStep"]');
+     if(!b||b.__bpKioskStartBound)return;
+     b.__bpKioskStartBound=true;
+     b.type='button';
+     b.style.pointerEvents='auto';
+     b.style.touchAction='manipulation';
+     b.addEventListener('click',function(e){
+       e.preventDefault();
+       e.stopImmediatePropagation();
+       try{ if(typeof goToStep==='function') goToStep(2); }catch(err){ console.error('BoothPro kiosk start failed',err); }
+     },true);
    }catch(e){}
  }
  window.openDashboard=function(){ blockDashboard(); return false; };
  window.openDashboardUnlocked=function(){ blockDashboard(); return false; };
  window.openDashboardAuth=function(){ blockDashboard(); return false; };
  forceKioskInitial();
+ bindStartButton();
+ setTimeout(bindStartButton,100);
+ setTimeout(bindStartButton,500);
+ setTimeout(bindStartButton,1500);
  setTimeout(blockDashboard,100);
  setTimeout(blockDashboard,500);
  setTimeout(blockDashboard,1500);
@@ -39,11 +57,12 @@ try{
      if(typeof window.openDashboard!=='function' || !window.openDashboard.__bpKioskBlocked){var f=function(){ blockDashboard(); return false; }; f.__bpKioskBlocked=true; window.openDashboard=f;}
      if(typeof window.openDashboardUnlocked!=='function' || !window.openDashboardUnlocked.__bpKioskBlocked){var u=function(){ blockDashboard(); return false; }; u.__bpKioskBlocked=true; window.openDashboardUnlocked=u;}
      if(typeof window.openDashboardAuth!=='function' || !window.openDashboardAuth.__bpKioskBlocked){var a=function(){ blockDashboard(); return false; }; a.__bpKioskBlocked=true; window.openDashboardAuth=a;}
+     bindStartButton();
      blockDashboard();
    }catch(e){}
  },500);
 })();
-<\/script>`;
+<\\/script>\`;
  const at=html.toLowerCase().lastIndexOf('</body>');
  if(at<0) throw new Error('BoothPro Kiosk tidak memiliki body penutup');
  html=html.slice(0,at)+guard+html.slice(at);

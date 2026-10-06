@@ -1067,28 +1067,22 @@ async function syncCustomerSoftFile(){
 }
 function openCustomerShare(kind){const form=$('customerShareForm');if(!form)return;form.classList.remove('hidden');const phone=$('customerSharePhone'),email=$('customerShareEmail'),send=$('customerShareSendBtn');phone.classList.toggle('hidden',kind!=='whatsapp');email.classList.toggle('hidden',kind!=='email');send.onclick=kind==='whatsapp'?shareCustomerWhatsApp:shareCustomerEmail;(kind==='whatsapp'?phone:email).focus()}
 async function deliverCustomerSoftFile(channel){
- const status=$('customerShareStatus'), send=$('customerShareSendBtn');
+ const status=$('customerShareStatus'),send=$('customerShareSendBtn');
  if(send){send.disabled=true;send.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Mengirim...'}
- if(status)status.innerText='Menyiapkan soft file untuk pengiriman langsung...';
+ if(status)status.innerText='Menyiapkan 3 soft file untuk pengiriman langsung...';
  try{
-  let d=customerShareData();
-  if(!d.photoUrl||!customerSoftSyncResult){await syncCustomerSoftFile();d=customerShareData()}
-  const media={
-   sessionId:d.sid,
-   phone:channel==='whatsapp'?normalizeCustomerPhone($('customerSharePhone')?.value||''):'',
-   email:channel==='email'?String($('customerShareEmail')?.value||'').trim():'',
-   message:d.message||'Soft file BoothPro Anda sudah siap.',
-   photoUrl:String(customerSoftSyncResult?.photoUrl||d.photoUrl||'').trim(),
-   gifUrl:String(customerSoftSyncResult?.gifUrl||'').trim(),
-   videoUrl:String(customerSoftSyncResult?.videoUrl||'').trim()
-  };
-  if(channel==='whatsapp'&&!media.phone)throw new Error('Masukkan nomor WhatsApp pelanggan.');
-  if(channel==='email'&&!media.email)throw new Error('Masukkan email pelanggan.');
-  if(!media.photoUrl)throw new Error('Foto final belum tersedia. Sinkronkan Soft File terlebih dahulu.');
-  const r=await fetch('/api/deliver-softfile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel,sessionId:media.sessionId,phone:media.phone,email:media.email,message:media.message,photoUrl:media.photoUrl,gifUrl:media.gifUrl,videoUrl:media.videoUrl})});
+  const phone=channel==='whatsapp'?normalizeCustomerPhone($('customerSharePhone')?.value||''):'';
+  const email=channel==='email'?String($('customerShareEmail')?.value||'').trim():'';
+  if(channel==='whatsapp'&&!/^62\\d{8,15}$/.test(phone))throw new Error('Nomor WhatsApp tidak valid.');
+  if(channel==='email'&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))throw new Error('Email tidak valid.');
+  if(typeof window.boothProAutoSyncSoftFile!=='function')throw new Error('Modul Soft File langsung belum aktif.');
+  const bundle=await window.boothProAutoSyncSoftFile();
+  if(!bundle?.sessionId)throw new Error('Session Soft File belum siap.');
+  const target=channel==='whatsapp'?phone:email;
+  const r=await fetch('/api/send-direct-media',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:bundle.sessionId,customerName:'',deliveryMethod:channel,target}),cache:'no-store'});
   const out=await r.json().catch(()=>null);
   if(!r.ok||!out?.ok)throw new Error(out?.error||'Pengiriman soft file gagal.');
-  if(status)status.innerText=channel==='whatsapp'?'✓ Foto + media berhasil dikirim ke WhatsApp pelanggan.':'✓ Foto + media berhasil dikirim ke email pelanggan.';
+  if(status)status.innerText=channel==='whatsapp'?'✓ 3 soft file berhasil dikirim langsung ke WhatsApp.':'✓ 3 soft file berhasil dikirim sebagai attachment ke email.';
  }catch(e){
   if(status)status.innerText='Pengiriman gagal · '+(e.message||e);
   alert('Kirim Soft File: '+(e.message||e));

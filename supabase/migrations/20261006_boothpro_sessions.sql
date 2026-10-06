@@ -44,3 +44,9 @@ drop trigger if exists sessions_updated_at on public.sessions;
 create trigger sessions_updated_at
 before update on public.sessions
 for each row execute function public.set_sessions_updated_at();
+
+
+-- Create the private storage bucket used by signed upload/download URLs.
+insert into storage.buckets (id,name,public)
+values ('boothpro-softfiles','boothpro-softfiles',false)
+on conflict (id) do update set public=false;

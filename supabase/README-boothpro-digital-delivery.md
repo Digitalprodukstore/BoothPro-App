@@ -10,20 +10,24 @@ Recommended object paths:
 - `<session_id>/animation.gif`
 - `<session_id>/live-session.mp4`
 
-The bucket may be public for the simplest customer download flow, or private if signed URLs are added later.
+The bucket can remain private. BoothPro creates short-lived signed URLs server-side when preparing direct delivery.
 
 ## 3. Vercel server variables
-Required for the delivery API:
+Required for direct delivery:
 - SUPABASE_URL
 - SUPABASE_SERVICE_ROLE_KEY
 - FONNTE_TOKEN
-- RESEND_API_KEY
-- RESEND_FROM_EMAIL
-- BOOTHPRO_PUBLIC_ORIGIN=https://boothpro.my.id
+- BREVO_API_KEY
+- BREVO_FROM_EMAIL
 
-Never expose SUPABASE_SERVICE_ROLE_KEY, FONNTE_TOKEN or RESEND_API_KEY to kiosk/browser JavaScript.
+Never expose SUPABASE_SERVICE_ROLE_KEY, FONNTE_TOKEN or BREVO_API_KEY to kiosk/browser JavaScript.
 
 ## 4. Delivery flow
-Kiosk -> POST /api/send-delivery -> Supabase sessions -> Fonnte/Resend -> /download/<sessionId>.
+Kiosk -> Supabase Storage -> POST /api/send-direct-media -> Fonnte (WhatsApp) or Brevo (Email).
 
-The kiosk does not open WhatsApp or Email itself.
+Each successful send delivers the three actual media files:
+- Foto Final
+- GIF
+- Live Session Video
+
+Customer delivery does not depend on a BoothPro login or a customer-facing download link. The separate `/download/<sessionId>` route remains available for authorized/manual download workflows.

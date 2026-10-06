@@ -56,6 +56,7 @@ module.exports=async function(req,res){
  if(req.method!=='POST')return json(res,405,{ok:false,error:'Method tidak didukung.'});
  const b=req.body||{},sid=clean(b.sessionId),name=clean(b.customerName)||'Pelanggan',method=clean(b.deliveryMethod).toLowerCase(),target=clean(b.target);
  if(!sid||!['email','whatsapp'].includes(method)||!target)return json(res,400,{ok:false,error:'sessionId, deliveryMethod, target wajib.'});
+ let claimed=false;
  try{
   const s=await session(sid);
   if(!s.photo_path||!s.gif_path||!s.video_path)throw new Error('3 soft file belum lengkap di Supabase.');
@@ -67,7 +68,6 @@ module.exports=async function(req,res){
   if(method==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target))throw new Error('Email tidak valid.');
   const normalizedPhone=method==='whatsapp'?phone(target):s.whatsapp;
   if(method==='whatsapp'&&!/^62\d{8,15}$/.test(normalizedPhone))throw new Error('Nomor WhatsApp tidak valid.');
-  let claimed=false;
   await claimForDelivery(sid,{customer_name:name,delivery_method:method,whatsapp:normalizedPhone,email:method==='email'?target:s.email});
   claimed=true;
   const media=await Promise.all(files.map(async f=>({...f,url:await signedFileUrl(f.path)})));

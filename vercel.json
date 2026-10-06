@@ -9,6 +9,14 @@
     {
       "source": "/download/:sessionId",
       "destination": "/download/index.html"
+    },
+    {
+      "source": "/kiosk",
+      "destination": "/index-legacy.html"
+    },
+    {
+      "source": "/kiosk/",
+      "destination": "/index-legacy.html"
     }
   ]
 }

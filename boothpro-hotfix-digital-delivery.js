@@ -18,7 +18,7 @@ async function send(channel){
  try{
   const sid=getSessionId();if(!sid)throw new Error('Session ID tidak tersedia.');
   if(status)status.textContent='Menunggu soft file otomatis...';
-  if(autoPromise)await withTimeout(autoPromise,20000,'Sinkronisasi otomatis');
+  if(autoPromise)await withTimeout(autoPromise,165000,'Sinkronisasi otomatis');
   if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording')await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');
   const stored=(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
   if(!stored)throw new Error('Soft file belum siap. Tunggu sampai status “✓ Soft file siap” lalu kirim lagi.');

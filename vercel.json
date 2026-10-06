@@ -1,5 +1,15 @@
 {
+  "crons": [
+    {
+      "path": "/api/cleanup-media",
+      "schedule": "0 3 * * *"
+    }
+  ],
   "rewrites": [
+    {
+      "source": "/download/:sessionId",
+      "destination": "/download/index.html"
+    },
     {
       "source": "/kiosk",
       "destination": "/index-legacy.html"
@@ -11,12 +21,6 @@
     {
       "source": "/kiosk/(.*)",
       "destination": "/index-legacy.html"
-    }
-  ],
-  "crons": [
-    {
-      "path": "/api/cleanup-media",
-      "schedule": "0 3 * * *"
     }
   ]
 }

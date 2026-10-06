@@ -16,6 +16,15 @@ function normalizePhone(v){
   if(p.startsWith('8')) p='62'+p;
   return p;
 }
+async function upsertSession(input){
+  const base=env('SUPABASE_URL').replace(/\/$/,'');
+  const row={session_id:input.sessionId,customer_name:input.name,whatsapp:input.method==='whatsapp'?normalizePhone(input.target):null,email:input.method==='email'?input.target:null,delivery_method:input.method,delivery_status:'pending',photo_path:input.photoPath||null,gif_path:input.gifPath||null,video_path:input.videoPath||null};
+  const u=base+'/rest/v1/sessions?on_conflict=session_id';
+  const r=await fetch(u,{method:'POST',headers:{...supabaseHeaders(),Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(row)});
+  const d=await r.json().catch(()=>null);
+  if(!r.ok) throw new Error(d?.message||d?.hint||'Gagal menyimpan sesi Supabase.');
+  return Array.isArray(d)?d[0]:d;
+}
 async function getSession(sessionId){
   const base=env('SUPABASE_URL').replace(/\/$/,'');
   const u=base+'/rest/v1/sessions?session_id=eq.'+encodeURIComponent(sessionId)+'&select=*&limit=1';
@@ -60,7 +69,14 @@ module.exports=async function(req,res){
   if(!['whatsapp','email'].includes(method)) return json(res,400,{ok:false,error:'deliveryMethod harus whatsapp atau email.'});
   if(!target) return json(res,400,{ok:false,error:'target wajib.'});
   try{
-    const session=await getSession(sessionId);
+    let session=await getSession(sessionId).catch(()=>null);
+    if(!session){
+      session=await upsertSession({sessionId,name,method,target,photoPath:b.photoPath,gifPath:b.gifPath,videoPath:b.videoPath});
+    }else if(b.photoPath||b.gifPath||b.videoPath){
+      await updateSession(sessionId,{customer_name:name,photo_path:b.photoPath||session.photo_path,gif_path:b.gifPath||session.gif_path,video_path:b.videoPath||session.video_path});
+      session=await getSession(sessionId);
+    }
+    if(!session.photo_path||!session.gif_path||!session.video_path) throw new Error('3 soft file belum lengkap.');
     const origin=clean(process.env.BOOTHPRO_PUBLIC_ORIGIN)||'https://boothpro.my.id';
     const url=origin.replace(/\/$/,'')+'/download/'+encodeURIComponent(sessionId);
     await updateSession(sessionId,{customer_name:name,delivery_method:method,whatsapp:method==='whatsapp'?normalizePhone(target):session.whatsapp,email:method==='email'?target:session.email,delivery_status:'sending'});

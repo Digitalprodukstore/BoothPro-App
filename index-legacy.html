@@ -3896,7 +3896,9 @@ function bootStartButton(){
   btn.dataset.bpStartReady='1';
   if(btn.__bpStartBound)return;
   btn.__bpStartBound=true;
-  const run=(ev)=>{\n    ev?.preventDefault?.();\n    ev?.stopImmediatePropagation?.();
+  const run=(ev)=>{
+    ev?.preventDefault?.();
+    ev?.stopImmediatePropagation?.();
     try{
       const attract=document.getElementById('attractOverlay');
       if(attract){attract.classList.add('hidden');attract.classList.remove('flex');}

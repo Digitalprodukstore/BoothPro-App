@@ -10,17 +10,12 @@
   function installDuplicatePhotoAssignment(){
     if(typeof window.bpEnsureSlotAssignments!=='function') return false;
     if(window.__BP_C9_DUPLICATE_ASSIGNMENT__) return true;
-
     window.assignPhotoToSlot=function(slot,photoIndex){
       slot=Number(slot); photoIndex=Number(photoIndex);
       if(!Number.isInteger(slot)||!Number.isInteger(photoIndex)||slot<0||photoIndex<0)return;
-      if(photoIndex>=window.__BP_CAPTURED_COUNT__ && Array.isArray(window.capturedPhotos)){}
       try{
-        const photos=Array.isArray(window.capturedPhotos)?window.capturedPhotos:[];
         const a=window.bpEnsureSlotAssignments();
-        if(slot<0||slot>=a.length||photoIndex>=photos.length)return;
-        /* Deliberately do NOT evict the same photo from another slot.
-           One photo can therefore fill 2, 3, 4... slots by customer choice. */
+        if(slot>=a.length||photoIndex>=a.length)return;
         a[slot]=photoIndex;
         window.__BP_SLOT_ASSIGNMENTS__=a.slice();
         window.__BP_PHOTO_PICK__=null;
@@ -40,12 +35,9 @@
     const photoUrl=String(data?.photoUrl||'').trim();
     const gifUrl=String(data?.gifUrl||'').trim();
     const videoUrl=String(data?.videoUrl||'').trim();
-    const configured=String(window.config?.shareBase||'').trim();
-    const url=shareUrl||(configured&&sid?configured.replace(/\/$/,'')+'/'+encodeURIComponent(sid):photoUrl);
-    const message=String(window.config?.shareTools?.message||'Halo! Soft file foto BoothPro Anda sudah siap. Silakan buka link berikut.').trim();
-    return {sid,shareUrl,photoUrl,gifUrl,videoUrl,url,message};
+    const url=shareUrl||photoUrl;
+    return {sid,shareUrl,photoUrl,gifUrl,videoUrl,url,message:'Halo! Soft file foto BoothPro Anda sudah siap. Silakan buka link berikut.'};
   }
-
   function phone(v){let n=String(v||'').replace(/\D/g,'');if(n.startsWith('0'))n='62'+n.slice(1);return n}
   function fallbackReason(text){return /api.?key|access.?token|resend|whatsapp api|not configured|belum dikonfigurasi|401|403|unauthor/i.test(String(text||''))}
 
@@ -59,8 +51,7 @@
       const text=encodeURIComponent(d.message+'\n\n'+d.url+'\nID Sesi: '+(d.sid||'-'));
       const target='https://wa.me/'+to+'?text='+text;
       const w=window.open('about:blank','_blank');
-      if(w){try{w.opener=null;w.location.href=target}catch(e){window.location.href=target}}
-      else window.location.href=target;
+      if(w){try{w.opener=null;w.location.href=target}catch(e){window.location.href=target}}else window.location.href=target;
       if(status)status.innerText='✓ WhatsApp dibuka dengan link soft file. (API pengiriman langsung belum aktif)';
       return true;
     }
@@ -76,61 +67,32 @@
   function installCustomerDelivery(){
     if(window.__BP_C9_DELIVERY__)return true;
     const originalOpen=window.openCustomerShare;
+    if(typeof originalOpen!=='function')return false;
     window.openCustomerShare=function(kind){
-      if(typeof originalOpen==='function')originalOpen(kind);
+      originalOpen(kind);
       const send=document.getElementById('customerShareSendBtn');
       if(!send)return;
       send.onclick=async function(){
-        const status=document.getElementById('customerShareStatus');
-        send.disabled=true;
+        const status=document.getElementById('customerShareStatus');send.disabled=true;
         try{
-          if(typeof window.syncCustomerSoftFile==='function'){
-            await window.syncCustomerSoftFile();
-          }
+          if(typeof window.syncCustomerSoftFile==='function')await window.syncCustomerSoftFile();
           const d=softFileData();
           if(!d.url)throw new Error('Link soft file belum tersedia setelah sinkronisasi.');
-          const payload={
-            channel:kind,
-            sessionId:d.sid,
-            phone:kind==='whatsapp'?phone(document.getElementById('customerSharePhone')?.value||''):'',
-            email:kind==='email'?String(document.getElementById('customerShareEmail')?.value||'').trim():'',
-            message:d.message,
-            photoUrl:d.photoUrl,
-            gifUrl:d.gifUrl,
-            videoUrl:d.videoUrl
-          };
+          const payload={channel:kind,sessionId:d.sid,phone:kind==='whatsapp'?phone(document.getElementById('customerSharePhone')?.value||''):'',email:kind==='email'?String(document.getElementById('customerShareEmail')?.value||'').trim():'',message:d.message,photoUrl:d.photoUrl,gifUrl:d.gifUrl,videoUrl:d.videoUrl};
           const r=await fetch('/api/deliver-softfile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'});
           const out=await r.json().catch(()=>null);
-          if(r.ok&&out?.ok){
-            if(status)status.innerText=kind==='whatsapp'?'✓ Foto + media berhasil dikirim ke WhatsApp pelanggan.':'✓ Foto + media berhasil dikirim ke email pelanggan.';
-            return;
-          }
+          if(r.ok&&out?.ok){if(status)status.innerText=kind==='whatsapp'?'✓ Foto + media berhasil dikirim ke WhatsApp pelanggan.':'✓ Foto + media berhasil dikirim ke email pelanggan.';return}
           const msg=String(out?.error||('HTTP '+r.status));
-          if(fallbackReason(msg)){
-            await deliverFallback(kind);
-            return;
-          }
+          if(fallbackReason(msg)){await deliverFallback(kind);return}
           throw new Error(msg);
         }catch(e){
-          /* A missing provider key/config must never block the already-synced soft file. */
-          if(fallbackReason(e?.message)){
-            try{await deliverFallback(kind);return}catch(fb){e=fb}
-          }
+          if(fallbackReason(e?.message)){try{await deliverFallback(kind);return}catch(fb){e=fb}}
           if(status)status.innerText='Pengiriman gagal · '+(e?.message||e);
         }finally{send.disabled=false;}
       };
     };
-    window.__BP_C9_DELIVERY__=true;
-    return true;
+    window.__BP_C9_DELIVERY__=true;return true;
   }
-
-  function install(){
-    const a=installDuplicatePhotoAssignment();
-    const b=installCustomerDelivery();
-    return a&&b;
-  }
-  if(!install()){
-    let tries=0;
-    const t=setInterval(function(){if(install()||++tries>80)clearInterval(t)},100);
-  }
+  function install(){return installDuplicatePhotoAssignment()&&installCustomerDelivery()}
+  if(!install()){let tries=0;const t=setInterval(function(){if(install()||++tries>80)clearInterval(t)},100)}
 })();

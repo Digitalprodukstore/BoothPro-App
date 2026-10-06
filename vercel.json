@@ -7,6 +7,10 @@
     {
       "source": "/kiosk/",
       "destination": "/index-legacy.html"
+    },
+    {
+      "source": "/kiosk/(.*)",
+      "destination": "/index-legacy.html"
     }
   ],
   "crons": [

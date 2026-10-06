@@ -1,0 +1,1 @@
+module.exports=async function(req,res){res.status(200).setHeader('Content-Type','text/plain').send('BOOTHPRO soft file bundle endpoint');};

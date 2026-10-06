@@ -3884,6 +3884,63 @@ if(typeof window.openDashboardUnlocked==='function'){
 </script>
 
 
+<!-- BOOTHPRO START CLICK HARDENING 2026-10-06 -->
+<style id="bp-start-click-hardening">
+#step-welcome{position:relative;z-index:50!important;pointer-events:auto!important}
+#step-welcome>button[onclick="goToStep(2)"]{
+  position:relative!important;
+  z-index:100!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  cursor:pointer!important;
+}
+.hidden{pointer-events:none!important}
+#attractOverlay.hidden,#dashboardAuthModal.hidden,#dashboardModal.hidden,#historyModal.hidden,#licenseModal.hidden,#extraPrintModal.hidden{
+  pointer-events:none!important;
+}
+</style>
+<script id="bp-start-click-hardening-script">
+(function(){
+'use strict';
+function bootStartButton(){
+  const btn=document.querySelector('#step-welcome button[onclick="goToStep(2)"]');
+  if(!btn)return;
+  btn.type='button';
+  btn.style.pointerEvents='auto';
+  btn.style.touchAction='manipulation';
+  btn.dataset.bpStartReady='1';
+  if(btn.__bpStartBound)return;
+  btn.__bpStartBound=true;
+  const run=()=>{
+    try{
+      const attract=document.getElementById('attractOverlay');
+      if(attract){attract.classList.add('hidden');attract.classList.remove('flex');}
+      if(typeof window.goToStep==='function'){
+        window.goToStep(2);
+      }else{
+        document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
+        const pkg=document.getElementById('step-package');
+        if(pkg)pkg.classList.remove('hidden');
+      }
+    }catch(err){
+      console.error('BoothPro START click failed:',err);
+      try{
+        document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
+        const pkg=document.getElementById('step-package');
+        if(pkg)pkg.classList.remove('hidden');
+      }catch(fallbackErr){console.error('BoothPro START fallback failed:',fallbackErr);}
+    }
+  };
+  btn.addEventListener('click',run,{capture:true});
+  btn.addEventListener('pointerup',()=>{if(window.matchMedia?.('(pointer:coarse)').matches)run()},{capture:true,passive:true});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootStartButton,{once:true});
+else bootStartButton();
+setTimeout(bootStartButton,250);
+setTimeout(bootStartButton,1000);
+})();
+</script>
+
 <!-- M3.7 CLOUD FRAME VISUAL DELIVERY FIX -->
 <style id="m37-cloud-frame-visual-style">
 .bpM37-frame-loading{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#71717a;font-size:10px}

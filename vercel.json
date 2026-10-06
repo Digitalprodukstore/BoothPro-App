@@ -1,4 +1,14 @@
 {
+  "rewrites": [
+    {
+      "source": "/kiosk",
+      "destination": "/index-legacy.html"
+    },
+    {
+      "source": "/kiosk/",
+      "destination": "/index-legacy.html"
+    }
+  ],
   "crons": [
     {
       "path": "/api/cleanup-media",

@@ -26,14 +26,14 @@ async function send(channel){
   if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording')await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');
   stored=stored||(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
   if(!stored)throw new Error('Soft file belum siap. Sinkronisasi otomatis belum menghasilkan 3 file.');
-  if(status)status.textContent='Mengirim link soft file ke '+(channel==='email'?'email':'WhatsApp')+'...';
+  if(status)status.textContent='Mengirim 3 file langsung ke '+(channel==='email'?'email':'WhatsApp')+'...';
   const target=channel==='whatsapp'?phone:email;
   const health=await deliveryHealth();
   if(channel==='whatsapp'&&!health.delivery.whatsappReady)throw new Error('WhatsApp delivery belum dikonfigurasi: FONNTE_TOKEN belum ada di Vercel.');
   if(channel==='email'&&!health.delivery.emailReady)throw new Error('Email delivery belum dikonfigurasi: BREVO_API_KEY/BREVO_FROM_EMAIL belum ada di Vercel.');
   const r=await withTimeout(fetch('/api/send-direct-media',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid,customerName:name,deliveryMethod:channel,target,photoPath:stored.paths.photo,gifPath:stored.paths.gif,videoPath:stored.paths.video})}),120000,'Pengiriman direct media');
   const out=await r.json().catch(()=>null);if(!r.ok||!out?.ok)throw new Error(out?.error||'Pengiriman direct media gagal.');
-  if(status)status.textContent=channel==='email'?'✓ Link soft file berhasil dikirim ke email.':'✓ Link soft file berhasil dikirim ke WhatsApp.';
+  if(status)status.textContent=channel==='email'?'✓ 3 soft file berhasil dikirim sebagai attachment ke email.':'✓ 3 soft file berhasil dikirim langsung ke WhatsApp.';
  }catch(e){if(status)status.textContent='Pengiriman gagal · '+(e.message||e);alert('BOOTHPRO: '+(e.message||e))}
  finally{if(btn){btn.disabled=false;btn.innerHTML='Kirim Soft File'}}
 }
@@ -42,7 +42,7 @@ window.boothProAutoSyncSoftFile=async function(){
  const health=await deliveryHealth();
  if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording')await stopSessionRecorder();
  const status=$('cloudUploadStatus')||$('customerShareStatus');
- if(status)status.textContent='Menyiapkan soft file otomatis (foto + GIF + video)...';
+ if(status)status.textContent='Menyiapkan 3 soft file untuk pengiriman langsung...';
  const stored=await withTimeout(prepare(sid),150000,'Sinkronisasi otomatis timeout setelah 150 detik.');
  window.__BP_DELIVERY_BUNDLE__=window.__BP_DELIVERY_BUNDLE__||{};window.__BP_DELIVERY_BUNDLE__[sid]=stored;
  if(status)status.textContent=deliveryStatusText(health);

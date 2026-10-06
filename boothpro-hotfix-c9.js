@@ -62,7 +62,7 @@
       const target='https://wa.me/'+to+'?text='+text;
       const w=window.open('about:blank','_blank');
       if(w){try{w.opener=null;w.location.href=target}catch(e){window.location.href=target}}else window.location.href=target;
-      if(status)status.innerText='✓ WhatsApp dibuka dengan link soft file. (API pengiriman langsung belum aktif)';
+      if(status)status.innerText='✓ WhatsApp dibuka sebagai fallback. Pengiriman otomatis server belum aktif.';
       return true;
     }
     const email=String(document.getElementById('customerShareEmail')?.value||'').trim();
@@ -70,7 +70,7 @@
     const subject=encodeURIComponent('Soft File Foto BoothPro '+(d.sid||''));
     const body=encodeURIComponent(d.message+'\n\n'+d.url+'\nID Sesi: '+(d.sid||'-'));
     window.location.href='mailto:'+encodeURIComponent(email)+'?subject='+subject+'&body='+body;
-    if(status)status.innerText='✓ Aplikasi email dibuka dengan link soft file. (API pengiriman langsung belum aktif)';
+    if(status)status.innerText='✓ Aplikasi email dibuka sebagai fallback. Pengiriman otomatis server belum aktif.';
     return true;
   }
 
@@ -80,6 +80,8 @@
     if(typeof originalOpen!=='function')return false;
     window.openCustomerShare=function(kind){
       originalOpen(kind);
+      const syncBtn=document.querySelector('[onclick="syncCustomerSoftFile()"]');
+      if(syncBtn)syncBtn.style.display='none';
       const send=document.getElementById('customerShareSendBtn');
       if(!send)return;
       send.onclick=async function(){
@@ -91,7 +93,7 @@
           const payload={channel:kind,sessionId:d.sid,phone:kind==='whatsapp'?phone(document.getElementById('customerSharePhone')?.value||''):'',email:kind==='email'?String(document.getElementById('customerShareEmail')?.value||'').trim():'',message:d.message,photoUrl:d.photoUrl,gifUrl:d.gifUrl,videoUrl:d.videoUrl};
           const r=await fetch('/api/deliver-softfile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'});
           const out=await r.json().catch(()=>null);
-          if(r.ok&&out?.ok){if(status)status.innerText=kind==='whatsapp'?'✓ Foto + media berhasil dikirim ke WhatsApp pelanggan.':'✓ Foto + media berhasil dikirim ke email pelanggan.';return}
+          if(r.ok&&out?.ok){if(status)status.innerText=kind==='whatsapp'?'✓ BOOTHPRO mengirim notifikasi WhatsApp berisi link 3 soft file.':'✓ BOOTHPRO mengirim email berisi link 3 soft file.';return}
           const msg=String(out?.error||('HTTP '+r.status));
           if(fallbackReason(msg)){await deliverFallback(kind);return}
           throw new Error(msg);

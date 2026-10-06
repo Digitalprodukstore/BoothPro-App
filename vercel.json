@@ -11,6 +11,10 @@
       "destination": "/index-legacy.html?kiosk=1"
     },
     {
+      "source": "/kiosk/",
+      "destination": "/index-legacy.html?kiosk=1"
+    },
+    {
       "source": "/download/:sessionId",
       "destination": "/download/index.html"
     }

@@ -67,14 +67,16 @@ module.exports=async function(req,res){
   if(method==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target))throw new Error('Email tidak valid.');
   const normalizedPhone=method==='whatsapp'?phone(target):s.whatsapp;
   if(method==='whatsapp'&&!/^62\d{8,15}$/.test(normalizedPhone))throw new Error('Nomor WhatsApp tidak valid.');
+  let claimed=false;
   await claimForDelivery(sid,{customer_name:name,delivery_method:method,whatsapp:normalizedPhone,email:method==='email'?target:s.email});
+  claimed=true;
   const media=await Promise.all(files.map(async f=>({...f,url:await signedFileUrl(f.path)})));
   if(method==='email')await sendBrevo(target,name,media);
   else await sendFonnte(target,name,media);
   await update(sid,{delivery_status:'sent',sent_at:new Date().toISOString()});
   return json(res,200,{ok:true,sessionId:sid,method,deliveredFiles:['photo','gif','video'],directMedia:true});
  }catch(e){
-  try{await update(sid,{delivery_status:'failed'})}catch(_){}
+  if(claimed){try{await update(sid,{delivery_status:'failed'})}catch(_) {}}
   return json(res,500,{ok:false,error:e?.message||String(e)});
  }
 };

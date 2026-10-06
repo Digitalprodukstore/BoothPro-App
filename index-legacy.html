@@ -1252,19 +1252,10 @@ async function publishSessionCloud(){
   if(result.shareUrl||result.photoUrl)generateQR(result.shareUrl||result.photoUrl);
   if(status)status.innerText=result.shareUrl?'✓ Foto final siap. QR/Share siap. GIF + video diproses di background.':'✓ Foto final tersinkron. QR foto siap.';
 
-  // Background: jangan pernah di-await oleh tombol customer.
+  // Background delivery: GIF berat TIDAK dibuat di sini.
+  // Direct Soft File memakai generator GIF ringan di boothpro-hotfix-digital-delivery.js
+  // agar proses final tidak kembali tertahan oleh generator GIF legacy.
   const backgroundMedia=(async()=>{
-    if(capturedPhotos.length){
-      try{
-        const gifBlob=await generateGifBlob();
-        const gu=await uploadDataUrlToCloudinary(await blobToDataUrl(gifBlob),'image');
-        result.gifUrl=gu.secure_url||gu.url;
-        result.gifPublicId=gu.public_id||null;
-        finalGifDataUrl=URL.createObjectURL(gifBlob);
-        localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
-        try{await writeBoothProSessionManifest(result)}catch(e){console.warn('Manifest GIF update skipped:',e)}
-      }catch(e){console.warn('GIF Cloudinary gagal:',e)}
-    }
     if(sessionVideoBlob){
       try{
         const vr=await uploadDataUrlToCloudinary(await blobToDataUrl(sessionVideoBlob),'video');

@@ -19,10 +19,10 @@ async function send(channel){
  if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Mengirim...'}
  try{
   const sid=getSessionId();if(!sid)throw new Error('Session ID tidak tersedia.');
-  if(status)status.textContent='Menunggu soft file otomatis...';
+  if(status)status.textContent='Memeriksa soft file siap kirim...';
   if(autoPromise){try{await withTimeout(autoPromise,165000,'Sinkronisasi otomatis')}catch(e){throw e}}
   let stored=(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
-  if(!stored){if(status)status.textContent='Soft file belum siap, mencoba sinkronisasi otomatis sekarang...';try{stored=await withTimeout(window.boothProAutoSyncSoftFile(),165000,'Sinkronisasi otomatis')}catch(e){throw e}}
+  if(!stored){if(status)status.textContent='Soft file belum siap. Menyiapkan foto + GIF + video...';try{stored=await withTimeout(window.boothProAutoSyncSoftFile(),165000,'Sinkronisasi otomatis')}catch(e){throw e}}
   if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording')await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');
   stored=stored||(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
   if(!stored)throw new Error('Soft file belum siap. Sinkronisasi otomatis belum menghasilkan 3 file.');
@@ -33,7 +33,7 @@ async function send(channel){
   if(channel==='email'&&!health.delivery.emailReady)throw new Error('Email delivery belum dikonfigurasi: BREVO_API_KEY/BREVO_FROM_EMAIL belum ada di Vercel.');
   const r=await withTimeout(fetch('/api/send-direct-media',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid,customerName:name,deliveryMethod:channel,target,photoPath:stored.paths.photo,gifPath:stored.paths.gif,videoPath:stored.paths.video})}),120000,'Pengiriman direct media');
   const out=await r.json().catch(()=>null);if(!r.ok||!out?.ok)throw new Error(out?.error||'Pengiriman direct media gagal.');
-  if(status)status.textContent=channel==='email'?'✓ 3 file sudah dikirim sebagai attachment email.':'✓ 3 media sudah dikirim langsung ke WhatsApp.';
+  if(status)status.textContent=channel==='email'?'✓ Link soft file berhasil dikirim ke email.':'✓ Link soft file berhasil dikirim ke WhatsApp.';
  }catch(e){if(status)status.textContent='Pengiriman gagal · '+(e.message||e);alert('BOOTHPRO: '+(e.message||e))}
  finally{if(btn){btn.disabled=false;btn.innerHTML='Kirim Soft File'}}
 }
@@ -46,7 +46,7 @@ window.boothProAutoSyncSoftFile=async function(){
  const stored=await withTimeout(prepare(sid),150000,'Sinkronisasi otomatis timeout setelah 150 detik.');
  window.__BP_DELIVERY_BUNDLE__=window.__BP_DELIVERY_BUNDLE__||{};window.__BP_DELIVERY_BUNDLE__[sid]=stored;
  if(status)status.textContent=deliveryStatusText(health);
- try{if(typeof generateQR==='function')generateQR((location.origin+'/download/?id='+encodeURIComponent(sid)))}catch(e){}
+ try{if(typeof generateQR==='function')generateQR((location.origin+'/share.html?session='+encodeURIComponent(sid)))}catch(e){}
  return stored;
 };
 function install(){ensureName();const manual=$('customerSoftSyncManualBtn')||document.querySelector('[onclick="syncCustomerSoftFile()"]');if(manual){manual.classList.add('hidden');manual.setAttribute('aria-hidden','true');manual.tabIndex=-1}const b=$('customerShareSendBtn');if(b&&!b.__bpDD3){b.__bpDD3=true;b.onclick=null;b.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();const channel=!$('customerSharePhone')?.classList.contains('hidden')?'whatsapp':'email';send(channel)},true)}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,100));else setTimeout(install,100);let autoSid='';

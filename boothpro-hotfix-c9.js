@@ -27,8 +27,18 @@
     return true;
   }
 
+  function resolveSessionId(){
+    let sid='';
+    try{sid=String(document.getElementById('sessionIdDisplay')?.textContent||'').trim()}catch(e){}
+    if(sid)return sid;
+    try{
+      const keys=Object.keys(localStorage).filter(k=>k.indexOf('boothpro_cloud_')===0);
+      if(keys.length)return keys[keys.length-1].slice('boothpro_cloud_'.length);
+    }catch(e){}
+    return '';
+  }
   function softFileData(){
-    const sid=String(window.sessionId||'').trim();
+    const sid=resolveSessionId();
     let data=null;
     try{data=JSON.parse(localStorage.getItem('boothpro_cloud_'+sid)||'null')}catch(e){}
     const shareUrl=String(data?.shareUrl||'').trim();

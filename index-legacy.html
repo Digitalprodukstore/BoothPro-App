@@ -3911,7 +3911,7 @@ function bootStartButton(){
   btn.dataset.bpStartReady='1';
   if(btn.__bpStartBound)return;
   btn.__bpStartBound=true;
-  const run=()=>{
+  const run=(ev)=>{\n    ev?.preventDefault?.();\n    ev?.stopImmediatePropagation?.();
     try{
       const attract=document.getElementById('attractOverlay');
       if(attract){attract.classList.add('hidden');attract.classList.remove('flex');}
@@ -3932,7 +3932,6 @@ function bootStartButton(){
     }
   };
   btn.addEventListener('click',run,{capture:true});
-  btn.addEventListener('pointerup',()=>{if(window.matchMedia?.('(pointer:coarse)').matches)run()},{capture:true,passive:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootStartButton,{once:true});
 else bootStartButton();

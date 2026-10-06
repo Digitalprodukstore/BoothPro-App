@@ -2,45 +2,36 @@
 
 **Locked candidate:** 2026-10-06  
 **Source branch:** `chore/boothpro-cleanup-2026-10-06`  
-**Code baseline commit:** `213a5e35dc5880bb35be84f47fa1f3c3a16b4dee`  
+**Commit:** `3c3776506c92272abbd5cbf8dc85f4628cec5e7a`  
+**Preview:** `https://booth-pro-7sau3hp1r-risakil.vercel.app/`  
 **Production:** `https://booth-pro-app.vercel.app/` — DO NOT MODIFY during stabilization.
 
 ## Rule
-This cleanup candidate is the new continuity source for the next BoothPro development phase. Do not reconstruct features from older previews or legacy delivery implementations. Preserve the working camera, payment, frame composer, editor, print, dashboard, cloud sync, and direct media delivery paths.
+This commit is the current BoothPro cleanup/stabilization source of truth. Future work must start from this state and must not reconstruct features from older previews or conversations.
 
-## Cleanup completed in this candidate
+## Preserved areas
+- Customer package/payment/capture/editor/print/output flow.
+- C8 frame composer: photo-to-slot assignment, swap, drag, pinch zoom, frame overlay.
+- Supabase cloud storage/session sync.
+- Dashboard configuration, Cloud Sync, frame gallery, camera, hardware bridge, payment, print, branding, and security.
+- Admin Cloud Session history and admin bundle download.
+- Direct Soft File delivery: WhatsApp and Email send the three actual media files (Foto Final, GIF, Video) through `/api/send-direct-media`.
+- Lightweight GIF path is used for direct delivery so heavy legacy GIF generation does not block sending.
+- `/api/storage-upload`, `/api/storage-complete`, and `/api/delivery-health` remain part of the active delivery pipeline.
+
+## Cleanup completed in this baseline
 - Removed unused legacy `admin.html`.
-- Removed obsolete link-based customer delivery APIs:
-  - `/api/deliver-softfile`
-  - `/api/send-delivery`
-  - `/api/send-softfile`
-  - `/api/softfile`
-- C9 now only owns duplicate photo-to-frame-slot assignment; it no longer installs a competing delivery handler.
-- Customer WhatsApp/Email send path now targets `/api/send-direct-media`.
-- Replaced the fragile Kiosk `document.write()` wrapper with a direct Vercel rewrite into `index-legacy.html?kiosk=1`.
-- Kiosk mode now loads its hotfixes directly from the core app and blocks Dashboard access without replacing the document lifecycle.
-- Kept `/download/<sessionId>` and `api/delivery-session.js` for manual/authorized download workflows.
+- Removed obsolete customer link-download page and its `/download/:sessionId` rewrite.
+- Removed obsolete `api/delivery-session.js`.
+- Removed older duplicate link-delivery API implementations already no longer present in the branch.
+- Repaired the Dashboard Cloud Bundle download handler so it is asynchronous and uses appropriate media extensions.
 
-## Direct media delivery architecture
-- Supabase Storage is the source of truth for:
-  - `photo.png`
-  - `animation.gif`
-  - `live-session.mp4`
-- `/api/send-direct-media` creates short-lived signed URLs server-side.
-- WhatsApp uses Fonnte.
-- Email uses Brevo.
-- Customer delivery sends the three actual media/files directly; it does not depend on a customer login or customer-facing download page.
-- Provider secrets remain server-side only.
+## Direct delivery rule
+The primary customer delivery path is direct media/file delivery. Do not reintroduce website-link delivery as the primary WhatsApp/Email behavior.
 
-## Do not regress
+## Production safety
 - Do not modify Production during stabilization.
-- Do not reintroduce link-based WhatsApp/Email delivery as the primary path.
-- Do not reintroduce the Kiosk `document.write()` wrapper.
-- Do not make localStorage the commercial source of truth; it remains cache/offline support.
-- Do not change protected working areas without a targeted QA check.
-
-## Verification status
-- Vercel preview built from this cleanup branch reached READY.
-- Kiosk route returned HTTP 200 and served the actual BoothPro core document, not the old loading shell.
-- Static source inspection confirms the Kiosk response no longer contains the old document-write wrapper or `/api/deliver-softfile` customer path.
-- Full GitHub QA workflow still needs to complete on the cleanup PR before this candidate is treated as the final release baseline.
+- Never expose server-side provider secrets in frontend code.
+- Preserve camera, payment, frame composer, editor, print, Dashboard, and cloud sync behavior.
+- Any Kiosk loader/entry refactor must be isolated and browser-verified before being treated as locked.
+- After Kiosk verification and direct-media real-world testing pass, create the next locked baseline commit.

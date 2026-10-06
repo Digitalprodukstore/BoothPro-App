@@ -5,13 +5,27 @@ function headers(){const key=env('SUPABASE_SERVICE_ROLE_KEY');return {apikey:key
 function phone(v){let p=clean(v).replace(/\D/g,'');if(p.startsWith('0'))p='62'+p.slice(1);if(p.startsWith('8'))p='62'+p;return p}
 async function session(sid){
  const base=env('SUPABASE_URL').replace(/\/$/,'');
- const r=await fetch(base+'/rest/v1/sessions?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id,customer_name,whatsapp,email,photo_path,gif_path,video_path&limit=1',{headers:headers(),cache:'no-store'});
+ const r=await fetch(base+'/rest/v1/sessions?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id,customer_name,whatsapp,email,photo_path,gif_path,video_path,delivery_status&limit=1',{headers:headers(),cache:'no-store'});
  const d=await r.json().catch(()=>null);if(!r.ok||!d?.[0])throw new Error(d?.message||'Sesi tidak ditemukan.');return d[0]
 }
 async function update(sid,patch){
  const base=env('SUPABASE_URL').replace(/\/$/,'');
  const r=await fetch(base+'/rest/v1/sessions?session_id=eq.'+encodeURIComponent(sid),{method:'PATCH',headers:{...headers(),Prefer:'return=minimal'},body:JSON.stringify(patch)});
  if(!r.ok){const d=await r.json().catch(()=>null);throw new Error(d?.message||'Gagal memperbarui status sesi.')}
+}
+async function claimForDelivery(sid,patch){
+ const base=env('SUPABASE_URL').replace(/\/$/,'');
+ const filter='session_id=eq.'+encodeURIComponent(sid)+'&or=(delivery_status.is.null,delivery_status.eq.failed)';
+ const r=await fetch(base+'/rest/v1/sessions?'+filter,{method:'PATCH',headers:{...headers(),Prefer:'return=representation'},body:JSON.stringify({...patch,delivery_status:'sending'})});
+ const d=await r.json().catch(()=>null);
+ if(!r.ok)throw new Error(d?.message||'Gagal mengunci sesi untuk pengiriman.');
+ if(!Array.isArray(d)||!d.length){
+  const current=await session(sid);
+  if(current.delivery_status==='sent')throw new Error('Soft file untuk sesi ini sudah pernah dikirim.');
+  if(current.delivery_status==='sending')throw new Error('Soft file sesi ini sedang dikirim. Silakan tunggu proses selesai.');
+  throw new Error('Sesi tidak dapat dikunci untuk pengiriman.');
+ }
+ return d[0];
 }
 function bundleUrl(req,sid){
  const configured=clean(process.env.BOOTHPRO_PUBLIC_ORIGIN)||((req.headers['x-forwarded-proto']||'https')+'://'+(req.headers['x-forwarded-host']||req.headers.host));
@@ -50,7 +64,7 @@ module.exports=async function(req,res){
    {path:s.gif_path,name:'BOOTHPRO-GIF.gif',label:'GIF'},
    {path:s.video_path,name:'BOOTHPRO-Live-Session.'+(s.video_path.toLowerCase().endsWith('.webm')?'webm':'mp4'),label:'Video'}
   ];
-  await update(sid,{customer_name:name,delivery_method:method,whatsapp:method==='whatsapp'?phone(target):s.whatsapp,email:method==='email'?target:s.email,delivery_status:'sending'});
+  await claimForDelivery(sid,{customer_name:name,delivery_method:method,whatsapp:method==='whatsapp'?phone(target):s.whatsapp,email:method==='email'?target:s.email});
   if(method==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target))throw new Error('Email tidak valid.');
   const media=await Promise.all(files.map(async f=>({...f,url:await signedFileUrl(f.path)})));
   if(method==='email')await sendBrevo(target,name,media);

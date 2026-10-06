@@ -64,8 +64,10 @@ module.exports=async function(req,res){
    {path:s.gif_path,name:'BOOTHPRO-GIF.gif',label:'GIF'},
    {path:s.video_path,name:'BOOTHPRO-Live-Session.'+(s.video_path.toLowerCase().endsWith('.webm')?'webm':'mp4'),label:'Video'}
   ];
-  await claimForDelivery(sid,{customer_name:name,delivery_method:method,whatsapp:method==='whatsapp'?phone(target):s.whatsapp,email:method==='email'?target:s.email});
   if(method==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target))throw new Error('Email tidak valid.');
+  const normalizedPhone=method==='whatsapp'?phone(target):s.whatsapp;
+  if(method==='whatsapp'&&!/^62\d{8,15}$/.test(normalizedPhone))throw new Error('Nomor WhatsApp tidak valid.');
+  await claimForDelivery(sid,{customer_name:name,delivery_method:method,whatsapp:normalizedPhone,email:method==='email'?target:s.email});
   const media=await Promise.all(files.map(async f=>({...f,url:await signedFileUrl(f.path)})));
   if(method==='email')await sendBrevo(target,name,media);
   else await sendFonnte(target,name,media);

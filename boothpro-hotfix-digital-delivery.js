@@ -9,7 +9,27 @@ function getSessionState(){try{return typeof window.BoothProDeliveryState==='fun
 function getSessionId(){const s=getSessionState();return clean(s.sessionId||window.sessionId||'')}
 function $(id){return document.getElementById(id)}
 function ensureName(){const box=$('customerShareForm');if(!box||$('customerShareName'))return;const n=document.createElement('input');n.id='customerShareName';n.className='w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-sm mb-2';n.placeholder='Nama pelanggan';n.autocomplete='name';box.prepend(n)}
-async function send(channel){const status=$('customerShareStatus'),btn=$('customerShareSendBtn'),name=clean($('customerShareName')?.value),phone=clean($('customerSharePhone')?.value),email=clean($('customerShareEmail')?.value);if(!name){if(status)status.textContent='Masukkan nama pelanggan.';return}if(channel==='whatsapp'&&!phone){if(status)status.textContent='Masukkan nomor WhatsApp.';return}if(channel==='email'&&!email){if(status)status.textContent='Masukkan email.';return}if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Menyiapkan...'}try{const sid=getSessionId();if(!sid)throw new Error('Session ID tidak tersedia.');if(status)status.textContent='Menunggu soft file otomatis...';if(autoPromise)await withTimeout(autoPromise,20000,'Sinkronisasi otomatis');if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording')await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');const stored=(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);if(!stored)throw new Error('Soft file belum siap. Tunggu sampai status “✓ Soft file siap” lalu kirim lagi.');if(status)status.textContent='Mengirim link download...';const target=channel==='whatsapp'?phone:email;const r=await fetch('/api/send-delivery',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid,customerName:name,deliveryMethod:channel,target,photoPath:stored.paths.photo,gifPath:stored.paths.gif,videoPath:stored.paths.video})});const out=await r.json().catch(()=>null);if(!r.ok||!out?.ok)throw new Error(out?.error||'Pengiriman gagal.');if(status)status.textContent='✓ Berhasil dikirim. Pelanggan cukup membuka link BOOTHPRO.'}catch(e){if(status)status.textContent='Pengiriman gagal · '+(e.message||e);alert('BOOTHPRO: '+(e.message||e))}finally{if(btn){btn.disabled=false;btn.innerHTML='Kirim Soft File'}}}
+async function send(channel){
+ const status=$('customerShareStatus'),btn=$('customerShareSendBtn'),name=clean($('customerShareName')?.value),phone=clean($('customerSharePhone')?.value),email=clean($('customerShareEmail')?.value);
+ if(!name){if(status)status.textContent='Masukkan nama pelanggan.';return}
+ if(channel==='whatsapp'&&!phone){if(status)status.textContent='Masukkan nomor WhatsApp.';return}
+ if(channel==='email'&&!email){if(status)status.textContent='Masukkan email.';return}
+ if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Mengirim...'}
+ try{
+  const sid=getSessionId();if(!sid)throw new Error('Session ID tidak tersedia.');
+  if(status)status.textContent='Menunggu soft file otomatis...';
+  if(autoPromise)await withTimeout(autoPromise,20000,'Sinkronisasi otomatis');
+  if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording')await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');
+  const stored=(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
+  if(!stored)throw new Error('Soft file belum siap. Tunggu sampai status “✓ Soft file siap” lalu kirim lagi.');
+  if(status)status.textContent=channel==='email'?'Mengirim 3 file sebagai attachment email...':'Mengirim 3 media langsung ke WhatsApp...';
+  const target=channel==='whatsapp'?phone:email;
+  const r=await withTimeout(fetch('/api/send-direct-media',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid,customerName:name,deliveryMethod:channel,target,photoPath:stored.paths.photo,gifPath:stored.paths.gif,videoPath:stored.paths.video})}),120000,'Pengiriman direct media');
+  const out=await r.json().catch(()=>null);if(!r.ok||!out?.ok)throw new Error(out?.error||'Pengiriman direct media gagal.');
+  if(status)status.textContent=channel==='email'?'✓ 3 file sudah dikirim sebagai attachment email.':'✓ 3 media sudah dikirim langsung ke WhatsApp.';
+ }catch(e){if(status)status.textContent='Pengiriman gagal · '+(e.message||e);alert('BOOTHPRO: '+(e.message||e))}
+ finally{if(btn){btn.disabled=false;btn.innerHTML='Kirim Soft File'}}
+}
 window.boothProAutoSyncSoftFile=async function(){
  const sid=getSessionId();if(!sid)throw new Error('Session ID tidak tersedia.');
  if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording')await stopSessionRecorder();

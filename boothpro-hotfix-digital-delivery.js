@@ -18,10 +18,17 @@ async function send(channel){
  try{
   const sid=getSessionId();if(!sid)throw new Error('Session ID tidak tersedia.');
   if(status)status.textContent='Menunggu soft file otomatis...';
-  if(autoPromise)await withTimeout(autoPromise,165000,'Sinkronisasi otomatis');
+  if(autoPromise){
+   try{await withTimeout(autoPromise,165000,'Sinkronisasi otomatis')}catch(e){throw e}
+  }
+  let stored=(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
+  if(!stored){
+   if(status)status.textContent='Soft file belum siap, mencoba sinkronisasi otomatis sekarang...';
+   try{stored=await withTimeout(window.boothProAutoSyncSoftFile(),165000,'Sinkronisasi otomatis')}catch(e){throw e}
+  }
   if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording')await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');
-  const stored=(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
-  if(!stored)throw new Error('Soft file belum siap. Tunggu sampai status “✓ Soft file siap” lalu kirim lagi.');
+  stored=stored||(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
+  if(!stored)throw new Error('Soft file belum siap. Sinkronisasi otomatis belum menghasilkan 3 file.');
   if(status)status.textContent=channel==='email'?'Mengirim 3 file sebagai attachment email...':'Mengirim 3 media langsung ke WhatsApp...';
   const target=channel==='whatsapp'?phone:email;
   const r=await withTimeout(fetch('/api/send-direct-media',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid,customerName:name,deliveryMethod:channel,target,photoPath:stored.paths.photo,gifPath:stored.paths.gif,videoPath:stored.paths.video})}),120000,'Pengiriman direct media');
@@ -48,7 +55,7 @@ async function autoSyncWhenFinal(){
  const sid=getSessionId();
  if(step!==7||!sid||autoSid===sid||autoPromise)return;
  autoSid=sid;
- autoPromise=window.boothProAutoSyncSoftFile().catch(e=>{autoSid='';const st=$('cloudUploadStatus')||$('customerShareStatus');if(st)st.textContent='Sinkronisasi otomatis gagal · '+(e.message||e)}).finally(()=>{autoPromise=null});
+ autoPromise=window.boothProAutoSyncSoftFile().catch(e=>{const msg=e?.message||String(e);const st=$('cloudUploadStatus')||$('customerShareStatus');if(st)st.textContent='Sinkronisasi otomatis gagal · '+msg;throw e}).finally(()=>{autoPromise=null});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(autoSyncWhenFinal,150));
 else setTimeout(autoSyncWhenFinal,150);

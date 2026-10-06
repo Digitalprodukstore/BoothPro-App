@@ -19,10 +19,10 @@ window.boothProAutoSyncSoftFile=async function(){
  try{if(typeof generateQR==='function')generateQR((location.origin+'/download/?id='+encodeURIComponent(sid)))}catch(e){}
  return stored;
 };
-function install(){ensureName();const b=$('customerShareSendBtn');if(b&&!b.__bpDD3){b.__bpDD3=true;b.onclick=null;b.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();const channel=!$('customerSharePhone')?.classList.contains('hidden')?'whatsapp':'email';send(channel)},true)}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,100));else setTimeout(install,100);let autoSid='';
+function install(){ensureName();const manual=$('customerSoftSyncManualBtn')||document.querySelector('[onclick="syncCustomerSoftFile()"]');if(manual){manual.classList.add('hidden');manual.setAttribute('aria-hidden','true');manual.tabIndex=-1}const b=$('customerShareSendBtn');if(b&&!b.__bpDD3){b.__bpDD3=true;b.onclick=null;b.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();const channel=!$('customerSharePhone')?.classList.contains('hidden')?'whatsapp':'email';send(channel)},true)}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,100));else setTimeout(install,100);let autoSid='';
 let autoPromise=null;
 async function autoSyncWhenFinal(){
- const step=Number(window.currentStep||0);
+ const step=document.getElementById('step-final')&&!document.getElementById('step-final').classList.contains('hidden')?7:0;
  const sid=getSessionId();
  if(step!==7||!sid||autoSid===sid||autoPromise)return;
  autoSid=sid;

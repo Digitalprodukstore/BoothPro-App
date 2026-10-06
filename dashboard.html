@@ -699,7 +699,7 @@ async function markCloudSessionDownloaded(id){
     const x=cloudSessions.find(a=>String(a.id)===String(id));if(x){x.download_status='downloaded';x.downloaded_at=new Date().toISOString()}renderCloudSessions();cloudSessionStatus('Status download diperbarui.');
   }catch(e){cloudSessionStatus('Gagal update status: '+(e.message||e))}
 }
-async function downloadCloudBundle(id){
+async async function downloadCloudBundle(id){
   const x=cloudSessions.find(a=>String(a.id)===String(id));if(!x)return;
   const links=sessionMediaLinks(x);if(!links.length)return cloudSessionStatus('Session ini belum memiliki media Cloud.');
   if(!window.JSZip)return cloudSessionStatus('Modul ZIP belum tersedia. Muat ulang Dashboard lalu coba lagi.');
@@ -710,7 +710,7 @@ async function downloadCloudBundle(id){
       const label=a[0],url=a[1],type=a[2];
       const res=await fetch(sessionUrl(url),{mode:'cors',cache:'no-store'});if(!res.ok)throw new Error(label+' HTTP '+res.status);
       const blob=await res.blob();if(!blob.size)continue;
-      const ext=type==='gif'?'gif':type==='video'?'webm':'jpg';
+      const ext=type==='gif'?'gif':type==='video'?'mp4':'png';
       zip.file(('0'+(added+1)).slice(-2)+'-'+label+'.'+ext,blob);added++;
     }
     if(!added)throw new Error('Tidak ada file yang berhasil diambil.');

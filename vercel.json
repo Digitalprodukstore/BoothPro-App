@@ -4,19 +4,5 @@
       "path": "/api/cleanup-media",
       "schedule": "0 3 * * *"
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/kiosk",
-      "destination": "/index-legacy.html?kiosk=1"
-    },
-    {
-      "source": "/kiosk/",
-      "destination": "/index-legacy.html?kiosk=1"
-    },
-    {
-      "source": "/download/:sessionId",
-      "destination": "/download/index.html"
-    }
   ]
 }

@@ -4,7 +4,7 @@ try{
  const r=await fetch('/index-legacy.html?bp-kiosk='+Date.now(),{cache:'no-store'});
  if(!r.ok) throw new Error('BoothPro Kiosk gagal dimuat ('+r.status+')');
  let html=await r.text();
- const kioskCss=`<style id="bp-kiosk-hard-isolation">#dashboardModal,#dashboardAuthModal{display:none!important;visibility:hidden!important;pointer-events:none!important}</style><script src="/boothpro-hotfix-c9.js?c9=1"><\/script><script src="/boothpro-hotfix-digital-delivery.js?dd=1"><\/script>`;
+ const kioskCss=`<style id="bp-kiosk-hard-isolation">#dashboardModal,#dashboardAuthModal{display:none!important;visibility:hidden!important;pointer-events:none!important}</style><script src="/boothpro-hotfix-c9.js?c9=1"><\\/script><script src="/boothpro-hotfix-digital-delivery.js?dd=ce45c625"><\\/script>`;
  html=html.replace('</head>',kioskCss+'</head>');
  const guard=`<script id="bp-kiosk-entry-guard">
 (function(){
@@ -43,7 +43,48 @@ try{
    }catch(e){}
  },500);
 })();
-<\/script>`;
+<\\/script>
+<script id="bp-kiosk-delivery-final-authority">
+(function(){
+ 'use strict';
+ function bind(){
+  var b=document.getElementById('customerShareSendBtn');
+  if(!b)return;
+  if(b.__bpFinalDeliveryBound)return;
+  b.__bpFinalDeliveryBound=true;
+  b.onclick=null;
+  b.removeAttribute('onclick');
+  b.addEventListener('click',async function(e){
+   e.preventDefault();e.stopImmediatePropagation();
+   var status=document.getElementById('customerShareStatus');
+   var phoneEl=document.getElementById('customerSharePhone'),emailEl=document.getElementById('customerShareEmail');
+   var channel=phoneEl&&!phoneEl.classList.contains('hidden')?'whatsapp':'email';
+   var target=channel==='whatsapp'?String(phoneEl?.value||'').trim():String(emailEl?.value||'').trim();
+   if(!target){if(status)status.textContent=channel==='whatsapp'?'Masukkan nomor WhatsApp.':'Masukkan email.';return;}
+   try{
+    var sid=String(window.sessionId||'').trim();
+    if(!sid)throw new Error('Session ID tidak tersedia.');
+    if(status)status.textContent='Menunggu bundle soft file selesai...';
+    if(typeof window.boothProAutoSyncSoftFile!=='function')throw new Error('Mesin sinkronisasi soft file belum siap.');
+    var stored=window.__BP_DELIVERY_BUNDLE__?.[sid];
+    if(!stored)stored=await window.boothProAutoSyncSoftFile();
+    if(!stored)throw new Error('Bundle soft file belum tersedia.');
+    if(status)status.textContent='Mengirim link bundle soft file...';
+    var payload={channel:channel,sessionId:sid,phone:channel==='whatsapp'?target:'',email:channel==='email'?target:'',message:'Soft file BoothPro Anda sudah siap.'};
+    var r=await fetch('/api/deliver-softfile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    var out=await r.json().catch(function(){return null});
+    if(!r.ok||!out?.ok)throw new Error(out?.error||'Pengiriman soft file gagal.');
+    if(status)status.textContent=channel==='whatsapp'?'✓ Link bundle soft file berhasil dikirim ke WhatsApp.':'✓ Link bundle soft file berhasil dikirim ke email.';
+   }catch(err){
+    if(status)status.textContent='Pengiriman gagal · '+(err?.message||err);
+    alert('BOOTHPRO: '+(err?.message||err));
+   }
+  },true);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(bind,250)});else setTimeout(bind,250);
+ setInterval(bind,250);
+})();
+<\\/script>`;
  const at=html.toLowerCase().lastIndexOf('</body>');
  if(at<0) throw new Error('BoothPro Kiosk tidak memiliki body penutup');
  html=html.slice(0,at)+guard+html.slice(at);

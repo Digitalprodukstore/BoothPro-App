@@ -20,7 +20,7 @@
       try{
         ['dashboardModal','dashboardAuthModal','extraPrintModal','attractOverlay'].forEach(function(id){
           const el=document.getElementById(id);
-          if(el){el.classList.add('hidden');el.style.display='none';el.style.pointerEvents='none';}
+          if(el){el.classList.add('hidden');el.style.pointerEvents='none';}
         });
         document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');s.style.display='none';});
         const welcome=document.getElementById('step-welcome');
@@ -395,15 +395,15 @@ window.BoothProStartSession=function(ev){
     if(ev){ev.preventDefault();ev.stopPropagation();}
     var overlay=document.getElementById('attractOverlay');
     if(overlay){overlay.classList.add('hidden');overlay.classList.remove('flex');overlay.style.display='none';overlay.style.pointerEvents='none';}
-    document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');s.style.display='none';});
+    document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');});
     var pkg=document.getElementById('step-package');
-    if(pkg){pkg.classList.remove('hidden');pkg.style.display='block';}
+    if(pkg){pkg.classList.remove('hidden');}
     if(typeof window.goToStep==='function'){window.goToStep(2);}else{window.__BP_START_PENDING__=true;}
     return false;
   }catch(err){
     console.error('BoothPro Start Session hotfix failed',err);
     var pkg=document.getElementById('step-package');
-    if(pkg){document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');s.style.display='none';});pkg.classList.remove('hidden');pkg.style.display='block';}
+    if(pkg){document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');});pkg.classList.remove('hidden');}
     return false;
   }
 };

@@ -8,6 +8,29 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>BoothPro v3.0 PRO - Self Photobooth</title>
+<script>
+/* BOOTHPRO CUSTOMER KIOSK MODE
+   ?mode=kiosk prevents an authenticated/stale Dashboard UI from becoming the customer entry screen. */
+(function(){
+  try{
+    const p=new URLSearchParams(location.search||'');
+    if(p.get('mode')!=='kiosk')return;
+    window.__BOOTHPRO_CUSTOMER_KIOSK__=true;
+    document.addEventListener('DOMContentLoaded',function(){
+      try{
+        ['dashboardModal','dashboardAuthModal','extraPrintModal','attractOverlay'].forEach(function(id){
+          const el=document.getElementById(id);
+          if(el){el.classList.add('hidden');el.style.display='none';el.style.pointerEvents='none';}
+        });
+        document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');s.style.display='none';});
+        const welcome=document.getElementById('step-welcome');
+        if(welcome){welcome.classList.remove('hidden');welcome.style.display='flex';}
+        window.scrollTo(0,0);
+      }catch(e){console.warn('BoothPro kiosk mode guard:',e);}
+    },{once:true});
+  }catch(e){}
+})();
+</script>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>

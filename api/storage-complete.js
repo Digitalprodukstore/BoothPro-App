@@ -14,6 +14,9 @@ module.exports=async function(req,res){
   const h={apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'};
   const publicUrl=p=>base+'/storage/v1/object/public/boothpro-softfiles/'+p.split('/').map(encodeURIComponent).join('/');
   const media={photo_url:publicUrl(photoPath),gif_url:publicUrl(gifPath),video_url:publicUrl(videoPath),media_status:'uploaded',download_status:'pending',updated_at:new Date().toISOString()};
+  const verify=async p=>{const vr=await fetch(base+'/storage/v1/object/info/boothpro-softfiles/'+p.split('/').map(encodeURIComponent).join('/'),{headers:{apikey:key,Authorization:'Bearer '+key},cache:'no-store'});return vr.ok};
+  const verified=await Promise.all([verify(photoPath),verify(gifPath),verify(videoPath)]);
+  if(verified.some(v=>!v))throw new Error('Supabase belum memastikan ketiga file soft file tersedia.');
   const lookup=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'},cache:'no-store'});
   const existing=await lookup.json().catch(()=>null);
   if(!lookup.ok)throw new Error(existing?.message||existing?.hint||'Gagal membaca manifest soft file.');

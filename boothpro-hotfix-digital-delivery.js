@@ -11,7 +11,7 @@ async function waitForSessionVideo(maxMs){
  while(Date.now()-started<maxMs){
   let s=getSessionState();
   if(s?.sessionVideoBlob?.size)return s.sessionVideoBlob;
-  if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording'){
+  if(typeof stopSessionRecorder==='function'){
    try{await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman video')}catch(e){}
   }
   s=getSessionState();
@@ -93,7 +93,7 @@ async function send(channel){
   if(autoPromise){try{await withTimeout(autoPromise,165000,'Sinkronisasi otomatis')}catch(e){throw e}}
   let stored=(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
   if(!stored){if(status)status.textContent='Soft file belum siap, mencoba sinkronisasi otomatis sekarang...';try{stored=await withTimeout(window.boothProAutoSyncSoftFile(),165000,'Sinkronisasi otomatis')}catch(e){throw e}}
-  if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording')await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');
+  if(typeof stopSessionRecorder==='function')await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');
   stored=stored||(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
   if(!stored)throw new Error('Soft file belum siap. Sinkronisasi otomatis belum menghasilkan 3 file.');
   if(status)status.textContent=channel==='email'?'Mengirim link soft file...':'Mengirim link soft file...';
@@ -121,7 +121,7 @@ window.boothProAutoSyncSoftFile=async function(){
  const status=$('cloudUploadStatus')||$('customerShareStatus')||$('customerSoftAutoStatus');
  if(status)status.textContent='Menyinkronkan Photo + GIF + Live Session otomatis...';
  try{
-  if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording'){
+  if(typeof stopSessionRecorder==='function'){
    await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');
   }
  }catch(e){console.warn('BoothPro recorder close:',e)}

@@ -4481,6 +4481,31 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 <script id="bp-digital-delivery-state-bridge">(function(){'use strict';window.BoothProDeliveryState=function(){return {sessionId:typeof sessionId==='string'?sessionId:'',finalCompositeDataUrl:typeof finalCompositeDataUrl==='string'?finalCompositeDataUrl:'',finalGifDataUrl:typeof finalGifDataUrl==='string'?finalGifDataUrl:'',capturedPhotos:Array.isArray(capturedPhotos)?capturedPhotos.slice():[],sessionVideoBlob:sessionVideoBlob||null,sessionVideoMime:sessionVideoBlob?.type||''};};})();</script>
 <script id="bp-digital-delivery-hotfix" src="/boothpro-hotfix-digital-delivery.js"></script>
+<style id="bp-frame-portrait-layout-fix">
+@media (orientation:portrait) and (max-width:900px){
+  #step-package{padding-bottom:20px}
+  #step-package>div:first-child{margin-bottom:18px}
+  #step-package>div:first-child h2{font-size:clamp(1.6rem,6vw,2.2rem);line-height:1.15}
+  #step-package>div:first-child p{font-size:12px;line-height:1.5}
+  #step-package>div.grid{display:flex!important;flex-direction:column!important;gap:16px!important}
+  #step-package #packageGrid{grid-template-columns:repeat(1,minmax(0,1fr))!important;gap:12px!important}
+  #step-package #packageGrid>button{min-height:108px;padding:16px!important}
+  #step-package>div.grid>div:last-child{width:100%;padding:16px!important;border-radius:22px}
+  #step-package #preFrameGrid{width:100%;min-width:0}
+  #step-package #preFrameGrid>div{width:100%;box-sizing:border-box}
+  #step-package .pre-category-index{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+  #step-package .pre-frame-category-card{min-height:122px!important;padding:12px!important}
+  #step-package .pre-frame-category-thumb{width:54px!important;height:68px!important}
+  #step-package .pre-frame-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;max-height:none!important;overflow:visible!important}
+  #step-package .pre-frame-detail-grid .pre-frame-card{aspect-ratio:2/3;min-height:0}
+  #step-package .pre-frame-detail-head{margin-bottom:12px}
+  #step-package #selectedPackageSummary{margin-top:14px!important}
+  #step-package #toPaymentBtn{min-height:56px;margin-top:12px!important}
+}
+@media (min-width:641px) and (max-width:900px) and (orientation:portrait){
+  #step-package #packageGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+</style>
 <style id="bp-kiosk-hard-lock">
 html.bp-kiosk-mode #dashboardModal,
 html.bp-kiosk-mode #dashboardAuthModal,

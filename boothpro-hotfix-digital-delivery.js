@@ -127,6 +127,7 @@ window.boothProAutoSyncSoftFile=async function(){
  }catch(e){console.warn('BoothPro recorder close:',e)}
  const stored=await withTimeout(prepare(sid),180000,'Sinkronisasi otomatis timeout setelah 180 detik.');
  window.__BP_DELIVERY_BUNDLE__=window.__BP_DELIVERY_BUNDLE__||{};
+ stored.bundleUrl=String(stored.bundleUrl||((location.origin||'').replace(/\\\/$/,'')+'/download/?id='+encodeURIComponent(sid)));
  window.__BP_DELIVERY_BUNDLE__[sid]=stored;
  if(status)status.textContent='✓ Soft file otomatis tersinkron · Foto + GIF + Live Session';
  try{if(typeof generateQR==='function')generateQR((location.origin+'/download/?id='+encodeURIComponent(sid)))}catch(e){}

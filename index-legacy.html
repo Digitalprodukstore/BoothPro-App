@@ -4507,42 +4507,85 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 }
 </style>
 <style id="bp-kiosk-premium-ui">
-html.bp-kiosk-mode body{background:#0b0b0d}
-html.bp-kiosk-mode main{padding:clamp(18px,3vw,36px);max-width:1440px}
-html.bp-kiosk-mode header{background:rgba(9,9,11,.94);border-color:rgba(255,255,255,.08);padding:12px clamp(14px,2.5vw,32px)}
-html.bp-kiosk-mode #step-welcome{max-width:920px;padding:clamp(30px,6vh,72px) 20px;gap:clamp(24px,4vh,38px)}
-html.bp-kiosk-mode #step-welcome h1{font-size:clamp(2.2rem,5vw,4.5rem);line-height:1.02;letter-spacing:-.04em}
-html.bp-kiosk-mode #step-welcome p{font-size:clamp(.9rem,1.4vw,1.05rem);line-height:1.7;color:#a1a1aa}
-html.bp-kiosk-mode #step-welcome button[onclick="goToStep(2)"]{min-height:62px;padding:0 30px;border-radius:18px;box-shadow:0 18px 45px rgba(79,70,229,.22)}
-html.bp-kiosk-mode #step-package,#step-payment,#step-capture,#step-final{max-width:1180px}
-html.bp-kiosk-mode #step-package>div:first-child,#step-payment>div:first-child{margin-bottom:28px}
-html.bp-kiosk-mode #step-package h2,html.bp-kiosk-mode #step-payment h2{font-size:clamp(1.8rem,3vw,2.5rem);letter-spacing:-.025em}
-html.bp-kiosk-mode #step-package>div.grid{gap:24px}
+/* BoothPro Signature UI — scoped to Kiosk mode. Functional DOM/IDs remain untouched. */
+html.bp-kiosk-mode{
+  --bp-bg:#08090c;--bp-panel:rgba(18,19,24,.88);--bp-panel2:rgba(25,26,33,.9);
+  --bp-line:rgba(255,255,255,.09);--bp-muted:#a1a1aa;--bp-accent:#8b7cff;--bp-accent2:#c084fc;
+}
+html.bp-kiosk-mode body{
+  background:
+    radial-gradient(900px 500px at 8% -10%,rgba(99,102,241,.14),transparent 62%),
+    radial-gradient(800px 500px at 95% 5%,rgba(168,85,247,.10),transparent 60%),
+    #08090c;
+}
+html.bp-kiosk-mode body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 28%)}
+html.bp-kiosk-mode header{
+  height:68px;padding:10px clamp(16px,3vw,40px);background:rgba(8,9,12,.78);
+  border-color:var(--bp-line);box-shadow:0 10px 35px rgba(0,0,0,.18)
+}
+html.bp-kiosk-mode #brandLogoWrap{width:42px;height:42px;border-radius:14px;box-shadow:0 8px 24px rgba(99,102,241,.22)}
+html.bp-kiosk-mode #brandNameDisplay{font-size:17px;letter-spacing:.12em}
+html.bp-kiosk-mode main{max-width:1380px;padding:clamp(20px,3vw,42px);align-items:flex-start}
+html.bp-kiosk-mode #step-welcome{
+  max-width:980px;min-height:calc(100vh - 130px);padding:clamp(28px,6vh,70px) 18px;
+  gap:28px;position:relative
+}
+html.bp-kiosk-mode #step-welcome:after{
+  content:"";position:absolute;width:360px;height:360px;border:1px solid rgba(139,124,255,.12);
+  border-radius:50%;top:8%;left:50%;transform:translateX(-50%);pointer-events:none
+}
+html.bp-kiosk-mode #step-welcome>div:first-child{z-index:1}
+html.bp-kiosk-mode #step-welcome h1{font-size:clamp(2.45rem,6vw,5.2rem);line-height:.98;letter-spacing:-.055em}
+html.bp-kiosk-mode #step-welcome p{max-width:600px;font-size:clamp(.92rem,1.3vw,1.08rem);line-height:1.75}
+html.bp-kiosk-mode #step-welcome button[onclick="goToStep(2)"]{
+  min-width:260px;min-height:64px;justify-content:center;border-radius:18px;
+  box-shadow:0 20px 55px rgba(99,102,241,.25);transition:transform .2s,box-shadow .2s
+}
+html.bp-kiosk-mode #step-welcome button[onclick="goToStep(2)"]:hover{transform:translateY(-2px);box-shadow:0 25px 65px rgba(99,102,241,.34)}
+html.bp-kiosk-mode #step-package,#step-payment,#step-capture,#step-final{max-width:1220px}
+html.bp-kiosk-mode #step-package>div:first-child,#step-payment>div:first-child{margin-bottom:30px}
+html.bp-kiosk-mode #step-package h2,html.bp-kiosk-mode #step-payment h2{font-size:clamp(1.9rem,3.2vw,2.7rem);letter-spacing:-.035em}
+html.bp-kiosk-mode #step-package>div.grid{grid-template-columns:minmax(0,1.25fr) minmax(360px,.75fr);gap:24px}
 html.bp-kiosk-mode #packageGrid{gap:14px}
-html.bp-kiosk-mode #packageGrid>button{min-height:150px;border-radius:22px;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
-html.bp-kiosk-mode #packageGrid>button:hover{transform:translateY(-2px)}
-html.bp-kiosk-mode #step-package .bg-zinc-950,
+html.bp-kiosk-mode #packageGrid>button{
+  min-height:168px;padding:22px!important;border-radius:24px;border-color:var(--bp-line);
+  background:linear-gradient(145deg,rgba(24,25,32,.96),rgba(12,13,17,.96));
+  box-shadow:0 12px 32px rgba(0,0,0,.18);transition:transform .2s,border-color .2s,box-shadow .2s
+}
+html.bp-kiosk-mode #packageGrid>button:hover{transform:translateY(-3px);border-color:rgba(139,124,255,.5);box-shadow:0 18px 42px rgba(0,0,0,.28)}
+html.bp-kiosk-mode #step-package>div.grid>div:last-child{
+  padding:24px;border-radius:26px;border:1px solid var(--bp-line);
+  background:linear-gradient(160deg,rgba(20,21,27,.94),rgba(10,11,14,.96));
+  box-shadow:0 20px 55px rgba(0,0,0,.2)
+}
+html.bp-kiosk-mode #preFrameGrid{min-height:320px}
+html.bp-kiosk-mode #step-package .pre-frame-category-card,
+html.bp-kiosk-mode #step-package .pre-frame-card{border-color:var(--bp-line);transition:transform .18s,border-color .18s,box-shadow .18s}
+html.bp-kiosk-mode #step-package .pre-frame-category-card:hover,
+html.bp-kiosk-mode #step-package .pre-frame-card:hover{transform:translateY(-2px);border-color:rgba(139,124,255,.48);box-shadow:0 12px 30px rgba(0,0,0,.22)}
+html.bp-kiosk-mode #step-package #toPaymentBtn{min-height:60px;border-radius:17px;box-shadow:0 12px 28px rgba(79,70,229,.2)}
+html.bp-kiosk-mode #step-payment>div.grid{gap:22px}
 html.bp-kiosk-mode #step-payment .bg-zinc-950,
 html.bp-kiosk-mode #step-capture .bg-zinc-950,
-html.bp-kiosk-mode #step-final .bg-zinc-950{border-color:rgba(255,255,255,.09);box-shadow:0 16px 40px rgba(0,0,0,.16)}
-html.bp-kiosk-mode #step-package>div.grid>div:last-child{padding:22px;border-radius:24px}
-html.bp-kiosk-mode #preFrameGrid{min-height:300px}
-html.bp-kiosk-mode #step-package #toPaymentBtn{min-height:58px;border-radius:16px}
-@media(max-width:900px){
- html.bp-kiosk-mode main{padding:18px 14px 28px}
- html.bp-kiosk-mode #step-package>div.grid{grid-template-columns:1fr!important}
- html.bp-kiosk-mode #step-package>div.grid>div{width:100%;min-width:0}
- html.bp-kiosk-mode #packageGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
- html.bp-kiosk-mode #step-package>div.grid>div:last-child{padding:18px}
+html.bp-kiosk-mode #step-final .bg-zinc-950{border-color:var(--bp-line);box-shadow:0 18px 45px rgba(0,0,0,.2)}
+html.bp-kiosk-mode #step-payment .bg-zinc-950{border-radius:26px}
+html.bp-kiosk-mode #step-capture .aspect-\[4\/3\]{box-shadow:0 22px 55px rgba(0,0,0,.32)}
+html.bp-kiosk-mode #step-final .preview-shell{filter:drop-shadow(0 22px 40px rgba(0,0,0,.3))}
+@media(max-width:1024px){
+  html.bp-kiosk-mode #step-package>div.grid{grid-template-columns:1fr}
+  html.bp-kiosk-mode #step-package>div.grid>div{width:100%;min-width:0}
 }
-@media(max-width:560px){
- html.bp-kiosk-mode header{padding:10px 12px}
- html.bp-kiosk-mode #brandTaglineDisplay{display:none}
- html.bp-kiosk-mode #step-welcome{padding:28px 8px}
- html.bp-kiosk-mode #step-welcome h1{font-size:clamp(2rem,10vw,3rem)}
- html.bp-kiosk-mode #step-welcome button[onclick="goToStep(2)"]{width:min(100%,360px)}
- html.bp-kiosk-mode #packageGrid{grid-template-columns:1fr}
- html.bp-kiosk-mode #packageGrid>button{min-height:124px}
+@media(max-width:640px){
+  html.bp-kiosk-mode header{height:60px;padding:8px 12px}
+  html.bp-kiosk-mode main{padding:16px 12px 28px}
+  html.bp-kiosk-mode #step-welcome{min-height:calc(100vh - 90px);padding:34px 6px;gap:24px}
+  html.bp-kiosk-mode #step-welcome:after{width:250px;height:250px;top:12%}
+  html.bp-kiosk-mode #step-welcome h1{font-size:clamp(2.15rem,11vw,3.25rem)}
+  html.bp-kiosk-mode #step-welcome button[onclick="goToStep(2)"]{width:min(100%,350px);min-height:60px}
+  html.bp-kiosk-mode #packageGrid{grid-template-columns:1fr!important}
+  html.bp-kiosk-mode #packageGrid>button{min-height:132px}
+  html.bp-kiosk-mode #step-package>div.grid>div:last-child{padding:18px;border-radius:22px}
+  html.bp-kiosk-mode #step-package .pre-frame-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
 }
 </style>
 <style id="bp-kiosk-hard-lock">

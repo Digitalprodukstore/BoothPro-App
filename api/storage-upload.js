@@ -8,7 +8,7 @@ module.exports=async function(req,res){
   if(!base||!key)throw new Error('SUPABASE_SERVICE_ROLE_KEY belum dikonfigurasi di Vercel.');
   const b=req.body||{},sid=clean(b.sessionId),files=Array.isArray(b.files)?b.files:[];
   if(!sid||files.length!==3)throw new Error('Session ID dan tepat 3 file wajib.');
-  const allowed={'photo.png':'image/png','animation.gif':'image/gif','live-session.mp4':'video/mp4'};
+  const allowed={'photo.png':'image/png','animation.gif':'image/gif','live-session.mp4':'video/mp4','live-session.webm':'video/webm'};
   const uploads=await Promise.all(files.map(async f=>{
    const name=clean(f.name);if(!allowed[name]||f.contentType!==allowed[name])throw new Error('Tipe file tidak valid: '+name);
    const path=sid+'/'+name;

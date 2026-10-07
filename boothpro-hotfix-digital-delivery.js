@@ -21,26 +21,28 @@ async function waitForSessionVideo(maxMs){
  return null;
 }
 async function prepare(sid){
- const state=typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():{};
- // Final-page fallback: the kiosk may render the finished composition directly into #finalPreview
- // without populating the legacy finalCompositeDataUrl variable. Capture that rendered canvas first.
+ // IMPORTANT: BoothProDeliveryState() returns a snapshot. Re-read it while waiting;
+ // otherwise a late prepareFinal() can never update the local state object.
+ let state=typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():{};
+ // Final-page fallback: recover the finished composition from the live state or the
+ // rendered #finalPreview image. This intentionally does not rely on a stale snapshot.
  if(!state.finalCompositeDataUrl){
   try{
-   // Final preview is rendered as an <img>, not a canvas. Wait briefly because
-   // step-final can become visible before renderFinalPreview() finishes.
    const deadline=Date.now()+12000;
-   while(!state.finalCompositeDataUrl&&Date.now()<deadline){
+   while(Date.now()<deadline){
+    state=typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():state;
+    if(state.finalCompositeDataUrl)break;
     const fp=document.getElementById('finalPreview');
     const im=fp?.querySelector?.('img');
-    if(im?.src&&/^data:image\\//i.test(im.src)){state.finalCompositeDataUrl=im.src;break;}
+    if(im?.src&&/^data:image\\//i.test(im.src)){state={...state,finalCompositeDataUrl:im.src};break;}
     const fc=fp?.querySelector?.('canvas');
-    if(fc?.width&&fc?.height){state.finalCompositeDataUrl=fc.toDataURL('image/png');break;}
+    if(fc?.width&&fc?.height){state={...state,finalCompositeDataUrl:fc.toDataURL('image/png')};break;}
     await new Promise(r=>setTimeout(r,250));
    }
    if(!state.finalCompositeDataUrl&&typeof buildCompositeCanvas==='function'){
     const built=await withTimeout(buildCompositeCanvas(),30000,'Membuat foto final terlalu lama.');
-    if(typeof built==='string')state.finalCompositeDataUrl=built;
-    else if(built?.toDataURL)state.finalCompositeDataUrl=built.toDataURL('image/png');
+    if(typeof built==='string')state={...state,finalCompositeDataUrl:built};
+    else if(built?.toDataURL)state={...state,finalCompositeDataUrl:built.toDataURL('image/png')};
    }
   }catch(e){ console.warn('BoothPro final photo fallback:',e); }
  }

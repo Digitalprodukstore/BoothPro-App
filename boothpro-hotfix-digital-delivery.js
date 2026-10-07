@@ -149,7 +149,12 @@ window.boothProAutoSyncSoftFile=async function(){
    await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');
   }
  }catch(e){console.warn('BoothPro recorder close:',e)}
- const stored=await withTimeout(prepare(sid),180000,'Sinkronisasi otomatis timeout setelah 180 detik.');
+ let stored=null,lastErr=null;
+ for(let attempt=1;attempt<=2&&!stored;attempt++){
+  try{stored=await withTimeout(prepare(sid),180000,'Sinkronisasi otomatis timeout setelah 180 detik.');}
+  catch(e){lastErr=e;if(attempt<2)await new Promise(r=>setTimeout(r,1200));}
+ }
+ if(!stored)throw (lastErr||new Error('Soft file belum berhasil disinkronkan.'));
  window.__BP_DELIVERY_BUNDLE__=window.__BP_DELIVERY_BUNDLE__||{};
  stored.bundleUrl=String(stored.bundleUrl||((location.origin||'').replace(/\\\/$/,'')+'/download/?id='+encodeURIComponent(sid)));
  window.__BP_DELIVERY_BUNDLE__[sid]=stored;

@@ -9,7 +9,7 @@ module.exports=async function(req,res){
   const expected=[sid+'/photo.png',sid+'/animation.gif',sid+'/live-session.mp4'];
   if(!sid||expected.some(x=>!paths.includes(x)))throw new Error('Upload 3 file belum lengkap.');
   const h={apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'};
-  const row={session_id:sid,customer_name:'Pelanggan',photo_path:paths.find(x=>x.endsWith('/photo.png')),gif_path:paths.find(x=>x.endsWith('/animation.gif')),video_path:paths.find(x=>x.endsWith('/live-session.mp4'))};
+  const row={session_id:sid,customer_name:'Pelanggan',photo_path:paths.find(x=>x.endsWith('/photo.png')),gif_path:paths.find(x=>x.endsWith('/animation.gif')),video_path:videoPath};
   const r=await fetch(base+'/rest/v1/sessions?on_conflict=session_id',{method:'POST',headers:{...h,Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(row)});
   const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(d?.message||d?.hint||'Gagal menyimpan metadata session.');
   return json(res,200,{ok:true,session:Array.isArray(d)?d[0]:d,paths:{photo:row.photo_path,gif:row.gif_path,video:row.video_path}});

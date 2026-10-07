@@ -20,11 +20,11 @@
       try{
         ['dashboardModal','dashboardAuthModal','extraPrintModal','attractOverlay'].forEach(function(id){
           const el=document.getElementById(id);
-          if(el){el.classList.add('hidden');el.style.pointerEvents='none';}
+          if(el){el.classList.add('hidden');el.style.pointerEvents='none';el.setAttribute('aria-hidden','true');}
         });
-        document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');s.style.display='none';});
+        document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');});
         const welcome=document.getElementById('step-welcome');
-        if(welcome){welcome.classList.remove('hidden');welcome.style.display='flex';}
+        if(welcome){welcome.classList.remove('hidden');}
         window.scrollTo(0,0);
       }catch(e){console.warn('BoothPro kiosk mode guard:',e);}
     },{once:true});
@@ -394,7 +394,7 @@ window.BoothProStartSession=function(ev){
   try{
     if(ev){ev.preventDefault();ev.stopPropagation();}
     var overlay=document.getElementById('attractOverlay');
-    if(overlay){overlay.classList.add('hidden');overlay.classList.remove('flex');overlay.style.display='none';overlay.style.pointerEvents='none';}
+    if(overlay){overlay.classList.add('hidden');overlay.classList.remove('flex');overlay.style.pointerEvents='none';}
     document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');});
     var pkg=document.getElementById('step-package');
     if(pkg){pkg.classList.remove('hidden');}
@@ -426,7 +426,7 @@ function bindStart(){
       if(typeof window.goToStep==='function'){window.goToStep(2);return;}
       document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
       const pkg=document.getElementById('step-package');
-      if(pkg){pkg.classList.remove('hidden');pkg.style.display='block';}
+      if(pkg){pkg.classList.remove('hidden');}
     }catch(err){
       console.error('BoothPro START guard failed',err);
       const pkg=document.getElementById('step-package');
@@ -437,6 +437,44 @@ function bindStart(){
 function boot(){bindStart();setTimeout(bindStart,300);setTimeout(bindStart,1200);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 window.addEventListener('pageshow',()=>setTimeout(bindStart,50));
+})();
+</script>
+
+<style id="bp-kiosk-click-safe-2026-10-07">
+body.bp-kiosk-mode #attractOverlay{pointer-events:none!important;display:none!important}
+body.bp-kiosk-mode #dashboardModal,
+body.bp-kiosk-mode #dashboardAuthModal,
+body.bp-kiosk-mode #extraPrintModal{pointer-events:none!important}
+body.bp-kiosk-mode #step-welcome{position:relative;z-index:400!important;pointer-events:auto!important}
+body.bp-kiosk-mode #step-welcome button{position:relative;z-index:401!important;pointer-events:auto!important;touch-action:manipulation!important}
+</style>
+<script id="bp-kiosk-click-safe-script-2026-10-07">
+(function(){
+'use strict';
+function install(){
+  if(!window.__BOOTHPRO_CUSTOMER_KIOSK__)return;
+  document.body.classList.add('bp-kiosk-mode');
+  var btn=document.querySelector('#step-welcome button[onclick]');
+  if(!btn || btn.__bpSafeClick)return;
+  btn.__bpSafeClick=true;
+  btn.type='button';
+  btn.addEventListener('pointerdown',function(e){e.stopPropagation();},{capture:true});
+  btn.addEventListener('click',function(e){
+    e.preventDefault(); e.stopImmediatePropagation();
+    try{
+      var overlay=document.getElementById('attractOverlay');
+      if(overlay){overlay.classList.add('hidden');overlay.classList.remove('flex');overlay.style.pointerEvents='none';}
+      if(typeof window.goToStep==='function'){window.goToStep(2);}
+      else {
+        document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');});
+        var pkg=document.getElementById('step-package');
+        if(pkg)pkg.classList.remove('hidden');
+      }
+    }catch(err){console.error('BoothPro kiosk start:',err);}
+  },true);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){install();setTimeout(install,250);setTimeout(install,1000);},{once:true});
+else {install();setTimeout(install,250);setTimeout(install,1000);}
 })();
 </script>
 

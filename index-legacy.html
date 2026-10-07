@@ -4481,4 +4481,38 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 <script id="bp-digital-delivery-state-bridge">(function(){'use strict';window.BoothProDeliveryState=function(){return {sessionId:typeof sessionId==='string'?sessionId:'',finalCompositeDataUrl:typeof finalCompositeDataUrl==='string'?finalCompositeDataUrl:'',finalGifDataUrl:typeof finalGifDataUrl==='string'?finalGifDataUrl:'',capturedPhotos:Array.isArray(capturedPhotos)?capturedPhotos.slice():[],sessionVideoBlob:sessionVideoBlob||null,sessionVideoMime:sessionVideoBlob?.type||''};};})();</script>
 <script id="bp-digital-delivery-hotfix" src="/boothpro-hotfix-digital-delivery.js"></script>
+<style id="bp-kiosk-hard-lock">
+html.bp-kiosk-mode #dashboardModal,
+html.bp-kiosk-mode #dashboardAuthModal,
+html.bp-kiosk-mode [onclick="openDashboard()"]{display:none!important}
+html.bp-kiosk-mode #dashboardModal *{pointer-events:none!important}
+</style>
+<script>
+(function(){
+  try{
+    const p=new URLSearchParams(location.search||'');
+    if(p.get('bp-kiosk')!=='1') return;
+    document.documentElement.classList.add('bp-kiosk-mode');
+    window.__BP_ENTRY_MODE__='kiosk';
+    const lock=function(){
+      try{
+        document.documentElement.classList.add('bp-kiosk-mode');
+        const d=document.getElementById('dashboardModal');
+        const a=document.getElementById('dashboardAuthModal');
+        [d,a].forEach(function(el){if(el){el.classList.add('hidden');el.style.setProperty('display','none','important');}});
+        document.querySelectorAll('[onclick="openDashboard()"]').forEach(function(el){el.style.setProperty('display','none','important');});
+        if(typeof resetToHome==='function') resetToHome();
+      }catch(e){}
+    };
+    window.openDashboard=function(){lock();return false};
+    window.openDashboardAuth=function(){lock();return false};
+    window.showAuthModal=function(){lock();return false};
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',lock,{once:true});
+    else lock();
+    setTimeout(lock,100);
+    setTimeout(lock,500);
+    setTimeout(lock,1500);
+  }catch(e){}
+})();
+</script>
 </body>\n</html>

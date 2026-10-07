@@ -75,35 +75,11 @@
   }
 
   function installCustomerDelivery(){
-    if(window.__BP_C9_DELIVERY__)return true;
-    const originalOpen=window.openCustomerShare;
-    if(typeof originalOpen!=='function')return false;
-    window.openCustomerShare=function(kind){
-      originalOpen(kind);
-      const syncBtn=document.querySelector('[onclick="syncCustomerSoftFile()"]');
-      if(syncBtn)syncBtn.style.display='none';
-      const send=document.getElementById('customerShareSendBtn');
-      if(!send)return;
-      send.onclick=async function(){
-        const status=document.getElementById('customerShareStatus');send.disabled=true;
-        try{
-          if(typeof window.syncCustomerSoftFile==='function')await window.syncCustomerSoftFile();
-          const d=softFileData();
-          if(!d.url)throw new Error('Link soft file belum tersedia setelah sinkronisasi.');
-          const payload={channel:kind,sessionId:d.sid,phone:kind==='whatsapp'?phone(document.getElementById('customerSharePhone')?.value||''):'',email:kind==='email'?String(document.getElementById('customerShareEmail')?.value||'').trim():'',message:d.message,photoUrl:d.photoUrl,gifUrl:d.gifUrl,videoUrl:d.videoUrl};
-          const r=await fetch('/api/deliver-softfile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'});
-          const out=await r.json().catch(()=>null);
-          if(r.ok&&out?.ok){if(status)status.innerText=kind==='whatsapp'?'✓ BOOTHPRO mengirim notifikasi WhatsApp berisi link 3 soft file.':'✓ BOOTHPRO mengirim email berisi link 3 soft file.';return}
-          const msg=String(out?.error||('HTTP '+r.status));
-          if(fallbackReason(msg)){await deliverFallback(kind);return}
-          throw new Error(msg);
-        }catch(e){
-          if(fallbackReason(e?.message)){try{await deliverFallback(kind);return}catch(fb){e=fb}}
-          if(status)status.innerText='Pengiriman gagal · '+(e?.message||e);
-        }finally{send.disabled=false;}
-      };
-    };
-    window.__BP_C9_DELIVERY__=true;return true;
+    // Delivery is owned by boothpro-hotfix-digital-delivery.js.
+    // The old C9 handler read boothpro_cloud_* (legacy Cloudinary data), while
+    // the current Supabase bundle is stored in __BP_DELIVERY_BUNDLE__. That mismatch
+    // caused the misleading "Link soft file belum tersedia setelah sinkronisasi".
+    return true;
   }
   function install(){return installDuplicatePhotoAssignment()&&installCustomerDelivery()}
   if(!install()){let tries=0;const t=setInterval(function(){if(install()||++tries>80)clearInterval(t)},100)}

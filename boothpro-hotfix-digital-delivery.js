@@ -96,12 +96,12 @@ async function send(channel){
   if(typeof stopSessionRecorder==='function'&&window.sessionRecorder&&window.sessionRecorder.state==='recording')await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');
   stored=stored||(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
   if(!stored)throw new Error('Soft file belum siap. Sinkronisasi otomatis belum menghasilkan 3 file.');
-  if(status)status.textContent=channel==='email'?'Mengirim 3 file sebagai attachment email...':'Mengirim 3 media langsung ke WhatsApp...';
+  if(status)status.textContent=channel==='email'?'Mengirim link soft file...':'Mengirim link soft file...';
   const target=channel==='whatsapp'?phone:email;
   const health=await deliveryHealth();
   if(channel==='whatsapp'&&!health.delivery.whatsappReady)throw new Error('WhatsApp delivery belum dikonfigurasi: FONNTE_TOKEN belum ada di Vercel.');
   if(channel==='email'&&!health.delivery.emailReady)throw new Error('Email delivery belum dikonfigurasi: BREVO_API_KEY/BREVO_FROM_EMAIL belum ada di Vercel.');
-  const r=await withTimeout(fetch('/api/send-direct-media',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid,customerName:name,deliveryMethod:channel,target,photoPath:stored.paths.photo,gifPath:stored.paths.gif,videoPath:stored.paths.video})}),120000,'Pengiriman direct media');
+  const r=await withTimeout(fetch('/api/send-direct-media',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid,customerName:name,deliveryMethod:channel,target})}),120000,'Pengiriman link soft file');
   const out=await r.json().catch(()=>null);
   if(!r.ok||!out?.ok){
    const msg=out?.error||('HTTP '+r.status);

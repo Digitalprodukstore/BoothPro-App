@@ -26,9 +26,17 @@ async function prepare(sid){
  // without populating the legacy finalCompositeDataUrl variable. Capture that rendered canvas first.
  if(!state.finalCompositeDataUrl){
   try{
-   const fp=document.getElementById('finalPreview');
-   const fc=fp?.querySelector?.('canvas');
-   if(fc?.width&&fc?.height)state.finalCompositeDataUrl=fc.toDataURL('image/png');
+   // Final preview is rendered as an <img>, not a canvas. Wait briefly because
+   // step-final can become visible before renderFinalPreview() finishes.
+   const deadline=Date.now()+12000;
+   while(!state.finalCompositeDataUrl&&Date.now()<deadline){
+    const fp=document.getElementById('finalPreview');
+    const im=fp?.querySelector?.('img');
+    if(im?.src&&/^data:image\\//i.test(im.src)){state.finalCompositeDataUrl=im.src;break;}
+    const fc=fp?.querySelector?.('canvas');
+    if(fc?.width&&fc?.height){state.finalCompositeDataUrl=fc.toDataURL('image/png');break;}
+    await new Promise(r=>setTimeout(r,250));
+   }
    if(!state.finalCompositeDataUrl&&typeof buildCompositeCanvas==='function'){
     const built=await withTimeout(buildCompositeCanvas(),30000,'Membuat foto final terlalu lama.');
     if(typeof built==='string')state.finalCompositeDataUrl=built;

@@ -198,7 +198,7 @@ main{width:100%!important;max-width:100vw!important;min-width:0!important;overfl
 </header>
 <main class="flex-1 w-full max-w-7xl mx-auto p-4 md:p-8 flex items-start justify-center">
 <!-- 1 WELCOME -->
-<section id="step-welcome" class="w-full max-w-4xl text-center py-12 flex flex-col items-center justify-center space-y-8 animate-fadeIn"><div class="relative"><div class="absolute -inset-1 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 opacity-30 blur-2xl"></div><div class="relative h-24 w-24 rounded-3xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-4xl text-indigo-400 shadow-2xl"><i class="fa-solid fa-bolt-lightning"></i></div></div><div class="space-y-3"><h1 id="homeTitleDisplay" class="text-4xl md:text-6xl font-extrabold tracking-tight">Capture Your Best <br><span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-400 to-pink-400">Moments Instantly.</span></h1><p id="homeSubtitleDisplay" class="text-zinc-400 max-w-lg mx-auto text-sm md:text-base">Pilih paket & frame, lakukan pembayaran, ambil foto, sesuaikan frame, edit, lalu cetak dan ambil soft file.</p></div><button onclick="goToStep(2)" class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-bold text-lg shadow-xl flex items-center gap-3">Mulai Sesi Foto <i class="fa-solid fa-arrow-right"></i></button><div class="flex flex-wrap gap-3 items-center justify-center"><button onclick="openDashboard()" class="px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-zinc-200 hover:border-indigo-500 hover:text-white font-bold text-xs shadow-lg transition touch-manipulation"><i class="fa-solid fa-sliders mr-2 text-indigo-400"></i>Admin / Dashboard</button><button onclick="openHistory()" class="text-xs text-zinc-500 hover:text-white underline">Riwayat sesi lokal</button><span class="text-zinc-700">·</span><button id="trialInfoBtn" onclick="openLicense()" class="text-xs text-amber-400/80 hover:text-amber-300 underline">Status Lisensi</button></div></section>
+<section id="step-welcome" class="w-full max-w-4xl text-center py-12 flex flex-col items-center justify-center space-y-8 animate-fadeIn"><div class="relative"><div class="absolute -inset-1 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 opacity-30 blur-2xl"></div><div class="relative h-24 w-24 rounded-3xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-4xl text-indigo-400 shadow-2xl"><i class="fa-solid fa-bolt-lightning"></i></div></div><div class="space-y-3"><h1 id="homeTitleDisplay" class="text-4xl md:text-6xl font-extrabold tracking-tight">Capture Your Best <br><span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-400 to-pink-400">Moments Instantly.</span></h1><p id="homeSubtitleDisplay" class="text-zinc-400 max-w-lg mx-auto text-sm md:text-base">Pilih paket & frame, lakukan pembayaran, ambil foto, sesuaikan frame, edit, lalu cetak dan ambil soft file.</p></div><button type="button" onclick="BoothProStartSession(event)" class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-bold text-lg shadow-xl flex items-center gap-3 touch-manipulation">Mulai Sesi Foto <i class="fa-solid fa-arrow-right"></i></button><div class="flex flex-wrap gap-3 items-center justify-center"><button onclick="openDashboard()" class="px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700 text-zinc-200 hover:border-indigo-500 hover:text-white font-bold text-xs shadow-lg transition touch-manipulation"><i class="fa-solid fa-sliders mr-2 text-indigo-400"></i>Admin / Dashboard</button><button onclick="openHistory()" class="text-xs text-zinc-500 hover:text-white underline">Riwayat sesi lokal</button><span class="text-zinc-700">·</span><button id="trialInfoBtn" onclick="openLicense()" class="text-xs text-amber-400/80 hover:text-amber-300 underline">Status Lisensi</button></div></section>
 <!-- 2 PACKAGE + FRAME PRESELECT -->
 <section id="step-package" class="hidden w-full max-w-6xl animate-fadeIn"><div class="mb-6"><span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Langkah 01</span><h2 class="text-3xl font-extrabold mt-2">Pilih Paket & Frame</h2><p class="text-zinc-400 text-sm mt-1">Pembayaran dilakukan setelah paket dan frame dipilih. Kamera belum dibuka sebelum pembayaran.</p></div><div class="grid lg:grid-cols-3 gap-6"><div class="lg:col-span-2"><div id="packageGrid" class="grid md:grid-cols-3 gap-4"></div></div><div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5"><h3 class="font-bold mb-1">Frame pilihan awal</h3><p class="text-[11px] text-zinc-500 mb-3">Pilih kategori frame terlebih dahulu. Setelah kategori dibuka, pilih frame dari grid yang tersedia. Setelah sesi foto, frame masih bisa diganti lagi sebelum edit dan cetak.</p><div id="preFrameGrid" class="min-w-0"></div><div class="mt-5 p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><div class="text-xs text-zinc-500">Paket dipilih</div><div id="selectedPackageSummary" class="font-bold mt-1">Belum dipilih</div><div id="selectedPackagePrice" class="text-indigo-300 font-black text-xl mt-1">Rp0</div><div id="selectedPackageDesc" class="text-[11px] text-zinc-500 mt-1"></div></div><button id="toPaymentBtn" disabled onclick="goToPayment()" class="mt-4 w-full py-4 rounded-xl bg-indigo-600 text-white font-bold disabled:bg-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed"><i class="fa-solid fa-arrow-right mr-2"></i><span id="toPaymentLabel">Lanjut ke Pembayaran</span></button></div></div></section>
 <!-- 3 PAYMENT -->
@@ -387,6 +387,28 @@ main{width:100%!important;max-width:100vw!important;min-width:0!important;overfl
 #step-welcome button[onclick="goToStep(2)"]{position:relative!important;z-index:20!important;pointer-events:auto!important;touch-action:manipulation!important}
 #attractOverlay.hidden{display:none!important;pointer-events:none!important}
 </style>
+<script id="bp-kiosk-start-hotfix-2026-10-07">
+(function(){
+'use strict';
+window.BoothProStartSession=function(ev){
+  try{
+    if(ev){ev.preventDefault();ev.stopPropagation();}
+    var overlay=document.getElementById('attractOverlay');
+    if(overlay){overlay.classList.add('hidden');overlay.classList.remove('flex');overlay.style.display='none';overlay.style.pointerEvents='none';}
+    document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');s.style.display='none';});
+    var pkg=document.getElementById('step-package');
+    if(pkg){pkg.classList.remove('hidden');pkg.style.display='block';}
+    if(typeof window.goToStep==='function'){window.goToStep(2);}else{window.__BP_START_PENDING__=true;}
+    return false;
+  }catch(err){
+    console.error('BoothPro Start Session hotfix failed',err);
+    var pkg=document.getElementById('step-package');
+    if(pkg){document.querySelectorAll('main section').forEach(function(s){s.classList.add('hidden');s.style.display='none';});pkg.classList.remove('hidden');pkg.style.display='block';}
+    return false;
+  }
+};
+})();
+</script>
 <script id="bp-main-latest-start-guard-script">
 (function(){
 'use strict';

@@ -4506,6 +4506,45 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   #step-package #packageGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 </style>
+<style id="bp-kiosk-premium-ui">
+html.bp-kiosk-mode body{background:#0b0b0d}
+html.bp-kiosk-mode main{padding:clamp(18px,3vw,36px);max-width:1440px}
+html.bp-kiosk-mode header{background:rgba(9,9,11,.94);border-color:rgba(255,255,255,.08);padding:12px clamp(14px,2.5vw,32px)}
+html.bp-kiosk-mode #step-welcome{max-width:920px;padding:clamp(30px,6vh,72px) 20px;gap:clamp(24px,4vh,38px)}
+html.bp-kiosk-mode #step-welcome h1{font-size:clamp(2.2rem,5vw,4.5rem);line-height:1.02;letter-spacing:-.04em}
+html.bp-kiosk-mode #step-welcome p{font-size:clamp(.9rem,1.4vw,1.05rem);line-height:1.7;color:#a1a1aa}
+html.bp-kiosk-mode #step-welcome button[onclick="goToStep(2)"]{min-height:62px;padding:0 30px;border-radius:18px;box-shadow:0 18px 45px rgba(79,70,229,.22)}
+html.bp-kiosk-mode #step-package,#step-payment,#step-capture,#step-final{max-width:1180px}
+html.bp-kiosk-mode #step-package>div:first-child,#step-payment>div:first-child{margin-bottom:28px}
+html.bp-kiosk-mode #step-package h2,html.bp-kiosk-mode #step-payment h2{font-size:clamp(1.8rem,3vw,2.5rem);letter-spacing:-.025em}
+html.bp-kiosk-mode #step-package>div.grid{gap:24px}
+html.bp-kiosk-mode #packageGrid{gap:14px}
+html.bp-kiosk-mode #packageGrid>button{min-height:150px;border-radius:22px;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+html.bp-kiosk-mode #packageGrid>button:hover{transform:translateY(-2px)}
+html.bp-kiosk-mode #step-package .bg-zinc-950,
+html.bp-kiosk-mode #step-payment .bg-zinc-950,
+html.bp-kiosk-mode #step-capture .bg-zinc-950,
+html.bp-kiosk-mode #step-final .bg-zinc-950{border-color:rgba(255,255,255,.09);box-shadow:0 16px 40px rgba(0,0,0,.16)}
+html.bp-kiosk-mode #step-package>div.grid>div:last-child{padding:22px;border-radius:24px}
+html.bp-kiosk-mode #preFrameGrid{min-height:300px}
+html.bp-kiosk-mode #step-package #toPaymentBtn{min-height:58px;border-radius:16px}
+@media(max-width:900px){
+ html.bp-kiosk-mode main{padding:18px 14px 28px}
+ html.bp-kiosk-mode #step-package>div.grid{grid-template-columns:1fr!important}
+ html.bp-kiosk-mode #step-package>div.grid>div{width:100%;min-width:0}
+ html.bp-kiosk-mode #packageGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ html.bp-kiosk-mode #step-package>div.grid>div:last-child{padding:18px}
+}
+@media(max-width:560px){
+ html.bp-kiosk-mode header{padding:10px 12px}
+ html.bp-kiosk-mode #brandTaglineDisplay{display:none}
+ html.bp-kiosk-mode #step-welcome{padding:28px 8px}
+ html.bp-kiosk-mode #step-welcome h1{font-size:clamp(2rem,10vw,3rem)}
+ html.bp-kiosk-mode #step-welcome button[onclick="goToStep(2)"]{width:min(100%,360px)}
+ html.bp-kiosk-mode #packageGrid{grid-template-columns:1fr}
+ html.bp-kiosk-mode #packageGrid>button{min-height:124px}
+}
+</style>
 <style id="bp-kiosk-hard-lock">
 html.bp-kiosk-mode #dashboardModal,
 html.bp-kiosk-mode #dashboardAuthModal,

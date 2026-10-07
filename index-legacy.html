@@ -4481,6 +4481,37 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 <script id="bp-digital-delivery-state-bridge">(function(){'use strict';window.BoothProDeliveryState=function(){return {sessionId:typeof sessionId==='string'?sessionId:'',finalCompositeDataUrl:typeof finalCompositeDataUrl==='string'?finalCompositeDataUrl:'',finalGifDataUrl:typeof finalGifDataUrl==='string'?finalGifDataUrl:'',capturedPhotos:Array.isArray(capturedPhotos)?capturedPhotos.slice():[],sessionVideoBlob:sessionVideoBlob||null,sessionVideoMime:sessionVideoBlob?.type||''};};})();</script>
 <script id="bp-digital-delivery-hotfix" src="/boothpro-hotfix-digital-delivery.js"></script>
+<style id="bp-kiosk-layout-fix">
+html.bp-kiosk-mode,html.bp-kiosk-mode body{width:100%;min-height:100%;overflow-x:hidden;overflow-y:auto}
+html.bp-kiosk-mode body{min-height:100dvh;padding:0;margin:0}
+html.bp-kiosk-mode header{position:sticky;top:0;min-height:64px;z-index:40;padding:10px 14px}
+html.bp-kiosk-mode header .flex.items-center.gap-1\.5{gap:6px}
+html.bp-kiosk-mode header button[onclick="resetToHome()"]{display:none!important}
+html.bp-kiosk-mode main{width:100%;max-width:none;margin:0;padding:18px 14px 28px;min-height:calc(100dvh - 64px);align-items:center}
+html.bp-kiosk-mode #step-welcome{width:100%;max-width:760px;min-height:calc(100dvh - 120px);padding:28px 8px!important;gap:0;justify-content:center}
+html.bp-kiosk-mode #step-welcome>div:nth-of-type(1){margin-bottom:22px}
+html.bp-kiosk-mode #step-welcome h1{font-size:clamp(2rem,7vw,4rem);line-height:1.08;margin:0}
+html.bp-kiosk-mode #step-welcome p{font-size:clamp(.82rem,2vw,1rem);line-height:1.6;padding:0 12px}
+html.bp-kiosk-mode #step-welcome button[onclick="goToStep(2)"]{width:min(100%,360px);justify-content:center;margin-top:22px;min-height:58px}
+html.bp-kiosk-mode #step-welcome>div:last-child{display:none!important}
+html.bp-kiosk-mode section[id^="step-"]{box-sizing:border-box}
+html.bp-kiosk-mode .safe-scroll{max-height:none}
+html.bp-kiosk-mode #frameGallery{max-height:calc(100dvh - 210px)}
+html.bp-kiosk-mode .capture-review-shell,.bp-kiosk-mode .preview-shell{max-width:100%}
+@media(max-width:640px){
+ html.bp-kiosk-mode header{padding:9px 10px}
+ html.bp-kiosk-mode header #brandLogoWrap{width:36px;height:36px}
+ html.bp-kiosk-mode header #brandNameDisplay{font-size:14px}
+ html.bp-kiosk-mode header #brandTaglineDisplay{display:none}
+ html.bp-kiosk-mode main{padding:12px 10px 22px}
+ html.bp-kiosk-mode #step-welcome{min-height:calc(100dvh - 64px);padding:18px 4px!important}
+ html.bp-kiosk-mode #step-welcome h1{font-size:clamp(1.8rem,9vw,3rem)}
+ html.bp-kiosk-mode #step-welcome>div:nth-of-type(1) .relative{width:76px;height:76px}
+}
+@media(min-width:641px) and (max-width:1100px){
+ html.bp-kiosk-mode main{padding-left:24px;padding-right:24px}
+}
+</style>
 <style id="bp-kiosk-hard-lock">
 html.bp-kiosk-mode #dashboardModal,
 html.bp-kiosk-mode #dashboardAuthModal,

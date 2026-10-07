@@ -30,6 +30,8 @@ module.exports=async function(req,res){
    saved=await mr.json().catch(()=>null);
    if(!mr.ok)throw new Error(saved?.message||saved?.hint||'Gagal membuat manifest 3 soft file.');
   }
-  return json(res,200,{ok:true,paths:{photo:photoPath,gif:gifPath,video:videoPath},media:{photoUrl:media.photo_url,gifUrl:media.gif_url,videoUrl:media.video_url},manifest:Array.isArray(saved)?saved[0]:saved});
+  const origin=clean(process.env.BOOTHPRO_PUBLIC_ORIGIN)||((req.headers['x-forwarded-proto']||'https')+'://'+(req.headers['x-forwarded-host']||req.headers.host));
+  const bundleUrl=origin.replace(/\/$/,'')+'/api/softfile?sessionId='+encodeURIComponent(sid);
+  return json(res,200,{ok:true,bundleReady:true,bundleUrl,paths:{photo:photoPath,gif:gifPath,video:videoPath},media:{photoUrl:media.photo_url,gifUrl:media.gif_url,videoUrl:media.video_url},manifest:Array.isArray(saved)?saved[0]:saved});
  }catch(e){return json(res,500,{ok:false,error:e.message||String(e)})}
 };

@@ -22,7 +22,20 @@ async function waitForSessionVideo(maxMs){
 }
 async function prepare(sid){
  const state=typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():{};
- if(!state.finalCompositeDataUrl&&typeof buildCompositeCanvas==='function')state.finalCompositeDataUrl=await withTimeout(buildCompositeCanvas(),30000,'Membuat foto final terlalu lama.');
+ // Final-page fallback: the kiosk may render the finished composition directly into #finalPreview
+ // without populating the legacy finalCompositeDataUrl variable. Capture that rendered canvas first.
+ if(!state.finalCompositeDataUrl){
+  try{
+   const fp=document.getElementById('finalPreview');
+   const fc=fp?.querySelector?.('canvas');
+   if(fc?.width&&fc?.height)state.finalCompositeDataUrl=fc.toDataURL('image/png');
+   if(!state.finalCompositeDataUrl&&typeof buildCompositeCanvas==='function'){
+    const built=await withTimeout(buildCompositeCanvas(),30000,'Membuat foto final terlalu lama.');
+    if(typeof built==='string')state.finalCompositeDataUrl=built;
+    else if(built?.toDataURL)state.finalCompositeDataUrl=built.toDataURL('image/png');
+   }
+  }catch(e){ console.warn('BoothPro final photo fallback:',e); }
+ }
  const items=[];
  if(!state.finalCompositeDataUrl)throw new Error('Foto final belum tersedia.');
  const pr=await withTimeout(fetch(state.finalCompositeDataUrl),10000,'Foto final tidak dapat diproses.');

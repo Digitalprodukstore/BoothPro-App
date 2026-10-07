@@ -8,6 +8,26 @@ async function uploadBundle(sid,items){const m=await postJSON('/api/storage-uplo
 function existing(){try{const sid=window.sessionId||'';return window.customerSoftSyncResult||JSON.parse(localStorage.getItem('boothpro_cloud_'+sid)||'null')||{}}catch(e){return {}}}
 async function prepare(sid){const state=typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():{};if(!state.finalCompositeDataUrl&&typeof buildCompositeCanvas==='function')state.finalCompositeDataUrl=await withTimeout(buildCompositeCanvas(),30000,'Membuat foto final terlalu lama.');const items=[];if(!state.finalCompositeDataUrl)throw new Error('Foto final belum tersedia.');const pr=await withTimeout(fetch(state.finalCompositeDataUrl),10000,'Foto final tidak dapat diproses.');if(!pr.ok)throw new Error('Foto final tidak dapat diproses.');items.push({name:'photo.png',type:'image/png',blob:await pr.blob()});let gifBlob=null;if(state.finalGifDataUrl){const gr=await withTimeout(fetch(state.finalGifDataUrl),10000,'GIF tersimpan tidak dapat dibaca.');if(gr.ok)gifBlob=await gr.blob()}if(!gifBlob&&typeof generateGifBlob==='function'&&Array.isArray(state.capturedPhotos)&&state.capturedPhotos.length){gifBlob=await withTimeout(generateGifBlob(),45000,'Pembuatan GIF terlalu lama. Sistem akan mencoba mode GIF ringan pada pengiriman berikutnya.')}if(gifBlob?.size)items.push({name:'animation.gif',type:'image/gif',blob:gifBlob});if(!state.sessionVideoBlob)throw new Error('Video live session belum selesai direkam.');const vb=state.sessionVideoBlob;if(String(vb.type||'').toLowerCase()!=='video/mp4')throw new Error('Browser menghasilkan video '+(vb.type||'tanpa format')+'. Untuk delivery MP4, gunakan browser/perangkat yang mendukung MediaRecorder MP4.');items.push({name:'live-session.mp4',type:'video/mp4',blob:vb});if(items.length!==3)throw new Error('3 soft file belum lengkap.');return uploadBundle(sid,items)}
 function getSessionState(){try{return typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():{}}catch(e){return {}}}
+function deliverClientFallback(channel,name,phone,email,sid,stored){
+ const base=String(location.origin||'').replace(/\\/$/,'');
+ const url=base+'/share.html?session='+encodeURIComponent(sid);
+ const status=$('customerShareStatus');
+ if(channel==='whatsapp'){
+  let n=clean(phone).replace(/\\D/g,'');if(n.startsWith('0'))n='62'+n.slice(1);if(n.startsWith('8'))n='62'+n;
+  if(!/^62\\d{8,15}$/.test(n))throw new Error('Nomor WhatsApp tidak valid.');
+  const msg=encodeURIComponent('Halo '+(name||'Pelanggan')+', soft file BOOTHPRO Anda sudah siap.\\n\\nFoto Final + GIF + Live Session tersedia di satu link:\\n'+url);
+  const target='https://wa.me/'+n+'?text='+msg;
+  const w=window.open(target,'_blank');if(!w)location.href=target;
+  if(status)status.textContent='✓ WhatsApp dibuka dengan link soft file. Silakan kirim.';
+  return true;
+ }
+ const em=clean(email);if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(em))throw new Error('Alamat email tidak valid.');
+ const subject=encodeURIComponent('BOOTHPRO · Soft File '+sid);
+ const body=encodeURIComponent('Halo '+(name||'Pelanggan')+', soft file BOOTHPRO Anda sudah siap.\\n\\nFoto Final + GIF + Live Session tersedia di satu link:\\n'+url);
+ const target='mailto:'+encodeURIComponent(em)+'?subject='+subject+'&body='+body;
+ location.href=target;if(status)status.textContent='✓ Aplikasi email dibuka dengan link soft file. Silakan kirim.';
+ return true;
+}
 function getSessionId(){const s=getSessionState();return clean(s.sessionId||window.sessionId||'')}
 function $(id){return document.getElementById(id)}
 function ensureName(){const box=$('customerShareForm');if(!box||$('customerShareName'))return;const n=document.createElement('input');n.id='customerShareName';n.className='w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-sm mb-2';n.placeholder='Nama pelanggan';n.autocomplete='name';box.prepend(n)}
@@ -32,8 +52,16 @@ async function send(channel){
   if(channel==='whatsapp'&&!health.delivery.whatsappReady)throw new Error('WhatsApp delivery belum dikonfigurasi: FONNTE_TOKEN belum ada di Vercel.');
   if(channel==='email'&&!health.delivery.emailReady)throw new Error('Email delivery belum dikonfigurasi: BREVO_API_KEY/BREVO_FROM_EMAIL belum ada di Vercel.');
   const r=await withTimeout(fetch('/api/send-direct-media',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid,customerName:name,deliveryMethod:channel,target,photoPath:stored.paths.photo,gifPath:stored.paths.gif,videoPath:stored.paths.video})}),120000,'Pengiriman direct media');
-  const out=await r.json().catch(()=>null);if(!r.ok||!out?.ok)throw new Error(out?.error||'Pengiriman direct media gagal.');
-  if(status)status.textContent=channel==='email'?'✓ 3 file sudah dikirim sebagai attachment email.':'✓ 3 media sudah dikirim langsung ke WhatsApp.';
+  const out=await r.json().catch(()=>null);
+  if(!r.ok||!out?.ok){
+   const msg=out?.error||('HTTP '+r.status);
+   // Provider/server delivery can fail for reasons other than missing keys (for example
+   // provider rejection, quota, or a transient API error). Do not strand the customer:
+   // fall back to the already-synced single soft-file bundle link.
+   try{await deliverClientFallback(channel,name,phone,email,sid,stored)}catch(fb){throw new Error(msg+' · Fallback juga gagal: '+(fb?.message||fb));}
+   return;
+  }
+  if(status)status.textContent=channel==='email'?'✓ Soft file dikirim via email.':'✓ Soft file dikirim via WhatsApp.';
  }catch(e){if(status)status.textContent='Pengiriman gagal · '+(e.message||e);alert('BOOTHPRO: '+(e.message||e))}
  finally{if(btn){btn.disabled=false;btn.innerHTML='Kirim Soft File'}}
 }

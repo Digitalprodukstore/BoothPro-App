@@ -51,8 +51,9 @@ async function prepare(sid){
  let videoBlob=state.sessionVideoBlob||null;
  if(!videoBlob?.size)videoBlob=await waitForSessionVideo(15000);
  if(!videoBlob?.size)throw new Error('Live Session video belum selesai direkam. Pastikan kamera aktif sampai masuk halaman hasil.');
- const videoType=String(videoBlob.type||'video/webm').toLowerCase();
- const videoExt=videoType.includes('mp4')?'mp4':'webm';
+ const rawVideoType=String(videoBlob.type||'video/webm').toLowerCase();
+ const videoExt=rawVideoType.includes('mp4')?'mp4':'webm';
+ const videoType=videoExt==='mp4'?'video/mp4':'video/webm';
  items.push({name:'live-session.'+videoExt,type:videoType,blob:videoBlob});
  if(items.length!==3)throw new Error('3 soft file belum lengkap.');
  return uploadBundle(sid,items);

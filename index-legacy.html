@@ -1248,31 +1248,36 @@ async function publishSessionCloud(){
   if(result.shareUrl||result.photoUrl)generateQR(result.shareUrl||result.photoUrl);
   if(status)status.innerText=result.shareUrl?'✓ Foto final siap. QR/Share siap. GIF + video diproses di background.':'✓ Foto final tersinkron. QR foto siap.';
 
-  // Background: jangan pernah di-await oleh tombol customer.
+  // Soft-file bundle wajib selesai sebelum fungsi ini mengembalikan result.
+  // Sebelumnya GIF/video diproses fire-and-forget sehingga WA/Email/Share
+  // menerima object result yang masih berisi foto saja.
   const backgroundMedia=(async()=>{
     if(capturedPhotos.length){
-      try{
-        const gifBlob=await generateGifBlob();
-        const gu=await uploadDataUrlToCloudinary(await blobToDataUrl(gifBlob),'image');
-        result.gifUrl=gu.secure_url||gu.url;
-        result.gifPublicId=gu.public_id||null;
-        finalGifDataUrl=URL.createObjectURL(gifBlob);
-        localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
-        try{await writeBoothProSessionManifest(result)}catch(e){console.warn('Manifest GIF update skipped:',e)}
-      }catch(e){console.warn('GIF Cloudinary gagal:',e)}
+      const gifBlob=await generateGifBlob();
+      if(!gifBlob)throw new Error('GIF tidak berhasil dibuat.');
+      const gu=await uploadDataUrlToCloudinary(await blobToDataUrl(gifBlob),'image');
+      result.gifUrl=gu.secure_url||gu.url;
+      result.gifPublicId=gu.public_id||null;
+      if(!result.gifUrl)throw new Error('Upload GIF tidak mengembalikan URL.');
+      finalGifDataUrl=URL.createObjectURL(gifBlob);
+      localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
     }
     if(sessionVideoBlob){
-      try{
-        const vr=await uploadDataUrlToCloudinary(await blobToDataUrl(sessionVideoBlob),'video');
-        result.videoUrl=vr.secure_url||vr.url;
-        result.videoPublicId=vr.public_id||null;
-        localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
-        try{await writeBoothProSessionManifest(result)}catch(e){console.warn('Manifest video update skipped:',e)}
-      }catch(e){console.warn('Video Cloudinary gagal:',e)}
+      const vr=await uploadDataUrlToCloudinary(await blobToDataUrl(sessionVideoBlob),'video');
+      result.videoUrl=vr.secure_url||vr.url;
+      result.videoPublicId=vr.public_id||null;
+      if(!result.videoUrl)throw new Error('Upload video tidak mengembalikan URL.');
+      localStorage.setItem('boothpro_cloud_'+sessionId,JSON.stringify(result));
     }
-    try{await writeBoothProSessionManifest(result)}catch(e){console.warn('Session manifest skipped:',e)}
+    if(!result.gifUrl)throw new Error('GIF soft file belum tersedia.');
+    if(!result.videoUrl)throw new Error('Video Live Session soft file belum tersedia.');
+    const manifest=await writeBoothProSessionManifest(result);
+    if(!manifest)throw new Error('Manifest soft file 3-media gagal disimpan.');
+    return result;
   })();
   window.__BP_SOFTFILE_BACKGROUND__=backgroundMedia;
+  await backgroundMedia;
+  if(status)status.innerText='✓ Foto + GIF + Live Session siap. QR/Share siap.';
   return result;
  }catch(e){
   console.warn('publishSessionCloud:',e);

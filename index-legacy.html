@@ -4587,6 +4587,23 @@ html.bp-kiosk-mode #step-final .preview-shell{filter:drop-shadow(0 22px 40px rgb
   html.bp-kiosk-mode #step-package>div.grid>div:last-child{padding:18px;border-radius:22px}
   html.bp-kiosk-mode #step-package .pre-frame-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
 }
+
+/* BoothPro Signature Layer: capture the booth identity without touching app logic. */
+html.bp-kiosk-mode #step-package>div:first-child:before,
+html.bp-kiosk-mode #step-payment>div:first-child:before,
+html.bp-kiosk-mode #step-capture>div:first-child:before,
+html.bp-kiosk-mode #step-final>div:first-child:before{
+ content:"BOOTHPRO • SIGNATURE EXPERIENCE";display:block;margin-bottom:10px;
+ font-size:9px;font-weight:900;letter-spacing:.24em;color:#8b7cff
+}
+html.bp-kiosk-mode #step-package>div:first-child p,
+html.bp-kiosk-mode #step-payment>div:first-child p,
+html.bp-kiosk-mode #step-capture>div:first-child p,
+html.bp-kiosk-mode #step-final>div:first-child p{max-width:720px}
+html.bp-kiosk-mode #step-package>div.grid>div:last-child>h3{letter-spacing:-.01em}
+html.bp-kiosk-mode .pre-frame-category-card,
+html.bp-kiosk-mode .pre-frame-card{background:linear-gradient(145deg,rgba(27,28,36,.9),rgba(12,13,17,.96))}
+html.bp-kiosk-mode button{touch-action:manipulation}
 </style>
 <style id="bp-kiosk-hard-lock">
 html.bp-kiosk-mode #dashboardModal,

@@ -1061,24 +1061,23 @@ async function deliverCustomerSoftFile(channel){
  if(send){send.disabled=true;send.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Mengirim...'}
  if(status)status.innerText='Menyiapkan soft file untuk pengiriman langsung...';
  try{
-  let d=customerShareData();
-  if(!d.photoUrl||!customerSoftSyncResult){await syncCustomerSoftFile();d=customerShareData()}
-  const media={
-   sessionId:d.sid,
-   phone:channel==='whatsapp'?normalizeCustomerPhone($('customerSharePhone')?.value||''):'',
-   email:channel==='email'?String($('customerShareEmail')?.value||'').trim():'',
-   message:d.message||'Soft file BoothPro Anda sudah siap.',
-   photoUrl:String(customerSoftSyncResult?.photoUrl||d.photoUrl||'').trim(),
-   gifUrl:String(customerSoftSyncResult?.gifUrl||'').trim(),
-   videoUrl:String(customerSoftSyncResult?.videoUrl||'').trim()
-  };
-  if(channel==='whatsapp'&&!media.phone)throw new Error('Masukkan nomor WhatsApp pelanggan.');
-  if(channel==='email'&&!media.email)throw new Error('Masukkan email pelanggan.');
-  if(!media.photoUrl)throw new Error('Foto final belum tersedia. Sinkronkan Soft File terlebih dahulu.');
-  const r=await fetch('/api/deliver-softfile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel,sessionId:media.sessionId,phone:media.phone,email:media.email,message:media.message,photoUrl:media.photoUrl,gifUrl:media.gifUrl,videoUrl:media.videoUrl})});
+  const sid=typeof sessionId==='string'?String(sessionId).trim():'';
+  if(!sid)throw new Error('Session ID tidak tersedia.');
+  // Single delivery path: the new Supabase bundle sync is the source of truth.
+  // Do not read the legacy customerSoftSyncResult/photoUrl snapshot here.
+  if(typeof window.boothProAutoSyncSoftFile!=='function')throw new Error('Mesin sinkronisasi soft file belum siap.');
+  let stored=window.__BP_DELIVERY_BUNDLE__?.[sid];
+  if(!stored)stored=await window.boothProAutoSyncSoftFile();
+  stored=stored||window.__BP_DELIVERY_BUNDLE__?.[sid];
+  if(!stored)throw new Error('Bundle soft file belum tersedia.');
+  const target=channel==='whatsapp'?normalizeCustomerPhone($('customerSharePhone')?.value||''):String($('customerShareEmail')?.value||'').trim();
+  if(channel==='whatsapp'&&!target)throw new Error('Masukkan nomor WhatsApp pelanggan.');
+  if(channel==='email'&&!target)throw new Error('Masukkan email pelanggan.');
+  const payload={channel,sessionId:sid,phone:channel==='whatsapp'?target:'',email:channel==='email'?target:'',message:'Soft file BoothPro Anda sudah siap.'};
+  const r=await fetch('/api/deliver-softfile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const out=await r.json().catch(()=>null);
   if(!r.ok||!out?.ok)throw new Error(out?.error||'Pengiriman soft file gagal.');
-  if(status)status.innerText=channel==='whatsapp'?'✓ Foto + media berhasil dikirim ke WhatsApp pelanggan.':'✓ Foto + media berhasil dikirim ke email pelanggan.';
+  if(status)status.innerText=channel==='whatsapp'?'✓ Link bundle soft file berhasil dikirim ke WhatsApp pelanggan.':'✓ Link bundle soft file berhasil dikirim ke email pelanggan.';
  }catch(e){
   if(status)status.innerText='Pengiriman gagal · '+(e.message||e);
   alert('Kirim Soft File: '+(e.message||e));

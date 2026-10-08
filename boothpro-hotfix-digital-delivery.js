@@ -27,13 +27,24 @@ async function waitForSessionVideo(maxMs){
 async function prepare(sid){
  // Re-read the bridge state because final photo/GIF/video can finish asynchronously.
  let state=typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():{};
- // Final-page recovery: if the bridge is still empty, explicitly ask the existing
- // finalization routine to prepare the exact same final composition used by the UI.
- if(!state.finalCompositeDataUrl&&typeof window.prepareFinal==='function'){
+ // The Final screen and the automatic delivery worker must share ONE finalization
+ // promise. Starting buildCompositeCanvas twice can race the same canvas/frame state
+ // and leave the delivery bridge empty even though the UI is already on Final.
+ if(!state.finalCompositeDataUrl){
   try{
-   await withTimeout(window.prepareFinal(),30000,'Persiapan foto final');
+   const finalPromise=window.__BP_FINAL_PREPARE_PROMISE__;
+   if(finalPromise){
+    await withTimeout(finalPromise,60000,'Persiapan foto final');
+   }else if(typeof window.prepareFinal==='function'){
+    const p=Promise.resolve().then(()=>window.prepareFinal());
+    window.__BP_FINAL_PREPARE_PROMISE__=p;
+    await withTimeout(p,60000,'Persiapan foto final');
+   }
    state=typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():state;
-  }catch(e){console.warn('BoothPro prepareFinal fallback:',e)}
+  }catch(e){
+   window.__BP_FINAL_PREPARE_ERROR__=e;
+   console.warn('BoothPro prepareFinal:',e);
+  }
  }
  // Final-page fallback: recover the finished composition from live state or rendered preview.
  if(!state.finalCompositeDataUrl){
@@ -57,7 +68,10 @@ async function prepare(sid){
   }catch(e){ console.warn('BoothPro final photo fallback:',e); }
  }
  const items=[];
- if(!state.finalCompositeDataUrl)throw new Error('Foto final belum tersedia setelah proses finalisasi.');
+ if(!state.finalCompositeDataUrl){
+  const detail=window.__BP_FINAL_PREPARE_ERROR__?.message||'Finalisasi foto tidak menghasilkan data foto.';
+  throw new Error('Foto final belum tersedia setelah proses finalisasi. '+detail);
+}
  const pr=await withTimeout(fetch(state.finalCompositeDataUrl),10000,'Foto final tidak dapat diproses.');
  if(!pr.ok)throw new Error('Foto final tidak dapat diproses.');
  items.push({name:'photo.png',type:'image/png',blob:await pr.blob()});

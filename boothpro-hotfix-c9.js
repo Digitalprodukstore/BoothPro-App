@@ -62,6 +62,9 @@
     if(document.getElementById(id)){window.__BP_C9_KIOSK_LAYOUT__=true;return true;}
     const style=document.createElement('style'); style.id=id;
     style.textContent=[
+      'html.bp-kiosk-mode main section.hidden{display:none!important}',
+      'html.bp-kiosk-mode main #step-welcome.hidden{display:none!important}',
+      'html.bp-kiosk-mode main #step-welcome:not(.hidden){display:flex!important}',
       'html.bp-kiosk-mode #step-capture{padding-bottom:32px;min-width:0;overflow:visible}',
       'html.bp-kiosk-mode #step-capture>div:first-child{margin-bottom:20px;min-width:0}',
       'html.bp-kiosk-mode #step-capture>div:first-child h2{line-height:1.15}',

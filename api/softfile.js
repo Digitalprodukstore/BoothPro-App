@@ -1,23 +1,37 @@
 /**
  * BoothPro Soft File Bundle page.
  * Public session link: /api/softfile?sessionId=...
+ * The bundle page reads the manifest with the service role and generates
+ * short-lived signed download URLs, so the storage bucket can remain private.
  */
 const clean=v=>String(v||'').trim();
-const esc=v=>clean(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=v=>clean(v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
 const json=(res,status,body)=>res.status(status).setHeader('Content-Type','application/json').send(JSON.stringify(body));
-
-async function manifest(sid){
+function config(){
  const base=clean(process.env.SUPABASE_URL).replace(/\/$/,'');
- const key=clean(process.env.SUPABASE_PUBLISHABLE_KEY);
+ const key=clean(process.env.SUPABASE_SERVICE_ROLE_KEY);
  if(!base||!key)throw new Error('Konfigurasi cloud belum tersedia.');
+ return {base,key};
+}
+function auth(key){return {apikey:key,Authorization:'Bearer '+key,Accept:'application/json','Content-Type':'application/json'}}
+async function manifest(sid){
+ const {base,key}=config();
  const url=base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&media_status=neq.deleted&select=session_id,photo_url,gif_url,video_url,expires_at,media_status&limit=1';
- const r=await fetch(url,{headers:{apikey:key,Accept:'application/json'},cache:'no-store'});
+ const r=await fetch(url,{headers:auth(key),cache:'no-store'});
  const d=await r.json().catch(()=>null);
  if(!r.ok)throw new Error(d?.message||'Soft file tidak dapat dibaca.');
  const row=Array.isArray(d)?d[0]:null;
  if(!row)throw new Error('Soft file sesi tidak ditemukan.');
  if(row.expires_at&&Date.now()>Date.parse(row.expires_at))throw new Error('Soft file sudah kedaluwarsa.');
  return row;
+}
+async function signedDownload(base,key,path){
+ const r=await fetch(base+'/storage/v1/object/sign/boothpro-softfiles/'+path.split('/').map(encodeURIComponent).join('/'),{method:'POST',headers:auth(key),body:JSON.stringify({expiresIn:3600}),cache:'no-store'});
+ const d=await r.json().catch(()=>null);
+ if(!r.ok)throw new Error(d?.message||d?.error||'Gagal membuat link download soft file.');
+ const raw=d?.signedURL||d?.signedUrl;
+ if(!raw)throw new Error('Supabase tidak mengembalikan signed download URL.');
+ return /^https?:\/\//i.test(raw)?raw:base+raw;
 }
 function card(title,desc,url,kind){
  if(!url)return '';
@@ -30,6 +44,12 @@ module.exports=async function(req,res){
   if(!sid)return json(res,400,{ok:false,error:'Session ID wajib diisi.'});
   const m=await manifest(sid);
   if(!m.photo_url||!m.gif_url||!m.video_url)return json(res,409,{ok:false,error:'Bundle belum lengkap.'});
+  const {base,key}=config();
+  const [photo,gif,video]=await Promise.all([
+   signedDownload(base,key,sid+'/photo.png'),
+   signedDownload(base,key,sid+'/animation.gif'),
+   signedDownload(base,key,sid+'/live-session.webm').catch(()=>signedDownload(base,key,sid+'/live-session.mp4'))
+  ]);
   res.status(200).setHeader('Content-Type','text/html; charset=utf-8').setHeader('Cache-Control','no-store').send(`<!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BOOTHPRO · Soft File</title>
@@ -47,11 +67,11 @@ h1{font-size:clamp(28px,7vw,48px);line-height:1.05;margin:12px 0}.sub{color:#a1a
 <div class="brand">BOOTHPRO</div><h1>Soft File Anda Siap.</h1>
 <p class="sub">Satu link berisi <b>3 file</b> dari sesi foto Anda: foto final yang sama seperti hasil print, GIF, dan Live Video Session.</p>
 <section class="bundle">
-${card('Foto Final','Hasil akhir + frame + filter, sama seperti print.',m.photo_url,'photo')}
-${card('GIF','Animasi dari sesi foto.',m.gif_url,'gif')}
-${card('Live Video Session','Video sesi / momen terbaik yang direkam.',m.video_url,'video')}
+${card('Foto Final','Hasil akhir + frame + filter, sama seperti print.',photo,'photo')}
+${card('GIF','Animasi dari sesi foto.',gif,'gif')}
+${card('Live Video Session','Video sesi / momen terbaik yang direkam.',video,'video')}
 </section>
-<p class="note">ID Sesi: ${esc(sid)}<br>File tersedia selama masa penyimpanan BoothPro.</p>
+<p class="note">ID Sesi: ${esc(sid)}<br>Link file aman dan berlaku sementara.</p>
 </main></body></html>`);
  }catch(e){return json(res,500,{ok:false,error:e.message||String(e)})}
 };

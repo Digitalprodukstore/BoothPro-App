@@ -31,7 +31,7 @@ async function signedDownload(base,key,path){
  if(!r.ok)throw new Error(d?.message||d?.error||'Gagal membuat link download soft file.');
  const raw=d?.signedURL||d?.signedUrl;
  if(!raw)throw new Error('Supabase tidak mengembalikan signed download URL.');
- return /^https?:\/\//i.test(raw)?raw:base+raw;
+ if(/^https?:\/\//i.test(raw))return raw;if(raw.startsWith('/storage/v1/'))return base+raw;if(raw.startsWith('/object/'))return base+'/storage/v1'+raw;if(raw.startsWith('object/'))return base+'/storage/v1/'+raw;throw new Error('Format signed download URL Supabase tidak valid.');
 }
 function card(title,desc,url,kind){
  if(!url)return '';

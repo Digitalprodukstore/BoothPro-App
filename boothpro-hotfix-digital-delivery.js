@@ -104,7 +104,7 @@ async function prepare(sid){
 function getSessionState(){try{return typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():{}}catch(e){return {}}}
 function deliverClientFallback(channel,name,phone,email,sid,stored){
  const base=String(location.origin||'').replace(/\\/$/,'');
- const url=base+'/share.html?session='+encodeURIComponent(sid);
+ const url=base+'/api/softfile?sessionId='+encodeURIComponent(sid);
  const status=$('customerShareStatus');
  if(channel==='whatsapp'){
   let n=clean(phone).replace(/\\D/g,'');if(n.startsWith('0'))n='62'+n.slice(1);if(n.startsWith('8'))n='62'+n;

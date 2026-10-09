@@ -55,7 +55,7 @@ async function prepare(sid){
     if(state.finalCompositeDataUrl)break;
     const fp=document.getElementById('finalPreview');
     const im=fp?.querySelector?.('img');
-    if(im?.src&&/^data:image\\//i.test(im.src)){state={...state,finalCompositeDataUrl:im.src};break;}
+    if(im?.src&&/^data:image\//i.test(im.src)){state={...state,finalCompositeDataUrl:im.src};break;}
     const fc=fp?.querySelector?.('canvas');
     if(fc?.width&&fc?.height){state={...state,finalCompositeDataUrl:fc.toDataURL('image/png')};break;}
     await new Promise(r=>setTimeout(r,250));
@@ -103,18 +103,18 @@ async function prepare(sid){
 }
 function getSessionState(){try{return typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():{}}catch(e){return {}}}
 function deliverClientFallback(channel,name,phone,email,sid,stored){
- const base=String(location.origin||'').replace(/\\/$/,'');
+ const base=String(location.origin||'').replace(/\/$/,'');
  const url=base+'/api/softfile?sessionId='+encodeURIComponent(sid);
  const status=$('customerShareStatus');
  if(channel==='whatsapp'){
-  let n=clean(phone).replace(/\\D/g,'');if(n.startsWith('0'))n='62'+n.slice(1);if(n.startsWith('8'))n='62'+n;
-  if(!/^62\\d{8,15}$/.test(n))throw new Error('Nomor WhatsApp tidak valid.');
-  const msg=encodeURIComponent('Halo '+(name||'Pelanggan')+', soft file BOOTHPRO Anda sudah siap.\\n\\nFoto Final + GIF + Live Session tersedia di satu link:\\n'+url);
+  let n=clean(phone).replace(/\D/g,'');if(n.startsWith('0'))n='62'+n.slice(1);if(n.startsWith('8'))n='62'+n;
+  if(!/^62\d{8,15}$/.test(n))throw new Error('Nomor WhatsApp tidak valid.');
+  const msg=encodeURIComponent('Halo '+(name||'Pelanggan')+', soft file BOOTHPRO Anda sudah siap.\n\nFoto Final + GIF + Live Session tersedia di satu link:\n'+url);
   const target='https://wa.me/'+n+'?text='+msg;const w=window.open(target,'_blank');if(!w)location.href=target;
   if(status)status.textContent='✓ WhatsApp dibuka dengan link soft file. Silakan kirim.';return true;
  }
- const em=clean(email);if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(em))throw new Error('Alamat email tidak valid.');
- const subject=encodeURIComponent('BOOTHPRO · Soft File '+sid);const body=encodeURIComponent('Halo '+(name||'Pelanggan')+', soft file BOOTHPRO Anda sudah siap.\\n\\nFoto Final + GIF + Live Session tersedia di satu link:\\n'+url);location.href='mailto:'+encodeURIComponent(em)+'?subject='+subject+'&body='+body;if(status)status.textContent='✓ Aplikasi email dibuka dengan link soft file. Silakan kirim.';return true
+ const em=clean(email);if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em))throw new Error('Alamat email tidak valid.');
+ const subject=encodeURIComponent('BOOTHPRO · Soft File '+sid);const body=encodeURIComponent('Halo '+(name||'Pelanggan')+', soft file BOOTHPRO Anda sudah siap.\n\nFoto Final + GIF + Live Session tersedia di satu link:\n'+url);location.href='mailto:'+encodeURIComponent(em)+'?subject='+subject+'&body='+body;if(status)status.textContent='✓ Aplikasi email dibuka dengan link soft file. Silakan kirim.';return true
 }
 function getSessionId(){const s=getSessionState();return clean(s.sessionId||window.sessionId||'')}
 function $(id){return document.getElementById(id)}
@@ -158,7 +158,7 @@ window.boothProAutoSyncSoftFile=async function(){
  }
  if(!stored)throw(lastErr||new Error('Soft file belum berhasil disinkronkan.'));
  window.__BP_DELIVERY_BUNDLE__=window.__BP_DELIVERY_BUNDLE__||{};
- stored.bundleUrl=String(stored.bundleUrl||((location.origin||'').replace(/\\/$/,'')+'/download/?id='+encodeURIComponent(sid)));
+ stored.bundleUrl=String(stored.bundleUrl||((location.origin||'').replace(/\/$/,'')+'/download/?id='+encodeURIComponent(sid)));
  window.__BP_DELIVERY_BUNDLE__[sid]=stored;
  if(status)status.textContent='✓ Soft file otomatis tersinkron · Foto + GIF + Live Session';
  try{if(typeof generateQR==='function')generateQR((location.origin+'/download/?id='+encodeURIComponent(sid)))}catch(e){}

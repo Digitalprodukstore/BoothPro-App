@@ -3,6 +3,8 @@
  * 1) A captured photo may be assigned to multiple frame slots.
  * 2) If the direct delivery API is unavailable/misconfigured, WhatsApp/Email falls back
  *    to the already-synced soft-file link instead of surfacing an API-key error.
+ * 3) Live Session recorder hardening: Safari/iOS-safe MIME selection, immutable
+ *    recorder/chunk references, Promise-based finalization, and empty-Blob audit.
  */
 (function(){
   'use strict';
@@ -55,6 +57,136 @@
   }
   function installCustomerDelivery(){return true;}
 
+  function installRecorderHardening(){
+    if(window.__BP_C9_RECORDER_HARDENED__)return true;
+    if(typeof window.startSessionRecorder!=='function'||typeof window.stopSessionRecorder!=='function')return false;
+
+    const nativeStop=window.stopSessionRecorder;
+    window.__BP_NATIVE_STOP_SESSION_RECORDER__=nativeStop;
+
+    const supportedMime=()=>{
+      if(!window.MediaRecorder||typeof MediaRecorder.isTypeSupported!=='function')return '';
+      const types=[
+        'video/mp4;codecs=h264',
+        'video/mp4',
+        'video/webm;codecs=vp8',
+        'video/webm',
+        'video/webm;codecs=vp9'
+      ];
+      return types.find(t=>MediaRecorder.isTypeSupported(t))||'';
+    };
+
+    window.__BP_SESSION_RECORDER_ERROR__=null;
+    window.__BP_SESSION_RECORDER_MIME__='';
+    window.__BP_SESSION_RECORDER_AUDIT__=null;
+
+    window.startSessionRecorder=function(){
+      window.__BP_SESSION_STOP_PROMISE__=null;
+      window.__BP_SESSION_RECORDER_ERROR__=null;
+      window.__BP_SESSION_RECORDER_AUDIT__=null;
+      sessionVideoBlob=null;
+      sessionVideoChunks=[];
+      if(sessionVideoUrl){try{URL.revokeObjectURL(sessionVideoUrl)}catch(e){}sessionVideoUrl='';}
+      try{
+        if(!window.MediaRecorder)throw new Error('Browser tidak mendukung MediaRecorder.');
+        if(!streamInstance)throw new Error('Stream kamera belum tersedia.');
+        if(useSimulation){window.__BP_SESSION_RECORDER_ERROR__='Recorder dilewati karena mode simulasi.';return;}
+
+        const mime=supportedMime();
+        const options=mime?{mimeType:mime}:undefined;
+        const recorder=new MediaRecorder(streamInstance,options);
+        const recorderMime=recorder.mimeType||mime||'video/webm';
+        const chunks=sessionVideoChunks;
+        window.__BP_SESSION_RECORDER_MIME__=recorderMime;
+        window.__BP_SESSION_RECORDER_INSTANCE__=recorder;
+
+        recorder.ondataavailable=(event)=>{
+          try{if(event?.data?.size)chunks.push(event.data)}catch(e){console.warn('BoothPro recorder chunk:',e)}
+        };
+        recorder.onerror=(event)=>{
+          const msg=event?.error?.message||event?.error?.name||'MediaRecorder error';
+          window.__BP_SESSION_RECORDER_ERROR__=msg;
+          console.warn('BoothPro Live Session recorder error:',msg,event);
+        };
+        recorder.onstop=()=>{
+          try{
+            const blob=new Blob(chunks,{type:recorderMime});
+            window.__BP_SESSION_RECORDER_AUDIT__={mime:recorderMime,size:blob.size,chunks:chunks.length,at:Date.now()};
+            if(blob.size>1000){
+              sessionVideoBlob=blob;
+              if(sessionVideoUrl){try{URL.revokeObjectURL(sessionVideoUrl)}catch(e){}}
+              sessionVideoUrl=URL.createObjectURL(blob);
+            }else{
+              sessionVideoBlob=null;
+              window.__BP_SESSION_RECORDER_ERROR__=window.__BP_SESSION_RECORDER_ERROR__||('Blob Live Session terlalu kecil: '+blob.size+' bytes');
+            }
+          }catch(e){
+            window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);
+            console.warn('BoothPro Live Session finalization:',e);
+          }
+        };
+        recorder.start(1000);
+        sessionRecorder=recorder;
+      }catch(e){
+        sessionRecorder=null;
+        window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);
+        console.warn('BoothPro Live Session recorder unavailable:',e);
+      }
+    };
+
+    window.stopSessionRecorder=function(){
+      if(window.__BP_SESSION_STOP_PROMISE__)return window.__BP_SESSION_STOP_PROMISE__;
+      window.__BP_SESSION_STOP_PROMISE__=new Promise((resolve)=>{
+        const rec=window.__BP_SESSION_RECORDER_INSTANCE__||sessionRecorder;
+        const chunks=sessionVideoChunks;
+        const mime=window.__BP_SESSION_RECORDER_MIME__||rec?.mimeType||'video/webm';
+        let settled=false;
+        let timer=null;
+        const finish=()=>{
+          if(settled)return;
+          settled=true;
+          if(timer)clearTimeout(timer);
+          try{
+            if(!sessionVideoBlob&&chunks.length){
+              const blob=new Blob(chunks,{type:mime});
+              window.__BP_SESSION_RECORDER_AUDIT__={mime,size:blob.size,chunks:chunks.length,at:Date.now()};
+              if(blob.size>1000){
+                sessionVideoBlob=blob;
+                sessionVideoUrl=sessionVideoUrl||URL.createObjectURL(blob);
+              }else{
+                window.__BP_SESSION_RECORDER_ERROR__=window.__BP_SESSION_RECORDER_ERROR__||('Blob Live Session terlalu kecil: '+blob.size+' bytes');
+              }
+            }
+          }catch(e){window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e)}
+          if(sessionRecorder===rec)sessionRecorder=null;
+          if(window.__BP_SESSION_RECORDER_INSTANCE__===rec)window.__BP_SESSION_RECORDER_INSTANCE__=null;
+          resolve(sessionVideoBlob||null);
+        };
+        if(!rec){finish();return;}
+        try{if(rec.state==='recording'&&typeof rec.requestData==='function')rec.requestData()}catch(e){}
+        if(rec.state==='inactive'){
+          finish();return;
+        }
+        const previousOnStop=rec.onstop;
+        rec.onstop=()=>{
+          try{if(typeof previousOnStop==='function')previousOnStop()}catch(e){console.warn('BoothPro recorder onstop:',e)}
+          finish();
+        };
+        try{rec.stop();}catch(e){
+          window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);
+          finish();
+          return;
+        }
+        timer=setTimeout(finish,10000);
+      });
+      return window.__BP_SESSION_STOP_PROMISE__;
+    };
+
+    window.__BP_C9_RECORDER_HARDENED__=true;
+    console.info('BoothPro C9 Recorder Hardening active · MIME:',window.__BP_SESSION_RECORDER_MIME__||'auto');
+    return true;
+  }
+
   function installKioskTestLayout(){
     if(window.__BP_C9_KIOSK_LAYOUT__)return true;
     if(!document.head)return false;
@@ -94,7 +226,7 @@
   }
 
   function install(){
-    return installDuplicatePhotoAssignment()&&installCustomerDelivery()&&installKioskTestLayout();
+    return installDuplicatePhotoAssignment()&&installCustomerDelivery()&&installKioskTestLayout()&&installRecorderHardening();
   }
-  if(!install()){let tries=0;const t=setInterval(function(){if(install()||++tries>80)clearInterval(t)},100)}
+  if(!install()){let tries=0;const t=setInterval(function(){if(install()||++tries>120)clearInterval(t)},100)}
 })();

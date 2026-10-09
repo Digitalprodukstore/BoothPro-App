@@ -11,16 +11,18 @@ function deliveryStatusText(d){if(!d?.storageReady)return 'Soft file belum siap.
 async function uploadBundle(sid,items){const m=await postJSON('/api/storage-upload',{sessionId:sid,files:items.map(x=>({name:x.name,contentType:x.type,size:x.blob.size}))});if(!Array.isArray(m.uploads)||m.uploads.length!==items.length)throw new Error('Server upload tidak mengembalikan 3 URL upload.');await Promise.all(m.uploads.map(async u=>{const x=items.find(i=>i.name===u.name);if(!x)throw new Error('Manifest upload tidak cocok untuk '+u.name+'.');const r=await withTimeout(fetch(u.uploadUrl,{method:'PUT',headers:{'Content-Type':x.type},body:x.blob}),60000,'Upload '+x.name);if(!r.ok)throw new Error('Upload '+x.name+' gagal (HTTP '+r.status+').')}));return postJSON('/api/storage-complete',{sessionId:sid,paths:m.uploads.map(u=>u.path)})}
 function existing(){try{const sid=window.sessionId||'';return window.customerSoftSyncResult||JSON.parse(localStorage.getItem('boothpro_cloud_'+sid)||'null')||{}}catch(e){return {}}}
 async function waitForSessionVideo(maxMs){
+ // Stop exactly once. Repeated stop calls can race Safari's asynchronous
+ // dataavailable/onstop events and discard the final video blob.
+ let s=getSessionState();
+ if(s?.sessionVideoBlob?.size)return s.sessionVideoBlob;
+ if(typeof stopSessionRecorder==='function'){
+  try{await withTimeout(stopSessionRecorder(),Math.min(20000,maxMs),'Penutupan rekaman video')}catch(e){console.warn('BoothPro Live Session stop wait:',e)}
+ }
  const started=Date.now();
  while(Date.now()-started<maxMs){
-  let s=getSessionState();
-  if(s?.sessionVideoBlob?.size)return s.sessionVideoBlob;
-  if(typeof stopSessionRecorder==='function'){
-   try{await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman video')}catch(e){}
-  }
   s=getSessionState();
   if(s?.sessionVideoBlob?.size)return s.sessionVideoBlob;
-  await new Promise(r=>setTimeout(r,300));
+  await new Promise(r=>setTimeout(r,250));
  }
  return null;
 }

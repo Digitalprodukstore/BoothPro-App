@@ -632,7 +632,7 @@ function saveConfig(opts={}){
 }
 function fmt(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n)}
 /* ============ STEPS ============ */
-function goToStep(n){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));const actual=n===6?5:n;const map={1:'step-welcome',2:'step-package',3:'step-payment',4:'step-capture',5:'step-frame',6:'step-frame',7:'step-final'};$(map[n]).classList.remove('hidden');currentStep=actual;updateStatusBadge();resetIdleTimer();if(actual===2)renderPackageStep();if(actual===3)renderPayment();if(actual===4)startCaptureSession();if(actual===5){stopSessionRecorder().catch(e=>console.warn('BoothPro capture recorder finalization:',e)).finally(()=>stopWebcam());renderEditor();renderFilterChoicesStep5();renderCaptureReview();updateActiveFrameLabel()}if(actual===7){window.__BP_FINAL_PREPARE_ERROR__=null;window.__BP_FINAL_PREPARE_PROMISE__=Promise.resolve().then(()=>prepareFinal()).catch(e=>{window.__BP_FINAL_PREPARE_ERROR__=e;throw e});}}
+function goToStep(n){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));const actual=n===6?5:n;const map={1:'step-welcome',2:'step-package',3:'step-payment',4:'step-capture',5:'step-frame',6:'step-frame',7:'step-final'};$(map[n]).classList.remove('hidden');currentStep=actual;updateStatusBadge();resetIdleTimer();if(actual===2)renderPackageStep();if(actual===3)renderPayment();if(actual===4)startCaptureSession();if(actual===5){stopSessionRecorder().then(blob=>{if(blob?.size)stopWebcam();else console.warn('BoothPro video is not finalized; camera remains active.')}).catch(e=>{window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);console.warn('BoothPro capture recorder finalization:',e)});renderEditor();renderFilterChoicesStep5();renderCaptureReview();updateActiveFrameLabel()}if(actual===7){window.__BP_FINAL_PREPARE_ERROR__=null;window.__BP_FINAL_PREPARE_PROMISE__=Promise.resolve().then(()=>prepareFinal()).catch(e=>{window.__BP_FINAL_PREPARE_ERROR__=e;throw e});}}
 function updateStatusBadge(){const b=$('statusBadge'),t=$('statusText');b.classList.remove('hidden');if(currentStep===1)b.classList.add('hidden');else if(currentStep===2)t.innerText='Pilih Paket';else if(currentStep===3)t.innerText='Menunggu Pembayaran';else if(currentStep===4)t.innerText=`Take ${capturedPhotos.length}/${requiredPhotosCount}`;else if(currentStep===5||currentStep===6)t.innerText='Sesuaikan Foto & Filter';else t.innerText='Selesai'}
 function resetToHome(){stopSessionRecorder();stopWebcam();stopMidtransPoll();if(sessionTimerId)clearInterval(sessionTimerId);if(countdownTimer)clearInterval(countdownTimer);sessionTimerId=null;countdownTimer=null;capturedPhotos=[];window.__BP_PHOTO_PICK__=null;retakeCount=0;paymentConfirmed=false;sessionVideoBlob=null;if(sessionVideoUrl){try{URL.revokeObjectURL(sessionVideoUrl)}catch(e){}sessionVideoUrl='';}finalCompositeDataUrl='';finalGifDataUrl='';extraPrintPaid=false;selectedPackageId=null;frameSelectionConfirmed=false;preFrameCategoryOpen='';sessionId='';sessionStartedAt=null;selectedFrameId='plain-white';selectedFrameSrc='';currentFilter='none';frameBg='#ffffff';frameFg='#18181b';adjState={brightness:100,contrast:100,saturate:100};stickers=[];if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels()}goToStep(1)}
 /* ============ PACKAGES ============ */
@@ -832,7 +832,50 @@ async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await 
 function setupZoom(){try{const track=streamInstance?.getVideoTracks()[0];const caps=track?.getCapabilities?.();if(caps&&caps.zoom){const z=$('zoomRange');z.min=caps.zoom.min;z.max=caps.zoom.max;z.step=(caps.zoom.max-caps.zoom.min)/50;z.value=caps.zoom.min;$('zoomWrap').classList.remove('hidden');$('zoomWrap').classList.add('flex');z.oninput=()=>track.applyConstraints({advanced:[{zoom:Number(z.value)}]}).catch(()=>{})}}catch(e){}}
 /* ============ CAPTURE ============ */
 function startCaptureSession(){if(!paymentConfirmed){goToStep(3);return}capturedPhotos=[];retakeCount=0;$('filmStripGallery').innerHTML='';$('capturedCount').innerText='0';$('retakeCount').innerText='0';$('maxPhotosCount').innerText=requiredPhotosCount;$('nextToFrameBtn').disabled=true;$('cameraPlaceholder').classList.remove('hidden');$('cameraMessage').innerText='Membuka akses kamera...';startWebcam().then(()=>{$('shutterBtn').disabled=false;startSessionRecorder()});startSessionTimer();requestWakeLock()}
-function startSessionRecorder(){window.__BP_SESSION_STOP_PROMISE__=null;sessionVideoBlob=null;sessionVideoChunks=[];if(sessionVideoUrl){try{URL.revokeObjectURL(sessionVideoUrl)}catch(e){}sessionVideoUrl=''}try{if(!window.MediaRecorder||!streamInstance||useSimulation)return;const mime=['video/mp4;codecs=h264','video/webm;codecs=vp9','video/webm'].find(t=>MediaRecorder.isTypeSupported?.(t))||'';sessionRecorder=new MediaRecorder(streamInstance,mime?{mimeType:mime}:undefined);sessionRecorder.ondataavailable=e=>{if(e.data?.size)sessionVideoChunks.push(e.data)};sessionRecorder.onstop=()=>{if(sessionVideoChunks.length){sessionVideoBlob=new Blob(sessionVideoChunks,{type:sessionRecorder?.mimeType||'video/webm'});sessionVideoUrl=URL.createObjectURL(sessionVideoBlob)}};sessionRecorder.start(1000)}catch(e){console.warn('Session recorder unavailable',e);sessionRecorder=null}}function stopSessionRecorder(){if(window.__BP_SESSION_STOP_PROMISE__)return window.__BP_SESSION_STOP_PROMISE__;window.__BP_SESSION_STOP_PROMISE__=new Promise(resolve=>{if(window.__BP_SESSION_RECORD_TIMER__){clearTimeout(window.__BP_SESSION_RECORD_TIMER__);window.__BP_SESSION_RECORD_TIMER__=null}const rec=sessionRecorder;let settled=false;let fallbackTimer=null;const finalize=()=>{if(settled)return;settled=true;if(fallbackTimer)clearTimeout(fallbackTimer);try{if(!sessionVideoBlob&&sessionVideoChunks.length)sessionVideoBlob=new Blob(sessionVideoChunks,{type:rec?.mimeType||'video/webm'});if(sessionVideoBlob?.size&&!sessionVideoUrl)sessionVideoUrl=URL.createObjectURL(sessionVideoBlob)}catch(e){console.warn('BoothPro video finalization:',e)}if(sessionRecorder===rec)sessionRecorder=null;resolve(sessionVideoBlob||null)};if(!rec){finalize();return}try{if(rec.state==='recording'&&typeof rec.requestData==='function')rec.requestData()}catch(e){}if(rec.state==='inactive'){if(sessionVideoBlob?.size||sessionVideoChunks.length){finalize();return}fallbackTimer=setTimeout(finalize,5000);return}try{const prev=rec.onstop;rec.onstop=()=>{try{if(typeof prev==='function')prev()}catch(e){console.warn('BoothPro recorder onstop:',e)}finally{finalize()}};rec.stop();fallbackTimer=setTimeout(finalize,10000)}catch(e){console.warn('BoothPro recorder stop:',e);fallbackTimer=setTimeout(finalize,1000)}});return window.__BP_SESSION_STOP_PROMISE__}
+function startSessionRecorder(){
+ const tracks=streamInstance?.getVideoTracks?.()||[];
+ const liveTracks=tracks.filter(t=>t&&t.readyState==='live');
+ const audit=(status,extra={})=>{window.__BP_SESSION_RECORDER_AUDIT__={status,at:Date.now(),state:sessionRecorder?.state||'none',mime:sessionRecorder?.mimeType||'',videoTracks:tracks.map(t=>({readyState:t?.readyState||'unknown',muted:!!t?.muted})),...extra}};
+ if(sessionRecorder?.state==='recording'){window.__BP_SESSION_RECORDER_INSTANCE__=sessionRecorder;audit('recording');return true}
+ if(sessionRecorder?.state==='paused'){try{sessionRecorder.resume();if(sessionRecorder.state==='recording'){window.__BP_SESSION_RECORDER_INSTANCE__=sessionRecorder;audit('recording');return true}}catch(e){window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e)}}
+ if(useSimulation){window.__BP_SESSION_RECORDER_ERROR__='Kamera simulasi tidak menghasilkan video Live Session.';audit('unavailable');return false}
+ if(!window.MediaRecorder){window.__BP_SESSION_RECORDER_ERROR__='MediaRecorder tidak didukung browser ini.';audit('unsupported');return false}
+ if(!streamInstance||!liveTracks.length){window.__BP_SESSION_RECORDER_ERROR__='Stream kamera belum memiliki video track aktif.';audit('no-live-video-track');return false}
+ try{
+  window.__BP_SESSION_STOP_PROMISE__=null;sessionVideoBlob=null;sessionVideoChunks=[];
+  if(sessionVideoUrl){try{URL.revokeObjectURL(sessionVideoUrl)}catch(e){}sessionVideoUrl=''}
+  const mime=['video/mp4;codecs=h264','video/webm;codecs=vp9','video/webm'].find(t=>MediaRecorder.isTypeSupported?.(t))||'';
+  const rec=new MediaRecorder(streamInstance,mime?{mimeType:mime}:undefined);sessionRecorder=rec;window.__BP_SESSION_RECORDER_INSTANCE__=rec;
+  rec.ondataavailable=e=>{if(e.data?.size)sessionVideoChunks.push(e.data)};
+  rec.onerror=e=>{window.__BP_SESSION_RECORDER_ERROR__=e?.error?.message||e?.message||'MediaRecorder mengalami error.';audit('error',{error:window.__BP_SESSION_RECORDER_ERROR__})};
+  rec.onstop=()=>{try{if(sessionRecorder===rec&&sessionVideoChunks.length){sessionVideoBlob=new Blob(sessionVideoChunks,{type:rec.mimeType||mime||'video/webm'});if(sessionVideoBlob.size)sessionVideoUrl=URL.createObjectURL(sessionVideoBlob)}audit(sessionVideoBlob?.size?'finalized':'stopped-empty',{blobBytes:sessionVideoBlob?.size||0})}catch(e){window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);audit('finalization-error',{error:window.__BP_SESSION_RECORDER_ERROR__})}};
+  rec.start(1000);
+  if(rec.state!=='recording')throw new Error('MediaRecorder tidak masuk state recording.');
+  window.__BP_SESSION_RECORDER_ERROR__=null;window.__BP_SESSION_RECORDER_MIME__=rec.mimeType||mime||'';audit('recording',{startedAt:Date.now()});
+  return true;
+ }catch(e){window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);audit('start-error',{error:window.__BP_SESSION_RECORDER_ERROR__});console.warn('Session recorder unavailable',e);return false}
+}
+function stopSessionRecorder(){
+ if(window.__BP_SESSION_STOP_PROMISE__)return window.__BP_SESSION_STOP_PROMISE__;
+ window.__BP_SESSION_STOP_PROMISE__=new Promise((resolve,reject)=>{
+  if(window.__BP_SESSION_RECORD_TIMER__){clearTimeout(window.__BP_SESSION_RECORD_TIMER__);window.__BP_SESSION_RECORD_TIMER__=null}
+  const rec=sessionRecorder;let promiseSettled=false,finalized=false,fallbackTimer=null;
+  const finalize=()=>{
+   if(finalized)return;finalized=true;if(fallbackTimer)clearTimeout(fallbackTimer);
+   try{if(!sessionVideoBlob&&sessionVideoChunks.length)sessionVideoBlob=new Blob(sessionVideoChunks,{type:rec?.mimeType||window.__BP_SESSION_RECORDER_MIME__||'video/webm'});if(sessionVideoBlob?.size&&!sessionVideoUrl)sessionVideoUrl=URL.createObjectURL(sessionVideoBlob)}catch(e){window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);console.warn('BoothPro video finalization:',e)}
+   if(sessionRecorder===rec)sessionRecorder=null;if(window.__BP_SESSION_RECORDER_INSTANCE__===rec)window.__BP_SESSION_RECORDER_INSTANCE__=null;
+   window.__BP_SESSION_RECORDER_AUDIT__={...(window.__BP_SESSION_RECORDER_AUDIT__||{}),status:sessionVideoBlob?.size?'finalized':'stopped-empty',stoppedAt:Date.now(),state:rec?.state||'none',blobBytes:sessionVideoBlob?.size||0};
+   if(!promiseSettled){promiseSettled=true;resolve(sessionVideoBlob||null)}
+  };
+  if(!rec){promiseSettled=true;resolve(sessionVideoBlob||null);return}
+  if(rec.state==='inactive'){finalize();return}
+  const previous=rec.onstop;
+  rec.onstop=function(event){try{if(typeof previous==='function')previous.call(rec,event)}catch(e){console.warn('BoothPro recorder onstop:',e)}finally{finalize()}};
+  fallbackTimer=setTimeout(()=>{if(promiseSettled)return;promiseSettled=true;window.__BP_SESSION_RECORDER_ERROR__='MediaRecorder tidak mengirim event stop dalam 20 detik.';window.__BP_SESSION_RECORDER_AUDIT__={...(window.__BP_SESSION_RECORDER_AUDIT__||{}),status:'stop-timeout',timedOutAt:Date.now(),state:rec.state};reject(new Error(window.__BP_SESSION_RECORDER_ERROR__))},20000);
+  try{if(rec.state==='recording'&&typeof rec.requestData==='function')rec.requestData();if(rec.state!=='inactive')rec.stop();else finalize()}catch(e){clearTimeout(fallbackTimer);fallbackTimer=null;if(!promiseSettled){promiseSettled=true;window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);reject(e)}}
+ });
+ return window.__BP_SESSION_STOP_PROMISE__
+}
 function startSessionTimer(){if(sessionTimerId)clearInterval(sessionTimerId);sessionSecondsLeft=Math.max(7,Number(config.duration)||7)*60;renderTimer();sessionTimerId=setInterval(()=>{sessionSecondsLeft--;renderTimer();if(sessionSecondsLeft<=0){clearInterval(sessionTimerId);sessionTimerId=null;$('shutterBtn').disabled=true;alert('Waktu sesi habis. Lanjutkan ke frame jika foto sudah lengkap.')}},1000)}
 function renderTimer(){const m=Math.floor(sessionSecondsLeft/60),s=sessionSecondsLeft%60;$('sessionTimer').innerText=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');$('sessionTimer').classList.toggle('timer-danger',sessionSecondsLeft<=60)}
 function takePhoto(){if(sessionSecondsLeft<=0||capturedPhotos.length>=requiredPhotosCount||countdownTimer)return;const btn=$('shutterBtn'),overlay=$('countdownOverlay'),ct=$('countdownText');btn.disabled=true;overlay.classList.remove('hidden');let count=Math.max(1,Number(config.countdown)||3);ct.innerText=count;countdownTimer=setInterval(()=>{count--;if(count>0){ct.innerText=count}else{clearInterval(countdownTimer);countdownTimer=null;overlay.classList.add('hidden');const flash=$('flashLayer');flash.style.opacity='1';setTimeout(()=>flash.style.opacity='0',150);captureCurrentFrame()}},700)}
@@ -2566,7 +2609,11 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
     renderCaptureReview();
     if(!sessionTimerId)startSessionTimer();
     requestWakeLock();
-    startWebcam().then(()=>{c7RenderState();if(capturedPhotos.length>=requiredPhotosCount){c7SetState('Semua foto lengkap · Review siap.',true)}else if(c7AutoCapture)c7ScheduleAuto()}).catch(()=>c7RenderState());
+    startWebcam().then(()=>{
+      startSessionRecorder();
+      c7RenderState();
+      if(capturedPhotos.length>=requiredPhotosCount){c7SetState('Semua foto lengkap · Review siap.',true)}else if(c7AutoCapture)c7ScheduleAuto()
+    }).catch(()=>c7RenderState());
   };
 
   /* Safer timer: warning at 60s and no blocking alert at expiry. */
@@ -4479,7 +4526,7 @@ function start(){if(timer)clearInterval(timer);timer=setInterval(pullLive,10000)
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 </script>
-<script id="bp-digital-delivery-state-bridge">(function(){'use strict';window.BoothProDeliveryState=function(){return {sessionId:typeof sessionId==='string'?sessionId:'',finalCompositeDataUrl:typeof finalCompositeDataUrl==='string'?finalCompositeDataUrl:'',finalGifDataUrl:typeof finalGifDataUrl==='string'?finalGifDataUrl:'',capturedPhotos:Array.isArray(capturedPhotos)?capturedPhotos.slice():[],sessionVideoBlob:sessionVideoBlob||null,sessionVideoMime:sessionVideoBlob?.type||''};};})();</script>
+<script id="bp-digital-delivery-state-bridge">(function(){'use strict';window.BoothProDeliveryState=function(){return {sessionId:typeof sessionId==='string'?sessionId:'',finalCompositeDataUrl:typeof finalCompositeDataUrl==='string'?finalCompositeDataUrl:'',finalGifDataUrl:typeof finalGifDataUrl==='string'?finalGifDataUrl:'',capturedPhotos:Array.isArray(capturedPhotos)?capturedPhotos.slice():[],sessionVideoBlob:sessionVideoBlob||null,sessionVideoMime:sessionVideoBlob?.type||'',streamInstance:streamInstance||null,sessionRecorder:sessionRecorder||null,useSimulation:!!useSimulation};};})();</script>
 <script id="bp-digital-delivery-hotfix" src="/boothpro-hotfix-digital-delivery.js"></script>
 <style id="bp-frame-portrait-layout-fix">
 @media (orientation:portrait) and (max-width:900px){
@@ -4639,4 +4686,5 @@ html.bp-kiosk-mode #dashboardModal *{pointer-events:none!important}
   }catch(e){}
 })();
 </script>
+<script src="/boothpro-hotfix-c10.js?c10=2"></script>
 </body>\n</html>

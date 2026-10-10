@@ -94,7 +94,7 @@ async function prepare(sid){
  items.push({name:'animation.gif',type:'image/gif',blob:gifBlob});
 
  let videoBlob=state.sessionVideoBlob||null;
- if(!videoBlob?.size)videoBlob=await waitForSessionVideo(15000);
+ if(!videoBlob?.size)videoBlob=await waitForSessionVideo(22000);
  if(!videoBlob?.size)throw new Error('Live Session video belum selesai direkam. Pastikan kamera aktif sampai masuk halaman hasil.');
  const rawVideoType=String(videoBlob.type||'video/webm').toLowerCase();
  const videoExt=rawVideoType.includes('mp4')?'mp4':'webm';
@@ -133,7 +133,7 @@ async function send(channel){
   if(autoPromise){try{await withTimeout(autoPromise,165000,'Sinkronisasi otomatis')}catch(e){autoPromise=null}}
   let stored=(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
   if(!stored){if(status)status.textContent='Soft file belum siap, mencoba sinkronisasi otomatis sekarang...';stored=await withTimeout(window.boothProAutoSyncSoftFile(),165000,'Sinkronisasi otomatis')}
-  if(typeof stopSessionRecorder==='function')await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman');
+  if(typeof stopSessionRecorder==='function')await withTimeout(stopSessionRecorder(),22000,'Penutupan rekaman');
   stored=stored||(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
   if(!stored)throw new Error('Soft file belum siap. Sinkronisasi otomatis belum menghasilkan 3 file.');
   if(status)status.textContent='Mengirim link soft file...';
@@ -153,7 +153,7 @@ window.boothProAutoSyncSoftFile=async function(){
  const health=await deliveryHealth();
  const status=$('cloudUploadStatus')||$('customerShareStatus')||$('customerSoftAutoStatus');
  if(status)status.textContent='Menyinkronkan Photo + GIF + Live Session otomatis...';
- try{if(typeof stopSessionRecorder==='function')await withTimeout(stopSessionRecorder(),10000,'Penutupan rekaman')}catch(e){console.warn('BoothPro recorder close:',e)}
+ try{if(typeof stopSessionRecorder==='function')await withTimeout(stopSessionRecorder(),22000,'Penutupan rekaman')}catch(e){console.warn('BoothPro recorder close:',e)}
  let stored=null,lastErr=null;
  for(let attempt=1;attempt<=2&&!stored;attempt++){
   try{stored=await withTimeout(prepare(sid),180000,'Sinkronisasi otomatis timeout setelah 180 detik.')}catch(e){lastErr=e;if(attempt<2)await new Promise(r=>setTimeout(r,1200))}

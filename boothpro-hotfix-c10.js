@@ -19,21 +19,35 @@
   function tryStart(reason){
     try{
       if(!visibleCapture()) return false;
-      if(window.useSimulation) return false;
-      const rec=window.__BP_SESSION_RECORDER_INSTANCE__||window.sessionRecorder;
-      if(rec && (rec.state==='recording'||rec.state==='paused')) return true;
+      const simulation=typeof useSimulation!=='undefined'?useSimulation:window.useSimulation;
+      if(simulation) return false;
+      const stream=typeof streamInstance!=='undefined'?streamInstance:window.streamInstance;
+      const rec=window.__BP_SESSION_RECORDER_INSTANCE__||
+        (typeof sessionRecorder!=='undefined'?sessionRecorder:window.sessionRecorder);
+      if(rec && rec.state==='recording') return true;
+      if(rec && rec.state==='paused'){
+        try{rec.resume()}catch(e){}
+        return rec.state==='recording';
+      }
       if(window.__BP_SESSION_RECORDER_STARTING__) return false;
       if(typeof window.startSessionRecorder!=='function') return false;
-      if(!window.streamInstance || typeof window.streamInstance.getTracks!=='function') return false;
-      const tracks=window.streamInstance.getTracks();
-      if(!tracks.some(t=>t && t.readyState==='live')) return false;
+      if(!stream || typeof stream.getTracks!=='function') return false;
+      const videoTracks=typeof stream.getVideoTracks==='function'
+        ?stream.getVideoTracks():stream.getTracks().filter(t=>t&&t.kind==='video');
+      if(!videoTracks.some(t=>t && t.readyState==='live')) return false;
       window.__BP_SESSION_RECORDER_STARTING__=true;
       window.__BP_C10_RECORDER_START_ATTEMPTS__++;
       const ok=window.startSessionRecorder();
+      const startedRecorder=window.__BP_SESSION_RECORDER_INSTANCE__||
+        (typeof sessionRecorder!=='undefined'?sessionRecorder:window.sessionRecorder);
       window.__BP_C10_RECORDER_START_TIME__=Date.now();
       window.__BP_C10_RECORDER_START_REASON__=reason||'watchdog';
-      console.info('BoothPro C10 recorder start watchdog',reason||'watchdog',ok?'started':'requested');
-      return !!ok;
+      if(!ok||startedRecorder?.state!=='recording'){
+        window.__BP_SESSION_RECORDER_ERROR__=window.__BP_SESSION_RECORDER_ERROR__||'MediaRecorder gagal masuk ke state recording.';
+        return false;
+      }
+      console.info('BoothPro C10 recorder start watchdog',reason||'watchdog','recording');
+      return true;
     }catch(e){
       window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);
       console.warn('BoothPro C10 recorder watchdog:',e);

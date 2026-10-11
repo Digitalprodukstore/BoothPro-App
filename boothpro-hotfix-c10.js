@@ -1,6 +1,11 @@
 /* BoothPro C10 targeted recorder-start watchdog.
  * Runs after the kiosk's C7 capture override and observes the real lexical camera state.
  * Recorder creation is idempotent in startSessionRecorder().
+ *
+ * Safety note:
+ * - Never creates/starts a second recorder directly.
+ * - Never replaces MediaRecorder ondataavailable/onstop handlers.
+ * - Uses the kiosk's existing startSessionRecorder() as the single recorder owner.
  */
 (function(){
  'use strict';
@@ -15,8 +20,12 @@
    if(!visibleCapture())return false;
    const s=state();if(s.useSimulation)return false;
    const rec=s.sessionRecorder||window.__BP_SESSION_RECORDER_INSTANCE__||window.sessionRecorder;
-   if(rec?.state==='recording')return true;
-   if(rec?.state==='paused'){try{rec.resume();if(rec.state==='recording')return true}catch(e){}}
+   if(rec?.state==='recording'){
+    // Compatibility alias for diagnostics only; C10 never owns the recorder lifecycle.
+    if(!window.mediaRecorderInstance)window.mediaRecorderInstance=rec;
+    return true;
+   }
+   if(rec?.state==='paused'){try{rec.resume();if(rec.state==='recording'){if(!window.mediaRecorderInstance)window.mediaRecorderInstance=rec;return true}}catch(e){}}
    if(window.__BP_SESSION_RECORDER_STARTING__)return false;
    if(typeof window.startSessionRecorder!=='function')return false;
    const stream=s.streamInstance||window.streamInstance;
@@ -25,6 +34,7 @@
    window.__BP_SESSION_RECORDER_STARTING__=true;window.__BP_C10_RECORDER_START_ATTEMPTS__++;
    const ok=window.startSessionRecorder();const latest=state().sessionRecorder||window.__BP_SESSION_RECORDER_INSTANCE__;
    window.__BP_C10_RECORDER_START_TIME__=Date.now();window.__BP_C10_RECORDER_START_REASON__=reason||'watchdog';
+   if(latest)window.mediaRecorderInstance=latest;
    if(ok&&latest?.state==='recording'){window.__BP_SESSION_RECORDER_ERROR__=null;console.info('BoothPro C10 recorder confirmed recording',reason||'watchdog');return true}
    console.warn('BoothPro C10 recorder did not reach recording state',window.__BP_SESSION_RECORDER_ERROR__||latest?.state||'unknown');return false;
   }catch(e){window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);console.warn('BoothPro C10 recorder watchdog:',e);return false}

@@ -32,8 +32,16 @@ module.exports=async function(req,res){
    const name=clean(f.name);if(!allowed[name]||f.contentType!==allowed[name])throw new Error('Tipe file tidak valid: '+name);
    const path=sid+'/'+name;
    const encodedPath=path.split('/').map(encodeURIComponent).join('/');
+   // Signed-upload creation rejects an already-existing object. Remove only this
+   // session/file path first so a retry of the same session remains idempotent.
+   const objectUrl=base+'/storage/v1/object/'+bucket+'/'+encodedPath;
+   const remove=await fetch(objectUrl,{method:'DELETE',headers:{apikey:key,Authorization:'Bearer '+key},cache:'no-store'});
+   if(!remove.ok && remove.status!==404){
+    const rd=await remove.json().catch(()=>null);
+    throw new Error('Gagal menyiapkan upload '+name+(rd?.message?': '+rd.message:' (HTTP '+remove.status+')'));
+   }
    const u=base+'/storage/v1/object/upload/sign/'+bucket+'/'+encodedPath;
-   const r=await fetch(u,{method:'POST',headers,body:JSON.stringify({expiresIn:600,upsert:true})});
+   const r=await fetch(u,{method:'POST',headers,body:JSON.stringify({expiresIn:600})});
    const d=await r.json().catch(()=>null);if(!r.ok)throw new Error('Gagal membuat URL upload '+name+(d?.message?': '+d.message:''));
    const raw=d?.signedURL||d?.signedUrl||d?.url;
    if(!raw)throw new Error('Supabase tidak mengembalikan signed upload URL untuk '+name+'.');

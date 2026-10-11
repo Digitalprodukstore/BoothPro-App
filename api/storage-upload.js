@@ -16,12 +16,24 @@ module.exports=async function(req,res){
   const b=req.body||{},sid=clean(b.sessionId),files=Array.isArray(b.files)?b.files:[];
   if(!sid||files.length!==3)throw new Error('Session ID dan tepat 3 file wajib.');
   const allowed={'photo.png':'image/png','animation.gif':'image/gif','live-session.mp4':'video/mp4','live-session.webm':'video/webm'};
+  const headers={apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'};
+  const bucket='boothpro-softfiles';
+  const bucketUrl=base+'/storage/v1/bucket/'+encodeURIComponent(bucket);
+  const bucketCheck=await fetch(bucketUrl,{headers:{apikey:key,Authorization:'Bearer '+key},cache:'no-store'});
+  if(!bucketCheck.ok){
+   const bucketBody=await bucketCheck.json().catch(()=>null);
+   const create=await fetch(base+'/storage/v1/bucket',{method:'POST',headers,body:JSON.stringify({id:bucket,name:bucket,public:true,fileSizeLimit:52428800,allowedMimeTypes:['image/png','image/gif','video/mp4','video/webm']})});
+   if(!create.ok && create.status!==409){
+    const d=await create.json().catch(()=>null);
+    throw new Error('Bucket Supabase boothpro-softfiles belum tersedia dan gagal dibuat: '+(d?.message||d?.error||bucketBody?.message||('HTTP '+create.status)));
+   }
+  }
   const uploads=await Promise.all(files.map(async f=>{
    const name=clean(f.name);if(!allowed[name]||f.contentType!==allowed[name])throw new Error('Tipe file tidak valid: '+name);
    const path=sid+'/'+name;
    const encodedPath=path.split('/').map(encodeURIComponent).join('/');
-   const u=base+'/storage/v1/object/upload/sign/boothpro-softfiles/'+encodedPath;
-   const r=await fetch(u,{method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:600,upsert:true})});
+   const u=base+'/storage/v1/object/upload/sign/'+bucket+'/'+encodedPath;
+   const r=await fetch(u,{method:'POST',headers,body:JSON.stringify({expiresIn:600,upsert:true})});
    const d=await r.json().catch(()=>null);if(!r.ok)throw new Error('Gagal membuat URL upload '+name+(d?.message?': '+d.message:''));
    const raw=d?.signedURL||d?.signedUrl||d?.url;
    if(!raw)throw new Error('Supabase tidak mengembalikan signed upload URL untuk '+name+'.');

@@ -34,6 +34,20 @@ export const KioskRoot: React.FC = () => {
     storageService.getOperatorConfig()
   );
 
+  // Refresh safe public settings from cloud on each device; localStorage remains an offline cache.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const result = await storageService.loadOperatorConfigFromCloud();
+      if (cancelled || !result.success || !result.config) return;
+      const merged = { ...storageService.getOperatorConfig(), ...result.config };
+      storageService.saveOperatorConfig(merged);
+      setConfig(merged);
+      setSelectedPackage((current) => merged.packages.find((p) => p.id === current.id) || merged.packages[1] || current);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // Flow State
   const [currentStep, setCurrentStep] = useState<KioskStep>('start');
   const [selectedPackage, setSelectedPackage] = useState<PackageConfig>(config.packages[1]);

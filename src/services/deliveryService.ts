@@ -2,6 +2,55 @@ import JSZip from 'jszip';
 import QRCode from 'qrcode';
 import { SessionData, OperatorConfig } from '../types';
 
+async function uploadMediaBlob(sessionId: string, media: 'photo' | 'gif' | 'video', blob: Blob, mimeType: string): Promise<void> {
+  if (!blob || blob.size < 16) throw new Error(media === 'photo' ? 'Foto Final belum tersedia.' : media === 'gif' ? 'GIF belum tersedia. Tunggu pembuatan GIF selesai lalu coba lagi.' : 'Video sesi belum tersedia.');
+  const signed = await fetch('/api/session?route=softfile-upload', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+    body: JSON.stringify({ action: 'sign', sessionId, media, mimeType }),
+  });
+  const signedData = await signed.json().catch(() => null);
+  if (!signed.ok || signedData?.ok !== true || !signedData?.uploadUrl) {
+    throw new Error(signedData?.error || `Gagal menyiapkan upload ${media} (HTTP ${signed.status}).`);
+  }
+  const uploaded = await fetch(signedData.uploadUrl, {
+    method: 'PUT', headers: { 'Content-Type': mimeType || blob.type || 'application/octet-stream', 'x-upsert': 'true' },
+    body: blob, cache: 'no-store',
+  });
+  if (!uploaded.ok) {
+    const detail = await uploaded.text().catch(() => '');
+    throw new Error(`Upload ${media} gagal (HTTP ${uploaded.status}). ${detail.slice(0, 180)}`);
+  }
+}
+
+async function ensureCloudMediaUploaded(session: SessionData): Promise<void> {
+  const sid = session.sessionId;
+  let photoBlob: Blob;
+  try { photoBlob = await (await fetch(session.finalPhotoDataUrl)).blob(); }
+  catch { throw new Error('Foto Final tidak dapat dibaca untuk diunggah.'); }
+  let gifBlob: Blob;
+  try {
+    if (!session.gifBlobUrl) throw new Error('missing');
+    gifBlob = await (await fetch(session.gifBlobUrl)).blob();
+  } catch { throw new Error('GIF belum siap. Kembali tunggu GIF selesai dibuat, lalu coba lagi.'); }
+  let videoBlob: Blob;
+  try {
+    if (!session.videoBlobUrl) throw new Error('missing');
+    videoBlob = await (await fetch(session.videoBlobUrl)).blob();
+  } catch { throw new Error('Video sesi tidak tersedia pada perangkat ini.'); }
+  if (!photoBlob.type.startsWith('image/')) throw new Error('Format Foto Final tidak valid.');
+  if (gifBlob.size < 100) throw new Error('GIF belum selesai dibuat atau filenya tidak valid.');
+  const mime = session.videoMimeType || videoBlob.type || 'video/webm';
+  await uploadMediaBlob(sid, 'photo', photoBlob, 'image/png');
+  await uploadMediaBlob(sid, 'gif', gifBlob, 'image/gif');
+  await uploadMediaBlob(sid, 'video', videoBlob, mime);
+  const finalized = await fetch('/api/session?route=softfile-upload', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+    body: JSON.stringify({ action: 'complete', sessionId: sid, media: 'video', mimeType: mime }),
+  });
+  const result = await finalized.json().catch(() => null);
+  if (!finalized.ok || result?.ok !== true) throw new Error(result?.error || `Media terunggah, tetapi manifest gagal disimpan (HTTP ${finalized.status}).`);
+}
+
 export class DeliveryService {
   /**
    * Generates a public QR Code data URL for the customer to scan on their phone
@@ -135,6 +184,7 @@ Simpan link ini baik-baik ya! Sampai jumpa di sesi berikutnya! ✨`;
   ): Promise<{ success: boolean; message: string; directUrl: string }> {
     const directUrl = this.getWhatsAppDirectUrl(phone, session, _config);
     try {
+      await ensureCloudMediaUploaded(session);
       const response = await fetch('/api/send-direct-media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -162,6 +212,7 @@ Simpan link ini baik-baik ya! Sampai jumpa di sesi berikutnya! ✨`;
     _config: OperatorConfig
   ): Promise<{ success: boolean; message: string }> {
     try {
+      await ensureCloudMediaUploaded(session);
       const response = await fetch('/api/send-direct-media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

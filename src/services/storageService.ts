@@ -133,43 +133,27 @@ class StorageService {
     }
   }
 
-  // This verifies REST endpoint access only; it does not imply data sync is configured.
-  public async testCloudConnection(url: string, key: string): Promise<{ success: boolean; message: string }> {
-    const baseUrl = url.trim().replace(/\/+$/, '');
-    const apiKey = key.trim();
-
-    if (!baseUrl || !apiKey) {
-      return {
-        success: false,
-        message: 'URL atau API Key Supabase belum diisi. Mode offline aktif dengan LocalStorage.',
-      };
-    }
-
+  // Tests the actual server-side config API used for sync, not just the Supabase REST root.
+  public async testCloudConnection(_url: string, _key: string): Promise<{ success: boolean; message: string }> {
     try {
-      const res = await fetch(`${baseUrl}/rest/v1/`, {
-        method: 'GET',
-        headers: {
-          apikey: apiKey,
-          Authorization: `Bearer ${apiKey}`,
-        },
-        cache: 'no-store',
-      });
-
-      if (res.ok) {
+      const res = await fetch('/api/config', { method: 'GET', cache: 'no-store' });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success === true) {
         return {
           success: true,
-          message: 'Endpoint Supabase dapat diakses. Ini belum membuktikan sinkronisasi data aktif.',
+          message: data.configured
+            ? 'API cloud aktif dan konfigurasi bersama tersedia.'
+            : 'API cloud aktif, tetapi konfigurasi belum disimpan. Setelah environment Supabase dan migrasi siap, simpan konfigurasi dari Dashboard.',
         };
       }
-
       return {
         success: false,
-        message: `Tes endpoint Supabase gagal (HTTP ${res.status}). Periksa URL, API key, dan konfigurasi proyek.`,
+        message: data?.message || `Tes API sinkronisasi gagal (HTTP ${res.status}).`,
       };
     } catch {
       return {
         success: false,
-        message: 'Endpoint Supabase tidak dapat dijangkau. Periksa koneksi internet dan URL Supabase.',
+        message: 'API sinkronisasi tidak dapat dijangkau. Periksa deployment Vercel.',
       };
     }
   }

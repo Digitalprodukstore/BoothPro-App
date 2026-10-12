@@ -62,11 +62,8 @@ class StorageService {
     this.inMemorySessions.set(session.sessionId, session);
 
     try {
-      // Store lightweight manifest representation in localStorage to avoid 5MB quota overflow
-      const sessionsToStore = Array.from(this.inMemorySessions.values()).slice(0, 30).map(s => ({
-        ...s,
-        // Keep capturedPhotos & finalPhotoDataUrl intact if possible, or truncate older sessions
-      }));
+      // Store recent sessions locally as an offline cache.
+      const sessionsToStore = Array.from(this.inMemorySessions.values()).slice(0, 30);
       localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(sessionsToStore));
       return true;
     } catch (e) {
@@ -101,9 +98,12 @@ class StorageService {
     }
   }
 
-  // Test Cloud Sync simulation
+  // This verifies REST endpoint access only; it does not imply data sync is configured.
   public async testCloudConnection(url: string, key: string): Promise<{ success: boolean; message: string }> {
-    if (!url || !key) {
+    const baseUrl = url.trim().replace(/\/+$/, '');
+    const apiKey = key.trim();
+
+    if (!baseUrl || !apiKey) {
       return {
         success: false,
         message: 'URL atau API Key Supabase belum diisi. Mode offline aktif dengan LocalStorage.',
@@ -111,28 +111,30 @@ class StorageService {
     }
 
     try {
-      // Quick ping test
-      const res = await fetch(`${url}/rest/v1/`, {
+      const res = await fetch(`${baseUrl}/rest/v1/`, {
+        method: 'GET',
         headers: {
-          apikey: key,
-          Authorization: `Bearer ${key}`,
+          apikey: apiKey,
+          Authorization: `Bearer ${apiKey}`,
         },
+        cache: 'no-store',
       });
 
-      if (res.status === 200 || res.status === 404 || res.status === 401) {
+      if (res.ok) {
         return {
           success: true,
-          message: 'Koneksi ke endpoint Supabase berhasil diverifikasi! Sinkronisasi cloud aktif.',
+          message: 'Endpoint Supabase dapat diakses. Ini belum membuktikan sinkronisasi data aktif.',
         };
       }
+
       return {
-        success: true,
-        message: 'Endpoint cloud terjangkau (Status: ' + res.status + '). Sinkronisasi aktif.',
+        success: false,
+        message: `Tes endpoint Supabase gagal (HTTP ${res.status}). Periksa URL, API key, dan konfigurasi proyek.`,
       };
-    } catch (err: any) {
+    } catch {
       return {
-        success: true,
-        message: 'Simulasi cloud bridge siap. Data tersimpan aman di offline storage + cloud adapter.',
+        success: false,
+        message: 'Endpoint Supabase tidak dapat dijangkau. Periksa koneksi internet dan URL Supabase.',
       };
     }
   }

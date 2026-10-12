@@ -1,8 +1,9 @@
 {
+  "framework": "vite",
   "rewrites": [
     {
-      "source": "/download/:sessionId",
-      "destination": "/download/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }

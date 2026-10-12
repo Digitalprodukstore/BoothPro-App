@@ -60,7 +60,7 @@ async function getSessionMedia(sid){
  const row=d[0],photo_url=String(row.photo_url||'').trim()||null,gif_url=String(row.gif_url||'').trim()||null,video_url=String(row.video_url||'').trim()||null;
  return {session_id:row.session_id,package_name:row.package_name||'BoothPro',photo_url,gif_url,video_url,media_status:photo_url&&gif_url&&video_url?'uploaded':'partial',expires_at:row.expires_at||null,updated_at:row.updated_at||null};
 }
-module.exports=async function handler(req,res){
+export default async function handler(req,res){
  try{
   if(req.query?.route==='config')return await handleConfig(req,res);
   const sid=String(req.query?.session||req.body?.sessionId||'').trim();

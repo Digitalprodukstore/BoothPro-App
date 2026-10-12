@@ -610,7 +610,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
                   </span>
 
                   <div>
-                    <label className="text-[11px] text-slate-400 block mb-1">Supabase URL</label>
+                    <label className="text-[11px] text-slate-400 block mb-1">Supabase URL (referensi lokal)</label>
                     <input
                       type="text"
                       value={formConfig.supabaseUrl}
@@ -624,7 +624,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
 
                   <div>
                     <label className="text-[11px] text-slate-400 block mb-1">
-                      Supabase Anon / Service Key
+                      Supabase Anon Key (referensi lokal; jangan gunakan Service Role Key)
                     </label>
                     <input
                       type="password"

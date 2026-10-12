@@ -1,10 +1,4 @@
 {
-  "crons": [
-    {
-      "path": "/api/cleanup-media",
-      "schedule": "0 3 * * *"
-    }
-  ],
   "rewrites": [
     {
       "source": "/download/:sessionId",

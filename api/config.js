@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     }
     const expected = clean(process.env.BOOTHPRO_ADMIN_PIN);
     const supplied = clean(req.headers['x-boothpro-admin-pin']);
-    if (!expected || expected.length < 8) return json(res, 503, { success:false, message:'Atur BOOTHPRO_ADMIN_PIN minimal 8 karakter di Vercel sebelum mengaktifkan simpan cloud.' });
+    if (!expected || expected.length < 4) return json(res, 503, { success:false, message:'Atur BOOTHPRO_ADMIN_PIN minimal 4 karakter (disarankan 6 digit/karakter) di Vercel sebelum mengaktifkan simpan cloud.' });
     if (!supplied || supplied !== expected) return json(res, 401, { success:false, message:'Otorisasi Dashboard ditolak. PIN server tidak cocok.' });
     const config = safeConfig(req.body?.config);
     if (!Object.keys(config).length) return json(res, 400, { success:false, message:'Konfigurasi publik kosong atau tidak valid.' });

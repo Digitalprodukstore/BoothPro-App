@@ -141,13 +141,17 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
   }
 
   // Handle Save
-  const handleSave = () => {
+  const handleSave = async () => {
     audioEffects.playClick();
     storageService.saveOperatorConfig(formConfig);
     onSaveConfig(formConfig);
-    setSaveSuccessMessage('Konfigurasi tersimpan pada perangkat ini. Sinkronisasi cloud belum dikonfirmasi.');
-    audioEffects.playSuccessChime();
-    setTimeout(() => setSaveSuccessMessage(null), 3000);
+    setSaveSuccessMessage('Tersimpan di perangkat ini. Mengirim konfigurasi publik ke cloud...');
+    const cloudSave = await storageService.saveOperatorConfigToCloud(formConfig);
+    setSaveSuccessMessage(cloudSave.success
+      ? 'Konfigurasi tersimpan lokal dan berhasil disinkronkan ke cloud.'
+      : 'Tersimpan lokal saja. Sinkronisasi cloud gagal: ' + cloudSave.message);
+    if (cloudSave.success) audioEffects.playSuccessChime();
+    setTimeout(() => setSaveSuccessMessage(null), 6000);
   };
 
   // Test Cloud

@@ -98,6 +98,41 @@ class StorageService {
     }
   }
 
+  // Cloud config uses a server-side Vercel API; browser clients never receive the Supabase service-role key.
+  public async loadOperatorConfigFromCloud(): Promise<{ success: boolean; config?: Partial<OperatorConfig>; message: string }> {
+    try {
+      const res = await fetch('/api/config', { method: 'GET', cache: 'no-store' });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.success !== true) {
+        return { success: false, message: data?.message || `Gagal memuat konfigurasi cloud (HTTP ${res.status}).` };
+      }
+      if (!data.configured || !data.config) {
+        return { success: true, config: undefined, message: 'Cloud dapat diakses, tetapi konfigurasi belum pernah disimpan. Menggunakan cache perangkat.' };
+      }
+      return { success: true, config: data.config as Partial<OperatorConfig>, message: 'Konfigurasi cloud berhasil dimuat.' };
+    } catch {
+      return { success: false, message: 'Cloud tidak dapat dijangkau. Menggunakan cache lokal jika tersedia.' };
+    }
+  }
+
+  public async saveOperatorConfigToCloud(config: OperatorConfig): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch('/api/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-boothpro-admin-pin': config.adminPin },
+        body: JSON.stringify({ config }),
+        cache: 'no-store',
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.success !== true) {
+        return { success: false, message: data?.message || `Gagal menyimpan konfigurasi cloud (HTTP ${res.status}).` };
+      }
+      return { success: true, message: data.message || 'Konfigurasi berhasil disimpan ke cloud.' };
+    } catch {
+      return { success: false, message: 'Konfigurasi tersimpan lokal, tetapi cloud tidak dapat dijangkau.' };
+    }
+  }
+
   // This verifies REST endpoint access only; it does not imply data sync is configured.
   public async testCloudConnection(url: string, key: string): Promise<{ success: boolean; message: string }> {
     const baseUrl = url.trim().replace(/\/+$/, '');

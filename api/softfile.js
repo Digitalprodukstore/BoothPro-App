@@ -73,5 +73,10 @@ ${card('Live Video Session','Video sesi / momen terbaik yang direkam.',video,'vi
 </section>
 <p class="note">ID Sesi: ${esc(sid)}<br>Link file aman dan berlaku sementara.</p>
 </main></body></html>`);
- }catch(e){return json(res,500,{ok:false,error:e.message||String(e)})}
+ }catch(e){
+  const message=e?.message||String(e);
+  const status=/tidak ditemukan/i.test(message)?404:/kedaluwarsa/i.test(message)?410:/belum lengkap/i.test(message)?409:/konfigurasi cloud belum tersedia/i.test(message)?503:500;
+  res.setHeader('Cache-Control','no-store');
+  return json(res,status,{ok:false,error:message});
+ }
 };

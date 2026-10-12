@@ -38,7 +38,7 @@ function card(title,desc,url,kind){
  const icon=kind==='video'?'▶':kind==='gif'?'GIF':'IMG';
  return '<article class="card"><div class="icon">'+icon+'</div><div class="copy"><strong>'+esc(title)+'</strong><span>'+esc(desc)+'</span></div><a class="btn" href="'+esc(url)+'" target="_blank" rel="noopener" download>Save</a></article>';
 }
-module.exports=async function(req,res){
+export default async function handler(req,res){
  try{
   const sid=clean(req.query?.sessionId);
   if(!sid)return json(res,400,{ok:false,error:'Session ID wajib diisi.'});

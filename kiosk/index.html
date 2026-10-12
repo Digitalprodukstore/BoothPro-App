@@ -15,8 +15,10 @@
     const res=await fetch(url,{cache:'no-store'});
     if(!res.ok)throw new Error('Kiosk engine HTTP '+res.status);
     let html=await res.text();
-    const marker='<script src="/boothpro-hotfix-c9.js?c9=1"></script>';
-    const c10='<script src="/boothpro-hotfix-c10.js?c10=1"></script>';
+    // Do not place a literal </script> inside this inline script: the HTML parser
+    // would terminate this loader before JavaScript can execute.
+    const marker='<scr'+'ipt src="/boothpro-hotfix-c9.js?c9=1"><\/scr'+'ipt>';
+    const c10='<scr'+'ipt src="/boothpro-hotfix-c10.js?c10=1"><\/scr'+'ipt>';
     if(!html.includes(c10)){
       if(html.includes(marker)) html=html.replace(marker,marker+'\n'+c10);
       else html=html.replace('</head>',c10+'\n</head>');

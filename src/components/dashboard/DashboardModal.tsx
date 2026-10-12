@@ -146,7 +146,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
     storageService.saveOperatorConfig(formConfig);
     onSaveConfig(formConfig);
     setSaveSuccessMessage('Tersimpan di perangkat ini. Mengirim konfigurasi publik ke cloud...');
-    const cloudSave = await storageService.saveOperatorConfigToCloud(formConfig);
+    const cloudSave = await storageService.saveOperatorConfigToCloud(formConfig, pinInput);
     setSaveSuccessMessage(cloudSave.success
       ? 'Konfigurasi tersimpan lokal dan berhasil disinkronkan ke cloud.'
       : 'Tersimpan lokal saja. Sinkronisasi cloud gagal: ' + cloudSave.message);

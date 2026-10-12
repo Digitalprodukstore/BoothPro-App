@@ -49,6 +49,41 @@ async function handleConfig(req,res){
   return json(res,200,{success:true,message:'Konfigurasi publik berhasil disimpan ke Supabase.',updatedAt:data?.[0]?.updated_at||null});
  }catch(e){return json(res,502,{success:false,message:e instanceof Error?e.message:'Kesalahan sinkronisasi cloud.'});}
 }
+const validSessionId=sid=>/^[a-zA-Z0-9_-]{8,100}$/.test(String(sid||''));
+async function handleSoftfileUpload(req,res){
+ if(req.method!=='POST')return json(res,405,{ok:false,error:'Method tidak didukung.'});
+ const sid=clean(req.body?.sessionId),action=clean(req.body?.action),media=clean(req.body?.media);
+ if(!validSessionId(sid))return json(res,400,{ok:false,error:'Session ID tidak valid.'});
+ if(!['photo','gif','video'].includes(media))return json(res,400,{ok:false,error:'Jenis media tidak valid.'});
+ try{
+  const base=configBase(),key=clean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if(!key)throw new Error('SUPABASE_SERVICE_ROLE_KEY belum dikonfigurasi.');
+  const h={apikey:key,Authorization:'Bearer '+key,Accept:'application/json','Content-Type':'application/json'};
+  const ext=media==='photo'?'photo.png':media==='gif'?'animation.gif':(clean(req.body?.mimeType).includes('mp4')?'live-session.mp4':'live-session.webm');
+  const path=sid+'/'+ext;
+  if(action==='sign'){
+   const sign=await fetch(base+'/storage/v1/object/upload/sign/boothpro-softfiles/'+path.split('/').map(encodeURIComponent).join('/'),{method:'POST',headers:h,body:JSON.stringify({upsert:true}),cache:'no-store'});
+   const data=await sign.json().catch(()=>null);
+   if(!sign.ok)throw new Error(data?.message||data?.error||'Gagal membuat URL upload aman. Pastikan bucket boothpro-softfiles tersedia.');
+   const token=clean(data?.token);
+   if(!token)throw new Error('Supabase tidak mengembalikan token upload.');
+   return json(res,200,{ok:true,path,uploadUrl:base+'/storage/v1/object/upload/sign/boothpro-softfiles/'+path.split('/').map(encodeURIComponent).join('/')+'?token='+encodeURIComponent(token)});
+  }
+  if(action==='complete'){
+   const photo=sid+'/photo.png',gif=sid+'/animation.gif';
+   const [p,g]=await Promise.all([photo,gif].map(async p=>{const r=await fetch(base+'/storage/v1/object/info/boothpro-softfiles/'+p.split('/').map(encodeURIComponent).join('/'),{headers:h,cache:'no-store'});return r.ok}));
+   const videoExt=clean(req.body?.mimeType).includes('mp4')?'live-session.mp4':'live-session.webm',video=sid+'/'+videoExt;
+   const vr=await fetch(base+'/storage/v1/object/info/boothpro-softfiles/'+video.split('/').map(encodeURIComponent).join('/'),{headers:h,cache:'no-store'});
+   if(!p||!g||!vr.ok)return json(res,409,{ok:false,error:'Belum semua media terunggah. Foto: '+p+', GIF: '+g+', video: '+vr.ok+'.'});
+   const publicUrl=p=>base+'/storage/v1/object/public/boothpro-softfiles/'+p.split('/').map(encodeURIComponent).join('/');
+   const row={session_id:sid,photo_url:publicUrl(photo),gif_url:publicUrl(gif),video_url:publicUrl(video),media_status:'uploaded',updated_at:new Date().toISOString()};
+   const up=await fetch(base+'/rest/v1/boothpro_session_manifest?on_conflict=session_id',{method:'POST',headers:{...h,Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(row),cache:'no-store'});
+   const data=await up.json().catch(()=>null);if(!up.ok)throw new Error(data?.message||data?.hint||'Manifest sesi gagal disimpan. Pastikan tabel boothpro_session_manifest memiliki kolom session_id, photo_url, gif_url, video_url, media_status, updated_at.');
+   return json(res,200,{ok:true,sessionId:sid,mediaStatus:'uploaded'});
+  }
+  return json(res,400,{ok:false,error:'Action upload tidak valid.'});
+ }catch(e){return json(res,502,{ok:false,error:e instanceof Error?e.message:'Upload soft file gagal.'});}
+}
 async function getSessionMedia(sid){
  const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!key)throw new Error('Soft file storage belum dikonfigurasi.');
@@ -62,7 +97,7 @@ async function getSessionMedia(sid){
 }
 export default async function handler(req,res){
  try{
-  if(req.query?.route==='config')return await handleConfig(req,res);
+  if(req.query?.route==='config')return await handleConfig(req,res);\n  if(req.query?.route==='softfile-upload')return await handleSoftfileUpload(req,res);
   const sid=String(req.query?.session||req.body?.sessionId||'').trim();
   if(!sid)return json(res,400,{ok:false,error:'Session ID wajib diisi.'});
   if(req.method==='GET'){

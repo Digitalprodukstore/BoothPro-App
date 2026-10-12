@@ -23,10 +23,11 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
   const [isZipping, setIsZipping] = useState<boolean>(false);
 
   const [waSending, setWaSending] = useState<boolean>(false);
-  const [waResult, setWaResult] = useState<{ message: string; directUrl?: string } | null>(null);
+  const [waResult, setWaResult] = useState<{ message: string; directUrl?: string; success?: boolean } | null>(null);
 
   const [emailSending, setEmailSending] = useState<boolean>(false);
   const [emailResult, setEmailResult] = useState<string | null>(null);
+  const [emailResultSuccess, setEmailResultSuccess] = useState<boolean>(false);
 
   const [resetCountdown, setResetCountdown] = useState<number>(config.kioskTimeoutSeconds || 90);
 
@@ -113,6 +114,7 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
       storageService.saveSession(session);
     } catch (error) {
       setWaResult({
+        success: false,
         message: error instanceof Error ? error.message : 'Pengiriman WhatsApp gagal. Silakan coba lagi.',
       });
     } finally {
@@ -130,6 +132,7 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
     try {
       const result = await DeliveryService.sendEmail(email, session, config);
       setEmailResult(result.message);
+      setEmailResultSuccess(result.success);
 
       session.customerEmail = email;
       if (result.success) {
@@ -139,6 +142,7 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
       storageService.saveSession(session);
     } catch (error) {
       setEmailResult(error instanceof Error ? error.message : 'Pengiriman email gagal. Silakan coba lagi.');
+      setEmailResultSuccess(false);
     } finally {
       setEmailSending(false);
     }
@@ -360,9 +364,9 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
               </div>
 
               {waResult && (
-                <div className="text-[11px] text-emerald-400 bg-emerald-950/40 border border-emerald-800 p-2 rounded-xl flex items-center justify-between gap-2">
+                <div className={`text-[11px] p-2 rounded-xl flex items-center justify-between gap-2 ${waResult.success ? 'text-emerald-400 bg-emerald-950/40 border border-emerald-800' : 'text-rose-300 bg-rose-950/40 border border-rose-800'}`}>
                   <span>{waResult.message}</span>
-                  {waResult.directUrl && (
+                  {waResult.success && waResult.directUrl && (
                     <a
                       href={waResult.directUrl}
                       target="_blank"
@@ -404,7 +408,7 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
               </div>
 
               {emailResult && (
-                <div className="text-[11px] text-emerald-400 bg-emerald-950/40 border border-emerald-800 p-2 rounded-xl">
+                <div className={`text-[11px] p-2 rounded-xl ${emailResultSuccess ? 'text-emerald-400 bg-emerald-950/40 border border-emerald-800' : 'text-rose-300 bg-rose-950/40 border border-rose-800'}`}>
                   {emailResult}
                 </div>
               )}

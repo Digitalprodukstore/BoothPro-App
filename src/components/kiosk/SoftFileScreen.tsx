@@ -101,16 +101,23 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
     setWaSending(true);
     audioEffects.playClick();
 
-    const result = await DeliveryService.sendWhatsApp(phone, session, config);
-    setWaSending(false);
-    setWaResult(result);
+    try {
+      const result = await DeliveryService.sendWhatsApp(phone, session, config);
+      setWaResult(result);
 
-    // Save phone and updated delivery status in storage
-    session.customerPhone = phone;
-    session.deliveryStatus.whatsapp = 'sent';
-    storageService.saveSession(session);
-
-    audioEffects.playSuccessChime();
+      session.customerPhone = phone;
+      if (result.success) {
+        session.deliveryStatus.whatsapp = 'sent';
+        audioEffects.playSuccessChime();
+      }
+      storageService.saveSession(session);
+    } catch (error) {
+      setWaResult({
+        message: error instanceof Error ? error.message : 'Pengiriman WhatsApp gagal. Silakan coba lagi.',
+      });
+    } finally {
+      setWaSending(false);
+    }
   };
 
   // Send to Email
@@ -120,16 +127,21 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
     setEmailSending(true);
     audioEffects.playClick();
 
-    const result = await DeliveryService.sendEmail(email, session, config);
-    setEmailSending(false);
-    setEmailResult(result.message);
+    try {
+      const result = await DeliveryService.sendEmail(email, session, config);
+      setEmailResult(result.message);
 
-    // Save email and updated delivery status in storage
-    session.customerEmail = email;
-    session.deliveryStatus.email = 'sent';
-    storageService.saveSession(session);
-
-    audioEffects.playSuccessChime();
+      session.customerEmail = email;
+      if (result.success) {
+        session.deliveryStatus.email = 'sent';
+        audioEffects.playSuccessChime();
+      }
+      storageService.saveSession(session);
+    } catch (error) {
+      setEmailResult(error instanceof Error ? error.message : 'Pengiriman email gagal. Silakan coba lagi.');
+    } finally {
+      setEmailSending(false);
+    }
   };
 
   return (

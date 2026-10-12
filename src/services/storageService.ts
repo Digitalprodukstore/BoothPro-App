@@ -115,11 +115,11 @@ class StorageService {
     }
   }
 
-  public async saveOperatorConfigToCloud(config: OperatorConfig): Promise<{ success: boolean; message: string }> {
+  public async saveOperatorConfigToCloud(config: OperatorConfig, operatorPin: string): Promise<{ success: boolean; message: string }> {
     try {
       const res = await fetch('/api/config', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'x-boothpro-admin-pin': config.adminPin },
+        headers: { 'Content-Type': 'application/json', 'x-boothpro-admin-pin': operatorPin },
         body: JSON.stringify({ config }),
         cache: 'no-store',
       });

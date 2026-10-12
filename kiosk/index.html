@@ -1,17 +1,32 @@
 <!doctype html>
-<html lang="id">
+<html lang="id" class="bp-kiosk-mode">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="cache-control" content="no-cache">
 <title>BoothPro Kiosk</title>
+<style>
+/* Instant hide of any dashboard modal on Kiosk screen */
+#dashboardModal, #dashboardAuthModal, [onclick="openDashboard()"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+#step-welcome {
+  display: flex !important;
+}
+</style>
 </head>
-<body>
+<body class="bg-black text-white">
+<div id="kiosk-boot" style="font-family:system-ui;padding:40px;text-align:center;">
+  <p>Memuat BoothPro Kiosk...</p>
+</div>
 <script>
 (async function(){
   'use strict';
   try{
-    const url='/index-legacy.html?bp-kiosk=1';
+    window.__BP_ENTRY_MODE__ = 'kiosk';
+    const url='/index-legacy.html?bp-kiosk=1&_t='+Date.now();
     const res=await fetch(url,{cache:'no-store'});
     if(!res.ok)throw new Error('Kiosk engine HTTP '+res.status);
     let html=await res.text();
@@ -21,6 +36,8 @@
       if(html.includes(marker)) html=html.replace(marker,marker+'\n'+c10);
       else html=html.replace('</body>',c10+'\n</body>');
     }
+    // Inject permanent kiosk class on HTML
+    html = html.replace('<html lang="id">', '<html lang="id" class="bp-kiosk-mode">');
     document.open();
     document.write(html);
     document.close();

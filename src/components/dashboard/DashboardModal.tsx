@@ -145,7 +145,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
     audioEffects.playClick();
     storageService.saveOperatorConfig(formConfig);
     onSaveConfig(formConfig);
-    setSaveSuccessMessage('Konfigurasi berhasil disimpan dan disinkronkan ke Kiosk!');
+    setSaveSuccessMessage('Konfigurasi tersimpan pada perangkat ini. Sinkronisasi cloud belum dikonfirmasi.');
     audioEffects.playSuccessChime();
     setTimeout(() => setSaveSuccessMessage(null), 3000);
   };

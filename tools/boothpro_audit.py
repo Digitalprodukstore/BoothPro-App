@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-INDEX = ROOT / "index.html"
+INDEX = (ROOT / "index-legacy.html") if (ROOT / "index-legacy.html").exists() else (ROOT / "index.html")
 OUT = ROOT / "audit-report.json"
 PROD_URL = "https://booth-pro-app.vercel.app"
 

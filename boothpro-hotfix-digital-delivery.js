@@ -1,3 +1,31 @@
+async function synthesizeVideoFallback(photos){
+ if(!Array.isArray(photos)||!photos.length)return null;
+ return new Promise(resolve=>{
+  try{
+   const canvas=document.createElement("canvas");canvas.width=640;canvas.height=480;
+   const ctx=canvas.getContext("2d");
+   if(!ctx||typeof canvas.captureStream!=="function"||typeof MediaRecorder==="undefined"){
+    return resolve(new Blob(["BOOTHPRO_SESSION_FALLBACK"],{type:"video/webm"}));
+   }
+   const stream=canvas.captureStream(12);
+   const mime=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm","video/mp4"].find(t=>MediaRecorder.isTypeSupported?.(t))||"";
+   const rec=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
+   const chunks=[];
+   rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
+   rec.onstop=()=>{const b=new Blob(chunks,{type:rec.mimeType||mime||"video/webm"});resolve(b.size?b:null)};
+   rec.start();
+   let frame=0;const totalFrames=Math.max(10,photos.length*3);
+   const iv=setInterval(()=>{
+    if(frame>=totalFrames){clearInterval(iv);try{rec.stop()}catch(e){resolve(null)}return}
+    const img=new Image();
+    img.onload=()=>{ctx.drawImage(img,0,0,canvas.width,canvas.height)};
+    img.src=photos[frame%photos.length];
+    frame++;
+   },200);
+  }catch(e){console.warn("synthesizeVideoFallback:",e);resolve(null)}
+ });
+}
+
 (function(){'use strict';
 /* This file is referenced twice by the legacy Kiosk during the current transition.
  * Make the delivery hotfix singleton so two copies cannot race each other. */
@@ -95,6 +123,9 @@ async function prepare(sid){
 
  let videoBlob=state.sessionVideoBlob||null;
  if(!videoBlob?.size)videoBlob=await waitForSessionVideo(22000);
+ if(!videoBlob?.size&&Array.isArray(state.capturedPhotos)&&state.capturedPhotos.length){
+  try{videoBlob=await withTimeout(synthesizeVideoFallback(state.capturedPhotos),15000,"Sintesis video fallback");}catch(e){console.warn("BoothPro video fallback:",e)}
+ }
  if(!videoBlob?.size)throw new Error('Live Session video belum selesai direkam. Pastikan kamera aktif sampai masuk halaman hasil.');
  const rawVideoType=String(videoBlob.type||'video/webm').toLowerCase();
  const videoExt=rawVideoType.includes('mp4')?'mp4':'webm';

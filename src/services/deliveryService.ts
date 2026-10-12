@@ -27,7 +27,7 @@ export class DeliveryService {
    */
   public static getPublicSoftfileUrl(sessionId: string): string {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://boothpro.id';
-    return `${origin}/#softfile=${sessionId}`;
+    return `${origin}/api/softfile?sessionId=${encodeURIComponent(sessionId)}`;
   }
 
   /**
@@ -131,95 +131,55 @@ Simpan link ini baik-baik ya! Sampai jumpa di sesi berikutnya! ✨`;
   public static async sendWhatsApp(
     phone: string,
     session: SessionData,
-    config: OperatorConfig
+    _config: OperatorConfig
   ): Promise<{ success: boolean; message: string; directUrl: string }> {
-    const directUrl = this.getWhatsAppDirectUrl(phone, session, config);
-    const cleanPhone = this.formatIndonesianPhone(phone);
-    const softfileUrl = this.getPublicSoftfileUrl(session.sessionId);
-
-    // If Fonnte token is configured and not default dummy, attempt real API post
-    if (config.fonnteToken && config.fonnteToken !== 'FONNTE_DEMO_KEY_2026') {
-      try {
-        const res = await fetch('https://api.fonnte.com/send', {
-          method: 'POST',
-          headers: {
-            Authorization: config.fonnteToken,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            target: cleanPhone,
-            message: `Halo Kak! ✨ Terima kasih sudah berfoto di ${config.brandName}.\n\nSoft-file sesi ${session.sessionId} siap diunduh:\n${softfileUrl}\n\nTermasuk Foto, GIF & Live Video!`,
-          }),
-        });
-
-        if (res.ok) {
-          return {
-            success: true,
-            message: `Pesan WhatsApp berhasil dikirim via Fonnte ke +${cleanPhone}!`,
-            directUrl,
-          };
-        }
-      } catch (e) {
-        console.warn('Fonnte API call failed, falling back to direct link', e);
+    const directUrl = this.getWhatsAppDirectUrl(phone, session, _config);
+    try {
+      const response = await fetch('/api/send-direct-media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({
+          sessionId: session.sessionId,
+          deliveryMethod: 'whatsapp',
+          target: phone,
+          customerName: 'Pelanggan',
+        }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.ok !== true) {
+        return { success: false, message: data?.error || `Pengiriman WhatsApp gagal (HTTP ${response.status}).`, directUrl };
       }
+      return { success: true, message: data.message || 'Permintaan pengiriman WhatsApp diterima oleh penyedia.', directUrl };
+    } catch {
+      return { success: false, message: 'Tidak dapat menghubungi layanan pengiriman WhatsApp. Periksa koneksi lalu coba lagi.', directUrl };
     }
-
-    return {
-      success: true,
-      message: `Link WhatsApp telah disiapkan untuk nomor +${cleanPhone}! Anda dapat klik tombol kirim langsung.`,
-      directUrl,
-    };
   }
 
-  /**
-   * Dispatch Email notification via Brevo or simulated dispatch
-   */
   public static async sendEmail(
     email: string,
     session: SessionData,
-    config: OperatorConfig
+    _config: OperatorConfig
   ): Promise<{ success: boolean; message: string }> {
-    const softfileUrl = this.getPublicSoftfileUrl(session.sessionId);
-
-    if (config.brevoApiKey && config.brevoApiKey !== 'BREVO_API_DEMO_2026') {
-      try {
-        const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
-          headers: {
-            'api-key': config.brevoApiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            sender: { name: config.brandName, email: config.brevoSenderEmail || 'photos@boothpro.id' },
-            to: [{ email }],
-            subject: `[${config.brandName}] Soft-File Photobooth Sesi ${session.sessionId}`,
-            htmlContent: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; background: #0f172a; color: #f8fafc; border-radius: 12px;">
-                <h1 style="color: #ec4899; margin-top: 0;">${config.brandName}</h1>
-                <p>Halo! Terima kasih telah mengabadikan momen di booth kami.</p>
-                <div style="background: #1e293b; padding: 16px; border-radius: 8px; margin: 20px 0;">
-                  <p><strong>Session ID:</strong> ${session.sessionId}</p>
-                  <p><strong>Paket:</strong> ${session.package.name}</p>
-                  <p><strong>Bundle:</strong> 1 Foto Final + 1 Boomerang GIF + 1 Live Session Video</p>
-                </div>
-                <p>Klik tombol di bawah ini untuk membuka dan mengunduh seluruh media Anda (tanpa perlu membuat akun):</p>
-                <a href="${softfileUrl}" style="display: inline-block; background: #ec4899; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">Download Soft-File Bundle</a>
-              </div>
-            `,
-          }),
-        });
-
-        if (res.ok) {
-          return { success: true, message: `Email terkirim ke ${email} via Brevo!` };
-        }
-      } catch (e) {
-        console.warn('Brevo API call failed', e);
+    try {
+      const response = await fetch('/api/send-direct-media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({
+          sessionId: session.sessionId,
+          deliveryMethod: 'email',
+          target: email,
+          customerName: 'Pelanggan',
+        }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.ok !== true) {
+        return { success: false, message: data?.error || `Pengiriman email gagal (HTTP ${response.status}).` };
       }
+      return { success: true, message: data.message || 'Permintaan pengiriman email diterima oleh penyedia.' };
+    } catch {
+      return { success: false, message: 'Tidak dapat menghubungi layanan email. Periksa koneksi lalu coba lagi.' };
     }
-
-    return {
-      success: true,
-      message: `Konfirmasi soft-file bundle berhasil disiapkan untuk ${email}!`,
-    };
   }
 }

@@ -83,57 +83,75 @@ export class DeliveryService {
    * Packages all 3 media files (Photo + GIF + Video) into a single downloadable ZIP
    */
   public static async createMediaBundleZip(session: SessionData): Promise<Blob> {
+    const required = ['foto final', 'GIF', 'video sesi'];
+    if (!session.finalPhotoDataUrl?.startsWith('data:image/')) {
+      throw new Error('ZIP dibatalkan: Foto Final belum tersedia atau bukan data gambar yang valid.');
+    }
+    if (!session.gifBlobUrl) throw new Error('ZIP dibatalkan: GIF belum siap. Tunggu sampai proses GIF selesai.');
+    if (!session.videoBlobUrl) throw new Error('ZIP dibatalkan: Video sesi belum tersedia.');
+
     const zip = new JSZip();
     const folderName = `BoothPro_${session.sessionId}`;
     const folder = zip.folder(folderName) || zip;
+    const expectedFiles: string[] = [];
 
-    // 1. Add Final Framed Photo
-    if (session.finalPhotoDataUrl) {
-      const base64Data = session.finalPhotoDataUrl.replace(/^data:image\/\w+;base64,/, '');
-      folder.file(`01_Final_Photo_${session.sessionId}.png`, base64Data, { base64: true });
+    // Use binary bytes for every media item; this avoids accidental text/base64 encoding.
+    const photoBase64 = session.finalPhotoDataUrl.slice(session.finalPhotoDataUrl.indexOf(',') + 1);
+    const photoBytes = Uint8Array.from(atob(photoBase64), (char) => char.charCodeAt(0));
+    if (photoBytes.length < 16 || photoBytes[0] !== 0x89 || photoBytes[1] !== 0x50 || photoBytes[2] !== 0x4e || photoBytes[3] !== 0x47) {
+      throw new Error('ZIP dibatalkan: data Foto Final PNG tidak valid.');
     }
+    const photoName = `01_Final_Photo_${session.sessionId}.png`;
+    folder.file(photoName, photoBytes, { binary: true });
+    expectedFiles.push(photoName);
 
-    // 2. Add Animated GIF
-    if (session.gifBlobUrl) {
-      try {
-        const gifResponse = await fetch(session.gifBlobUrl);
-        const gifBlob = await gifResponse.blob();
-        folder.file(`02_Boomerang_GIF_${session.sessionId}.gif`, gifBlob);
-      } catch (e) {
-        console.warn('Could not fetch gifBlobUrl for zip', e);
-      }
+    const gifResponse = await fetch(session.gifBlobUrl);
+    if (!gifResponse.ok) throw new Error(`ZIP dibatalkan: GIF gagal dibaca (HTTP ${gifResponse.status}).`);
+    const gifBytes = new Uint8Array(await gifResponse.arrayBuffer());
+    if (gifBytes.length < 100 || String.fromCharCode(...gifBytes.slice(0, 6)) !== 'GIF89a' && String.fromCharCode(...gifBytes.slice(0, 6)) !== 'GIF87a' || gifBytes[gifBytes.length - 1] !== 0x3b) {
+      throw new Error('ZIP dibatalkan: GIF tidak lengkap atau formatnya rusak. Buat ulang GIF lalu coba lagi.');
     }
+    const gifName = `02_Boomerang_GIF_${session.sessionId}.gif`;
+    folder.file(gifName, gifBytes, { binary: true });
+    expectedFiles.push(gifName);
 
-    // 3. Add Live Session Video
-    if (session.videoBlobUrl) {
-      try {
-        const videoResponse = await fetch(session.videoBlobUrl);
-        const videoBlob = await videoResponse.blob();
-        const extension = session.videoMimeType.includes('mp4') ? 'mp4' : 'webm';
-        folder.file(`03_Live_Session_Video_${session.sessionId}.${extension}`, videoBlob);
-      } catch (e) {
-        console.warn('Could not fetch videoBlobUrl for zip', e);
-      }
-    }
+    const videoResponse = await fetch(session.videoBlobUrl);
+    if (!videoResponse.ok) throw new Error(`ZIP dibatalkan: video gagal dibaca (HTTP ${videoResponse.status}).`);
+    const videoBytes = new Uint8Array(await videoResponse.arrayBuffer());
+    if (videoBytes.length < 128) throw new Error('ZIP dibatalkan: video sesi kosong atau belum selesai difinalisasi.');
+    const extension = session.videoMimeType?.includes('mp4') ? 'mp4' : 'webm';
+    const videoName = `03_Live_Session_Video_${session.sessionId}.${extension}`;
+    folder.file(videoName, videoBytes, { binary: true });
+    expectedFiles.push(videoName);
 
-    // 4. Add Readme Receipt
     const receiptText = `BOOTHPRO MEMORIES BUNDLE
 =========================================
 Session ID: ${session.sessionId}
 Paket     : ${session.package.name}
 Tanggal   : ${new Date(session.createdAt).toLocaleString('id-ID')}
-Status    : Soft-File Terverifikasi (3 Media Lengkap)
+Status    : 3 media sudah dimasukkan ke arsip ZIP
 
 Isi Bundle:
-1. 01_Final_Photo_${session.sessionId}.png (Foto cetak berbingkai resolusi tinggi)
-2. 02_Boomerang_GIF_${session.sessionId}.gif (Animasi foto bergerak)
-3. 03_Live_Session_Video_${session.sessionId}.webm (Video rekaman sesi live kamera)
+1. ${photoName}
+2. ${gifName}
+3. ${videoName}
 
-Terima kasih telah berfoto bersama BoothPro! ✨
+Terima kasih telah berfoto bersama BoothPro!
 `;
     folder.file('README_INFO.txt', receiptText);
 
-    return await zip.generateAsync({ type: 'blob' });
+    // STORE avoids recompressing already-compressed PNG/GIF/video streams.
+    const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE', streamFiles: false });
+    if (zipBlob.size < 256) throw new Error('ZIP gagal dibuat: ukuran arsip terlalu kecil.');
+    // Read the archive back before offering it to the customer; this catches broken ZIP output.
+    const checked = await JSZip.loadAsync(zipBlob, { checkCRC32: true });
+    for (const name of expectedFiles) {
+      const entry = checked.file(`${folderName}/${name}`);
+      if (!entry) throw new Error(`ZIP tidak valid: file ${name} tidak ditemukan setelah validasi.`);
+      const bytes = await entry.async('uint8array');
+      if (!bytes.length) throw new Error(`ZIP tidak valid: file ${name} kosong.`);
+    }
+    return zipBlob;
   }
 
   /**

@@ -75,7 +75,8 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      // iOS Safari can consume Blob downloads asynchronously; keep the URL alive long enough.
+      window.setTimeout(() => URL.revokeObjectURL(url), 30000);
       audioEffects.playSuccessChime();
     } catch (err) {
       console.error('Failed to create ZIP bundle', err);
@@ -94,15 +95,23 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
       const blob = await response.blob();
       if (blob.size < 16) throw new Error('File kosong atau belum selesai difinalisasi.');
       const mime = (blob.type || '').toLowerCase();
+      const bytes = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
+      const isPng = bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 && bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a;
+      const isJpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+      const isGif = bytes.length >= 6 && (String.fromCharCode(...bytes.slice(0, 6)) === 'GIF87a' || String.fromCharCode(...bytes.slice(0, 6)) === 'GIF89a');
+      const isWebM = bytes.length >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
+      const isMp4 = bytes.length >= 8 && String.fromCharCode(...bytes.slice(4, 8)) === 'ftyp';
+      const isZip = bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
       let safeName = filename;
       const dot = filename.lastIndexOf('.');
       const stem = dot > -1 ? filename.slice(0, dot) : filename;
-      if (mime.includes('image/png')) safeName = stem + '.png';
-      else if (mime.includes('image/jpeg')) safeName = stem + '.jpg';
-      else if (mime.includes('image/gif')) safeName = stem + '.gif';
-      else if (mime.includes('video/mp4')) safeName = stem + '.mp4';
-      else if (mime.includes('video/webm')) safeName = stem + '.webm';
-      else if (mime.includes('application/zip')) safeName = stem + '.zip';
+      // Prefer the actual file signature when available; MIME headers can be incorrect or generic.
+      if (isPng || mime.includes('image/png')) safeName = stem + '.png';
+      else if (isJpeg || mime.includes('image/jpeg')) safeName = stem + '.jpg';
+      else if (isGif || mime.includes('image/gif')) safeName = stem + '.gif';
+      else if (isMp4 || mime.includes('video/mp4')) safeName = stem + '.mp4';
+      else if (isWebM || mime.includes('video/webm')) safeName = stem + '.webm';
+      else if (isZip || mime.includes('application/zip')) safeName = stem + '.zip';
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = objectUrl;

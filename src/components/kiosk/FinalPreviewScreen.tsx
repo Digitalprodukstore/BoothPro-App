@@ -22,21 +22,20 @@ export const FinalPreviewScreen: React.FC<FinalPreviewScreenProps> = ({
   onProceedToSoftfile,
 }) => {
   const totalPrints = selectedPackage.defaultCopies + extraPrints;
-  const [hasPrinted, setHasPrinted] = useState<boolean>(false);
-  const [isPrinting, setIsPrinting] = useState<boolean>(false);
-  const [gifUrl, setGifUrl] = useState<string>('');
-  const [isGifReady, setIsGifReady] = useState<boolean>(false);
-  const [isGifGenerating, setIsGifGenerating] = useState<boolean>(false);
-  const [gifError, setGifError] = useState<string>('');
+  const [hasPrinted, setHasPrinted] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [gifUrl, setGifUrl] = useState('');
+  const [isGifReady, setIsGifReady] = useState(false);
+  const [isGifGenerating, setIsGifGenerating] = useState(false);
+  const [gifError, setGifError] = useState('');
 
   const buildGif = useCallback(async () => {
-    if (!capturedPhotos.length || isGifGenerating) return;
+    if (!capturedPhotos.length) return;
     setIsGifGenerating(true);
     setIsGifReady(false);
     setGifError('');
     try {
       console.log('[FinalPreview] Generating optimized GIF...');
-      // Keep the customer GIF intentionally lightweight so kiosk/iOS devices do not hit the old timeout.
       const result = await generateAnimatedGif(capturedPhotos, {
         width: 240,
         height: 180,
@@ -52,9 +51,8 @@ export const FinalPreviewScreen: React.FC<FinalPreviewScreenProps> = ({
     } finally {
       setIsGifGenerating(false);
     }
-  }, [capturedPhotos, isGifGenerating]);
+  }, [capturedPhotos]);
 
-  // Generate while the customer is viewing the final preview, instead of waiting until delivery.
   useEffect(() => {
     void buildGif();
   }, [buildGif]);
@@ -63,7 +61,6 @@ export const FinalPreviewScreen: React.FC<FinalPreviewScreenProps> = ({
     if (isPrinting) return;
     setIsPrinting(true);
     audioEffects.playClick();
-
     setTimeout(() => {
       window.print();
       setIsPrinting(false);
@@ -93,19 +90,14 @@ export const FinalPreviewScreen: React.FC<FinalPreviewScreenProps> = ({
 
       <header className="w-full max-w-5xl mx-auto flex items-center justify-between z-10 no-print">
         <div className="w-24"><span className="text-xs font-bold text-slate-400">{config.brandName}</span></div>
-        <div className="text-center">
-          <span className="text-xs font-bold tracking-wider text-pink-400 uppercase">Langkah 4 dari 4</span>
-          <h2 className="text-xl sm:text-2xl font-black">Hasil Foto Final</h2>
-        </div>
+        <div className="text-center"><span className="text-xs font-bold tracking-wider text-pink-400 uppercase">Langkah 4 dari 4</span><h2 className="text-xl sm:text-2xl font-black">Hasil Foto Final</h2></div>
         <div className="w-24 text-right"><span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20">{totalPrints} Cetakan</span></div>
       </header>
 
       <main className="w-full max-w-4xl mx-auto my-auto py-4 z-10 flex flex-col md:flex-row items-center justify-center gap-8 no-print">
         <div className="relative max-h-[520px] max-w-[340px] w-full flex items-center justify-center p-3 bg-slate-900/90 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md">
           {finalPhotoUrl ? <img src={finalPhotoUrl} alt="Hasil Cetak Final" className="max-h-[480px] w-auto object-contain rounded-xl shadow-2xl" /> : <div className="w-64 h-96 flex items-center justify-center text-slate-500 text-xs">Membuat foto...</div>}
-          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300 text-xs font-bold shadow-lg flex items-center gap-1.5 whitespace-nowrap">
-            <Sparkles className="w-3.5 h-3.5 text-pink-400" /><span>Siap Cetak • {selectedPackage.name}</span>
-          </div>
+          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300 text-xs font-bold shadow-lg flex items-center gap-1.5 whitespace-nowrap"><Sparkles className="w-3.5 h-3.5 text-pink-400" /><span>Siap Cetak • {selectedPackage.name}</span></div>
         </div>
 
         <div className="flex flex-col gap-4 max-w-sm w-full">
@@ -113,9 +105,7 @@ export const FinalPreviewScreen: React.FC<FinalPreviewScreenProps> = ({
             <h3 className="text-lg font-black text-white">Cetak Foto Fisik</h3>
             <p className="text-xs text-slate-400 leading-relaxed">Foto Anda akan dicetak sebanyak <strong>{totalPrints} lembar</strong> sesuai paket &amp; ekstra print.</p>
             <button onClick={handlePrint} disabled={isPrinting} className={`w-full py-4 px-6 rounded-2xl font-black text-base flex items-center justify-center gap-3 transition shadow-xl cursor-pointer ${hasPrinted ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : 'bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 text-white shadow-pink-600/30'}`}>
-              <Printer className="w-5 h-5" />
-              <span>{isPrinting ? 'Mengirim ke Printer...' : hasPrinted ? 'Cetak Ulang' : 'Cetak Foto Sekarang'}</span>
-              {hasPrinted && <Check className="w-5 h-5 stroke-[3]" />}
+              <Printer className="w-5 h-5" /><span>{isPrinting ? 'Mengirim ke Printer...' : hasPrinted ? 'Cetak Ulang' : 'Cetak Foto Sekarang'}</span>{hasPrinted && <Check className="w-5 h-5 stroke-[3]" />}
             </button>
             {hasPrinted && <div className="flex items-center gap-2 text-emerald-400 text-xs bg-emerald-950/40 border border-emerald-800/80 p-2.5 rounded-xl"><CheckCircle2 className="w-4 h-4 shrink-0" /><span>Foto telah dikirim ke printer kiosk. Silakan ambil di slot keluar!</span></div>}
           </div>

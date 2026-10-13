@@ -57,11 +57,8 @@ async function detectVideoMime(blob: Blob, preferredMime = ''): Promise<'video/m
   const isMp4 = bytes.length >= 8 && String.fromCharCode(...bytes.slice(4, 8)) === 'ftyp';
   if (isWebM) return 'video/webm';
   if (isMp4) return 'video/mp4';
-  const actualType = (blob.type || '').toLowerCase().split(';')[0].trim();
-  if (actualType === 'video/webm' || actualType === 'video/mp4') return actualType;
-  const preferred = preferredMime.toLowerCase().split(';')[0].trim();
-  if (preferred === 'video/webm' || preferred === 'video/mp4') return preferred;
-  throw new Error('Format video sesi tidak dikenali. Video tidak diunggah agar tidak tersimpan dengan ekstensi yang salah.');
+  // Do not trust Blob.type or a saved session MIME label when the bytes do not identify a known container.
+  throw new Error('Format video sesi tidak dikenali dari isi file. Video tidak diunggah agar tidak tersimpan dengan ekstensi yang salah.');
 }
 
 async function ensureCloudMediaUploaded(session: SessionData): Promise<void> {
@@ -84,7 +81,11 @@ async function ensureCloudMediaUploaded(session: SessionData): Promise<void> {
     videoBlob = await (await fetch(session.videoBlobUrl)).blob();
   } catch (error) { throw new Error(error instanceof Error ? error.message : 'Video sesi tidak tersedia pada perangkat ini.'); }
   if (!photoBlob.type.startsWith('image/')) throw new Error('Format Foto Final tidak valid.');
-  if (gifBlob.size < 100) throw new Error('GIF belum selesai dibuat atau filenya tidak valid.');
+  const gifHead = String.fromCharCode(...new Uint8Array(await gifBlob.slice(0, 6).arrayBuffer()));
+  const gifTail = new Uint8Array(await gifBlob.slice(-1).arrayBuffer())[0];
+  if (gifBlob.size < 100 || (gifHead !== 'GIF89a' && gifHead !== 'GIF87a') || gifTail !== 0x3b) {
+    throw new Error('GIF belum valid atau belum selesai dibuat. GIF tidak diunggah agar file pelanggan tidak rusak.');
+  }
   const mime = await detectVideoMime(videoBlob, session.videoMimeType);
   await uploadMediaBlob(sid, 'photo', photoBlob, 'image/png');
   await uploadMediaBlob(sid, 'gif', gifBlob, 'image/gif');

@@ -38,7 +38,9 @@ export const EditorScreen: React.FC<EditorScreenProps> = ({
 
   const [selectedFrame, setSelectedFrame] = useState<FrameTemplate>(initialFrame);
   const [activeSlotId, setActiveSlotId] = useState<number>(1);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'frame' | 'adjust' | 'filter'>('frame');
+  const gestureRef = useRef<{ distance: number; zoom: number; x: number; y: number; panX: number; panY: number } | null>(null);
 
   // Initialize transforms for each slot
   const [slotTransforms, setSlotTransforms] = useState<SlotTransform[]>(() => {
@@ -111,6 +113,32 @@ export const EditorScreen: React.FC<EditorScreenProps> = ({
     );
   };
 
+  // Pinch-to-zoom and one-finger pan on the preview; buttons/sliders remain as accessible fallbacks.
+  const handlePreviewTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!activeTransform || event.touches.length === 0) return;
+    const first = event.touches[0];
+    const second = event.touches[1];
+    const distance = second ? Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY) : 0;
+    gestureRef.current = { distance, zoom: activeTransform.zoom, x: first.clientX, y: first.clientY, panX: activeTransform.panX, panY: activeTransform.panY };
+  };
+  const handlePreviewTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    const start = gestureRef.current;
+    if (!start || !activeTransform) return;
+    if (event.cancelable) event.preventDefault();
+    if (event.touches.length >= 2 && start.distance > 0) {
+      const a = event.touches[0]; const b = event.touches[1];
+      const distance = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+      updateActiveTransform({ zoom: Math.max(1, Math.min(2.5, start.zoom * distance / start.distance)) });
+    } else if (event.touches.length === 1) {
+      const touch = event.touches[0];
+      updateActiveTransform({
+        panX: Math.max(-100, Math.min(100, start.panX + (touch.clientX - start.x) / 2)),
+        panY: Math.max(-100, Math.min(100, start.panY + (touch.clientY - start.y) / 2)),
+      });
+    }
+  };
+  const handlePreviewTouchEnd = () => { gestureRef.current = null; };
+
   // Pan adjust helpers
   const handlePan = (dx: number, dy: number) => {
     if (!activeTransform) return;
@@ -167,7 +195,7 @@ export const EditorScreen: React.FC<EditorScreenProps> = ({
       <main className="w-full max-w-6xl mx-auto my-auto py-4 z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
         {/* Left Side: Frame Interactive Preview Canvas */}
         <div className="lg:col-span-7 flex flex-col items-center justify-center">
-          <div className="relative max-h-[540px] max-w-[380px] w-full flex items-center justify-center p-3 bg-slate-900/60 rounded-3xl border border-slate-800/80 shadow-2xl backdrop-blur-md">
+          <div onTouchStart={handlePreviewTouchStart} onTouchMove={handlePreviewTouchMove} onTouchEnd={handlePreviewTouchEnd} onTouchCancel={handlePreviewTouchEnd} className="relative max-h-[540px] max-w-[380px] w-full flex items-center justify-center p-3 bg-slate-900/60 rounded-3xl border border-slate-800/80 shadow-2xl backdrop-blur-md touch-none">
             {previewDataUrl ? (
               <img
                 src={previewDataUrl}
@@ -198,6 +226,10 @@ export const EditorScreen: React.FC<EditorScreenProps> = ({
                   onClick={() => {
                     audioEffects.playClick();
                     setActiveSlotId(slot.id);
+                    if (selectedPhotoIndex !== null) {
+                      setSlotTransforms((prev) => prev.map((t) => t.slotId === slot.id ? { ...t, photoIndex: selectedPhotoIndex } : t));
+                      setSelectedPhotoIndex(null);
+                    }
                   }}
                   className={`w-8 h-8 rounded-xl font-bold text-xs transition ${
                     isSelected
@@ -307,7 +339,7 @@ export const EditorScreen: React.FC<EditorScreenProps> = ({
             <div className="space-y-5">
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                  Ganti Foto Untuk Slot #{activeSlotId}
+                  Pilih foto, lalu ketuk nomor slot untuk menempatkannya
                 </span>
                 <div className="flex gap-2 overflow-x-auto pb-2">
                   {capturedPhotos.map((photo, idx) => {
@@ -317,15 +349,15 @@ export const EditorScreen: React.FC<EditorScreenProps> = ({
                         key={idx}
                         onClick={() => {
                           audioEffects.playClick();
-                          updateActiveTransform({ photoIndex: idx });
+                          setSelectedPhotoIndex(idx);
                         }}
                         className={`relative w-16 h-14 rounded-xl overflow-hidden shrink-0 border-2 cursor-pointer transition ${
-                          isAssigned ? 'border-pink-500 scale-105' : 'border-slate-800 opacity-60'
+                          selectedPhotoIndex === idx ? 'border-amber-400 ring-2 ring-amber-400/40 scale-105' : isAssigned ? 'border-pink-500' : 'border-slate-800 opacity-60'
                         }`}
                       >
                         <img src={photo} alt="" className="w-full h-full object-cover" />
                         <span className="absolute bottom-0.5 right-1 text-[9px] font-bold text-white bg-black/60 px-1 rounded">
-                          #{idx + 1}
+                          {selectedPhotoIndex === idx ? 'Dipilih' : `Foto #${idx + 1}`}
                         </span>
                       </div>
                     );

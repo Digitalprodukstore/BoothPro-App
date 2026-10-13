@@ -58,14 +58,18 @@ export const FinalPreviewScreen: React.FC<FinalPreviewScreenProps> = ({
   }, [buildGif]);
 
   const handlePrint = () => {
-    if (isPrinting) return;
+    // A package print allowance must not be reusable by repeatedly tapping this button.
+    if (isPrinting || hasPrinted || totalPrints < 1) return;
     setIsPrinting(true);
     audioEffects.playClick();
-    setTimeout(() => {
-      window.print();
-      setIsPrinting(false);
-      setHasPrinted(true);
-      audioEffects.playSuccessChime();
+    window.setTimeout(() => {
+      try {
+        window.print();
+        setHasPrinted(true);
+        audioEffects.playSuccessChime();
+      } finally {
+        setIsPrinting(false);
+      }
     }, 400);
   };
 
@@ -104,8 +108,8 @@ export const FinalPreviewScreen: React.FC<FinalPreviewScreenProps> = ({
           <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 flex flex-col gap-4 shadow-xl">
             <h3 className="text-lg font-black text-white">Cetak Foto Fisik</h3>
             <p className="text-xs text-slate-400 leading-relaxed">Foto Anda akan dicetak sebanyak <strong>{totalPrints} lembar</strong> sesuai paket &amp; ekstra print.</p>
-            <button onClick={handlePrint} disabled={isPrinting} className={`w-full py-4 px-6 rounded-2xl font-black text-base flex items-center justify-center gap-3 transition shadow-xl cursor-pointer ${hasPrinted ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : 'bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 text-white shadow-pink-600/30'}`}>
-              <Printer className="w-5 h-5" /><span>{isPrinting ? 'Mengirim ke Printer...' : hasPrinted ? 'Cetak Ulang' : 'Cetak Foto Sekarang'}</span>{hasPrinted && <Check className="w-5 h-5 stroke-[3]" />}
+            <button onClick={handlePrint} disabled={isPrinting || hasPrinted || totalPrints < 1} className={`w-full py-4 px-6 rounded-2xl font-black text-base flex items-center justify-center gap-3 transition shadow-xl cursor-pointer ${hasPrinted ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : 'bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 text-white shadow-pink-600/30'}`}>
+              <Printer className="w-5 h-5" /><span>{isPrinting ? 'Menyiapkan Cetak...' : hasPrinted ? 'Cetak Paket Sudah Digunakan' : 'Cetak Foto Sekarang'}</span>{hasPrinted && <Check className="w-5 h-5 stroke-[3]" />}
             </button>
             {hasPrinted && <div className="flex items-center gap-2 text-emerald-400 text-xs bg-emerald-950/40 border border-emerald-800/80 p-2.5 rounded-xl"><CheckCircle2 className="w-4 h-4 shrink-0" /><span>Foto telah dikirim ke printer kiosk. Silakan ambil di slot keluar!</span></div>}
           </div>

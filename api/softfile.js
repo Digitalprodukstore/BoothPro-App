@@ -6,7 +6,7 @@
  */
 const clean=v=>String(v||'').trim();
 const esc=v=>clean(v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
-const json=(res,status,body)=>res.status(status).setHeader('Content-Type','application/json').send(JSON.stringify(body));
+const json=(res,status,body)=>res.status(status).setHeader('Content-Type','application/json').setHeader('Cache-Control','no-store').send(JSON.stringify(body));
 function config(){
  const base=clean(process.env.SUPABASE_URL).replace(/\/$/,'');
  const key=clean(process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -33,10 +33,17 @@ async function signedDownload(base,key,path){
  if(!raw)throw new Error('Supabase tidak mengembalikan signed download URL.');
  if(/^https?:\/\//i.test(raw))return raw;if(raw.startsWith('/storage/v1/'))return base+raw;if(raw.startsWith('/object/'))return base+'/storage/v1'+raw;if(raw.startsWith('object/'))return base+'/storage/v1/'+raw;throw new Error('Format signed download URL Supabase tidak valid.');
 }
+async function sendDownload(res,url,filename,contentType){
+ const r=await fetch(url,{cache:'no-store'});
+ if(!r.ok)throw new Error('File soft file tidak dapat diambil dari storage (HTTP '+r.status+').');
+ const bytes=Buffer.from(await r.arrayBuffer());
+ if(bytes.length<16)throw new Error('File soft file kosong atau rusak.');
+ return res.status(200).setHeader('Content-Type',contentType).setHeader('Content-Length',String(bytes.length)).setHeader('Content-Disposition','attachment; filename="'+filename+'"').setHeader('Cache-Control','private, no-store').send(bytes);
+}
 function card(title,desc,url,kind){
  if(!url)return '';
  const icon=kind==='video'?'▶':kind==='gif'?'GIF':'IMG';
- return '<article class="card"><div class="icon">'+icon+'</div><div class="copy"><strong>'+esc(title)+'</strong><span>'+esc(desc)+'</span></div><a class="btn" href="'+esc(url)+'" target="_blank" rel="noopener" download>Save</a></article>';
+ return '<article class="card"><div class="icon">'+icon+'</div><div class="copy"><strong>'+esc(title)+'</strong><span>'+esc(desc)+'</span></div><a class="btn" href="'+esc(url)+'" target="_blank" rel="noopener">Save</a></article>';
 }
 export default async function handler(req,res){
  try{
@@ -45,6 +52,14 @@ export default async function handler(req,res){
   const m=await manifest(sid);
   if(!m.photo_url||!m.gif_url||!m.video_url)return json(res,409,{ok:false,error:'Bundle belum lengkap.'});
   const {base,key}=config();
+  const requested=clean(req.query?.download).toLowerCase();
+  if(requested){
+   if(!['photo','gif','video'].includes(requested))return json(res,400,{ok:false,error:'Jenis download tidak valid.'});
+   if(requested==='photo')return sendDownload(res,await signedDownload(base,key,sid+'/photo.png'),'BoothPro-Final-'+sid+'.png','image/png');
+   if(requested==='gif')return sendDownload(res,await signedDownload(base,key,sid+'/animation.gif'),'BoothPro-Boomerang-'+sid+'.gif','image/gif');
+   try{return await sendDownload(res,await signedDownload(base,key,sid+'/live-session.mp4'),'BoothPro-Live-Session-'+sid+'.mp4','video/mp4');}
+   catch(e){return await sendDownload(res,await signedDownload(base,key,sid+'/live-session.webm'),'BoothPro-Live-Session-'+sid+'.webm','video/webm');}
+  }
   const [photo,gif,video]=await Promise.all([
    signedDownload(base,key,sid+'/photo.png'),
    signedDownload(base,key,sid+'/animation.gif'),
@@ -67,11 +82,11 @@ h1{font-size:clamp(28px,7vw,48px);line-height:1.05;margin:12px 0}.sub{color:#a1a
 <div class="brand">BOOTHPRO</div><h1>Soft File Anda Siap.</h1>
 <p class="sub">Satu link berisi <b>3 file</b> dari sesi foto Anda: foto final yang sama seperti hasil print, GIF, dan Live Video Session.</p>
 <section class="bundle">
-${card('Foto Final','Hasil akhir + frame + filter, sama seperti print.',photo,'photo')}
-${card('GIF','Animasi dari sesi foto.',gif,'gif')}
-${card('Live Video Session','Video sesi / momen terbaik yang direkam.',video,'video')}
+${card('Foto Final','Hasil akhir + frame + filter, sama seperti print.', '?', 'photo').replace('href="?"','href="/api/softfile?sessionId='+encodeURIComponent(sid)+'&download=photo"')}
+${card('GIF','Animasi dari sesi foto.', '?', 'gif').replace('href="?"','href="/api/softfile?sessionId='+encodeURIComponent(sid)+'&download=gif"')}
+${card('Live Video Session','Video sesi / momen terbaik yang direkam.', '?', 'video').replace('href="?"','href="/api/softfile?sessionId='+encodeURIComponent(sid)+'&download=video"')}
 </section>
-<p class="note">ID Sesi: ${esc(sid)}<br>Link file aman dan berlaku sementara.</p>
+<p class="note">ID Sesi: ${esc(sid)}<br>File diunduh melalui BoothPro agar format dan nama file tetap benar.</p>
 </main></body></html>`);
  }catch(e){
   const message=e?.message||String(e);

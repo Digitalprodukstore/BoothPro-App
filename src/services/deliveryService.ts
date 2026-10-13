@@ -22,21 +22,52 @@ async function uploadMediaBlob(sessionId: string, media: 'photo' | 'gif' | 'vide
   }
 }
 
+async function normalizePhotoPng(blob: Blob): Promise<Blob> {
+  const bytes = new Uint8Array(await blob.slice(0, 8).arrayBuffer());
+  const isPng = blob.type === 'image/png' && bytes.length === 8 &&
+    bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 &&
+    bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a;
+  if (isPng) return blob;
+  if (typeof createImageBitmap !== 'function') {
+    throw new Error('Foto Final bukan PNG yang valid dan browser ini tidak mendukung konversi PNG.');
+  }
+  const bitmap = await createImageBitmap(blob);
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Tidak dapat menyiapkan konversi Foto Final ke PNG.');
+    context.drawImage(bitmap, 0, 0);
+    const png = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((value) => value ? resolve(value) : reject(new Error('Konversi Foto Final ke PNG gagal.')), 'image/png');
+    });
+    if (png.size < 16) throw new Error('Hasil konversi Foto Final kosong.');
+    return png;
+  } finally {
+    bitmap.close();
+  }
+}
+
 async function ensureCloudMediaUploaded(session: SessionData): Promise<void> {
   const sid = session.sessionId;
   let photoBlob: Blob;
-  try { photoBlob = await (await fetch(session.finalPhotoDataUrl)).blob(); }
-  catch { throw new Error('Foto Final tidak dapat dibaca untuk diunggah.'); }
+  try {
+    const rawPhoto = await (await fetch(session.finalPhotoDataUrl)).blob();
+    photoBlob = await normalizePhotoPng(rawPhoto);
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'Foto Final tidak dapat dibaca untuk diunggah.');
+  }
   let gifBlob: Blob;
   try {
     if (!session.gifBlobUrl) throw new Error('missing');
     gifBlob = await (await fetch(session.gifBlobUrl)).blob();
-  } catch { throw new Error('GIF belum siap. Kembali tunggu GIF selesai dibuat, lalu coba lagi.'); }
+  } catch (error) { throw new Error(error instanceof Error ? error.message : 'GIF belum siap. Kembali tunggu GIF selesai dibuat, lalu coba lagi.'); }
   let videoBlob: Blob;
   try {
     if (!session.videoBlobUrl) throw new Error('missing');
     videoBlob = await (await fetch(session.videoBlobUrl)).blob();
-  } catch { throw new Error('Video sesi tidak tersedia pada perangkat ini.'); }
+  } catch (error) { throw new Error(error instanceof Error ? error.message : 'Video sesi tidak tersedia pada perangkat ini.'); }
   if (!photoBlob.type.startsWith('image/')) throw new Error('Format Foto Final tidak valid.');
   if (gifBlob.size < 100) throw new Error('GIF belum selesai dibuat atau filenya tidak valid.');
   const mime = session.videoMimeType || videoBlob.type || 'video/webm';
@@ -219,8 +250,8 @@ Simpan link ini baik-baik ya! Sampai jumpa di sesi berikutnya! ✨`;
         return { success: false, message: data?.error || `Pengiriman WhatsApp gagal (HTTP ${response.status}).`, directUrl };
       }
       return { success: true, message: data.message || 'Permintaan pengiriman WhatsApp diterima oleh penyedia.', directUrl };
-    } catch {
-      return { success: false, message: 'Tidak dapat menghubungi layanan pengiriman WhatsApp. Periksa koneksi lalu coba lagi.', directUrl };
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : 'Pengiriman WhatsApp gagal karena kesalahan yang tidak diketahui.', directUrl };
     }
   }
 
@@ -247,8 +278,8 @@ Simpan link ini baik-baik ya! Sampai jumpa di sesi berikutnya! ✨`;
         return { success: false, message: data?.error || `Pengiriman email gagal (HTTP ${response.status}).` };
       }
       return { success: true, message: data.message || 'Permintaan pengiriman email diterima oleh penyedia.' };
-    } catch {
-      return { success: false, message: 'Tidak dapat menghubungi layanan email. Periksa koneksi lalu coba lagi.' };
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : 'Pengiriman email gagal karena kesalahan yang tidak diketahui.' };
     }
   }
 }

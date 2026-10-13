@@ -85,14 +85,39 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
   };
 
   // Download individual media
-  const handleDownloadSingle = (url: string, filename: string) => {
+  const handleDownloadSingle = async (url: string, filename: string) => {
     audioEffects.playClick();
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      if (!url) throw new Error('File belum tersedia. Tunggu sampai media selesai dibuat.');
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`File gagal dibaca (HTTP ${response.status}).`);
+      const blob = await response.blob();
+      if (blob.size < 16) throw new Error('File kosong atau belum selesai difinalisasi.');
+      const mime = (blob.type || '').toLowerCase();
+      let safeName = filename;
+      const dot = filename.lastIndexOf('.');
+      const stem = dot > -1 ? filename.slice(0, dot) : filename;
+      if (mime.includes('image/png')) safeName = stem + '.png';
+      else if (mime.includes('image/jpeg')) safeName = stem + '.jpg';
+      else if (mime.includes('image/gif')) safeName = stem + '.gif';
+      else if (mime.includes('video/mp4')) safeName = stem + '.mp4';
+      else if (mime.includes('video/webm')) safeName = stem + '.webm';
+      else if (mime.includes('application/zip')) safeName = stem + '.zip';
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = safeName;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // Safari/iOS may need time to start consuming the Blob URL.
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Download gagal.';
+      console.error('[BoothPro Soft File] Download gagal:', error);
+      window.alert(message);
+    }
   };
 
   // Send to WhatsApp

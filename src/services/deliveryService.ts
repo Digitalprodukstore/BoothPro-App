@@ -50,7 +50,7 @@ async function normalizePhotoPng(blob: Blob): Promise<Blob> {
 }
 
 /** Detect the container from recorded bytes, not only a possibly stale session MIME label. */
-async function detectVideoMime(blob: Blob, preferredMime = ''): Promise<'video/mp4' | 'video/webm'> {
+async function detectVideoMime(blob: Blob): Promise<'video/mp4' | 'video/webm'> {
   if (!blob || blob.size < 128) throw new Error('Video sesi kosong atau belum selesai difinalisasi.');
   const bytes = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
   const isWebM = bytes.length >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
@@ -86,7 +86,7 @@ async function ensureCloudMediaUploaded(session: SessionData): Promise<void> {
   if (gifBlob.size < 100 || (gifHead !== 'GIF89a' && gifHead !== 'GIF87a') || gifTail !== 0x3b) {
     throw new Error('GIF belum valid atau belum selesai dibuat. GIF tidak diunggah agar file pelanggan tidak rusak.');
   }
-  const mime = await detectVideoMime(videoBlob, session.videoMimeType);
+  const mime = await detectVideoMime(videoBlob);
   await uploadMediaBlob(sid, 'photo', photoBlob, 'image/png');
   await uploadMediaBlob(sid, 'gif', gifBlob, 'image/gif');
   await uploadMediaBlob(sid, 'video', videoBlob, mime);
@@ -167,7 +167,7 @@ export class DeliveryService {
     const videoBytes = new Uint8Array(await videoResponse.arrayBuffer());
     if (videoBytes.length < 128) throw new Error('ZIP dibatalkan: video sesi kosong atau belum selesai difinalisasi.');
     const videoBlobForType = new Blob([videoBytes], { type: videoResponse.headers.get('content-type') || '' });
-    const detectedVideoMime = await detectVideoMime(videoBlobForType, session.videoMimeType);
+    const detectedVideoMime = await detectVideoMime(videoBlobForType);
     const extension = detectedVideoMime === 'video/mp4' ? 'mp4' : 'webm';
     const videoName = `03_Live_Session_Video_${session.sessionId}.${extension}`;
     folder.file(videoName, videoBytes, { binary: true });

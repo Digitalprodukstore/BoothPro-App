@@ -33,12 +33,30 @@ async function signedDownload(base,key,path){
  if(!raw)throw new Error('Supabase tidak mengembalikan signed download URL.');
  if(/^https?:\/\//i.test(raw))return raw;if(raw.startsWith('/storage/v1/'))return base+raw;if(raw.startsWith('/object/'))return base+'/storage/v1'+raw;if(raw.startsWith('object/'))return base+'/storage/v1/'+raw;throw new Error('Format signed download URL Supabase tidak valid.');
 }
-async function sendDownload(res,url,filename,contentType){
+function detectFileType(bytes,expected){
+ if(expected==='image/png'){
+  return bytes.length>=8&&bytes[0]===0x89&&bytes[1]===0x50&&bytes[2]===0x4e&&bytes[3]===0x47&&bytes[4]===0x0d&&bytes[5]===0x0a&&bytes[6]===0x1a&&bytes[7]===0x0a?{type:'image/png',ext:'png'}:null;
+ }
+ if(expected==='image/gif'){
+  const head=bytes.subarray(0,6).toString('ascii');
+  return bytes.length>=100&&(head==='GIF87a'||head==='GIF89a')&&bytes[bytes.length-1]===0x3b?{type:'image/gif',ext:'gif'}:null;
+ }
+ if(expected==='video/*'){
+  if(bytes.length>=4&&bytes[0]===0x1a&&bytes[1]===0x45&&bytes[2]===0xdf&&bytes[3]===0xa3)return {type:'video/webm',ext:'webm'};
+  if(bytes.length>=12&&bytes.subarray(4,8).toString('ascii')==='ftyp')return {type:'video/mp4',ext:'mp4'};
+  return null;
+ }
+ return null;
+}
+async function sendDownload(res,url,filename,expectedType){
  const r=await fetch(url,{cache:'no-store'});
  if(!r.ok)throw new Error('File soft file tidak dapat diambil dari storage (HTTP '+r.status+').');
  const bytes=Buffer.from(await r.arrayBuffer());
  if(bytes.length<16)throw new Error('File soft file kosong atau rusak.');
- return res.status(200).setHeader('Content-Type',contentType).setHeader('Content-Length',String(bytes.length)).setHeader('Content-Disposition','attachment; filename="'+filename+'"').setHeader('Cache-Control','private, no-store').send(bytes);
+ const actual=detectFileType(bytes,expectedType);
+ if(!actual)throw new Error(expectedType==='video/*'?'Format video tidak dikenali. File tidak dikirim dengan ekstensi yang berpotensi salah.':'Isi file tidak cocok dengan format '+expectedType+'. File ditolak agar tidak terunduh sebagai file rusak.');
+ if(expectedType==='video/*')filename=filename.replace(/\\.(mp4|webm)$/i,'.'+actual.ext);
+ return res.status(200).setHeader('Content-Type',actual.type).setHeader('X-Content-Type-Options','nosniff').setHeader('Content-Length',String(bytes.length)).setHeader('Content-Disposition','attachment; filename="'+filename+'"').setHeader('Cache-Control','private, no-store').send(bytes);
 }
 function card(title,desc,url,kind){
  if(!url)return '';
@@ -49,6 +67,7 @@ export default async function handler(req,res){
  try{
   const sid=clean(req.query?.sessionId);
   if(!sid)return json(res,400,{ok:false,error:'Session ID wajib diisi.'});
+  if(!/^[a-zA-Z0-9_-]{8,100}$/.test(sid))return json(res,400,{ok:false,error:'Session ID tidak valid.'});
   const m=await manifest(sid);
   if(!m.photo_url||!m.gif_url||!m.video_url)return json(res,409,{ok:false,error:'Bundle belum lengkap.'});
   const {base,key}=config();
@@ -57,8 +76,8 @@ export default async function handler(req,res){
    if(!['photo','gif','video'].includes(requested))return json(res,400,{ok:false,error:'Jenis download tidak valid.'});
    if(requested==='photo')return sendDownload(res,await signedDownload(base,key,sid+'/photo.png'),'BoothPro-Final-'+sid+'.png','image/png');
    if(requested==='gif')return sendDownload(res,await signedDownload(base,key,sid+'/animation.gif'),'BoothPro-Boomerang-'+sid+'.gif','image/gif');
-   try{return await sendDownload(res,await signedDownload(base,key,sid+'/live-session.mp4'),'BoothPro-Live-Session-'+sid+'.mp4','video/mp4');}
-   catch(e){return await sendDownload(res,await signedDownload(base,key,sid+'/live-session.webm'),'BoothPro-Live-Session-'+sid+'.webm','video/webm');}
+   try{return await sendDownload(res,await signedDownload(base,key,sid+'/live-session.mp4'),'BoothPro-Live-Session-'+sid+'.mp4','video/*');}
+   catch(e){return await sendDownload(res,await signedDownload(base,key,sid+'/live-session.webm'),'BoothPro-Live-Session-'+sid+'.webm','video/*');}
   }
   const [photo,gif,video]=await Promise.all([
    signedDownload(base,key,sid+'/photo.png'),

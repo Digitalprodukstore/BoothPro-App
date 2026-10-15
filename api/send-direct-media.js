@@ -28,7 +28,7 @@ async function sendWhatsApp(target,name,s,bundle){const p=phone(target);if(!/^62
 async function sendBrevo(to,name,s,bundle){
  const key=env('BREVO_API_KEY'),fromSetting=env('BREVO_FROM_EMAIL');
  const from=(fromSetting.match(/<([^<>]+)>/)||[])[1]||fromSetting;
- if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(from))throw new Error('BREVO_FROM_EMAIL harus berupa alamat email valid, misalnya noreply@domain.com.');
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from))throw new Error('BREVO_FROM_EMAIL harus berupa alamat email valid, misalnya noreply@domain.com.');
  const videoPath=s.video_mp4_url?s.session_id+'/live-session.mp4':s.session_id+'/live-session.webm';
  const [photo,gif,video]=await Promise.all([signedMediaUrl(s.session_id+'/photo.png'),signedMediaUrl(s.session_id+'/animation.gif'),signedMediaUrl(videoPath)]);
  const videoName=s.video_mp4_url?'BoothPro-Live-Session.mp4':'BoothPro-Live-Session.webm';

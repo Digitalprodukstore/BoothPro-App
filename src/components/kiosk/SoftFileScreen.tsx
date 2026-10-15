@@ -20,7 +20,8 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
   const [phone, setPhone] = useState<string>(session.customerPhone || '');
   const [email, setEmail] = useState<string>(session.customerEmail || '');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
-  const [isZipping, setIsZipping] = useState<boolean>(false);\n  const [zipError, setZipError] = useState<string>('');
+  const [isZipping, setIsZipping] = useState<boolean>(false);
+  const [zipError, setZipError] = useState<string>('');
 
   const [waSending, setWaSending] = useState<boolean>(false);
   const [waResult, setWaResult] = useState<{ message: string; directUrl?: string; success?: boolean } | null>(null);

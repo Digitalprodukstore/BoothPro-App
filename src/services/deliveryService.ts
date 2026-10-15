@@ -50,15 +50,22 @@ async function normalizePhotoPng(blob: Blob): Promise<Blob> {
 }
 
 /** Detect the container from recorded bytes, not only a possibly stale session MIME label. */
-async function detectVideoMime(blob: Blob): Promise<'video/mp4' | 'video/webm'> {
+async function detectVideoMime(blob: Blob, recordedMime = ''): Promise<'video/mp4' | 'video/webm'> {
   if (!blob || blob.size < 128) throw new Error('Video sesi kosong atau belum selesai difinalisasi.');
-  const bytes = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
+  // Inspect the actual container header first. Some browsers expose a generic or codec-qualified Blob MIME.
+  const bytes = new Uint8Array(await blob.slice(0, 64).arrayBuffer());
   const isWebM = bytes.length >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
-  const isMp4 = bytes.length >= 8 && String.fromCharCode(...bytes.slice(4, 8)) === 'ftyp';
+  const headerText = String.fromCharCode(...bytes);
+  const isMp4 = headerText.includes('ftyp');
   if (isWebM) return 'video/webm';
   if (isMp4) return 'video/mp4';
-  // Do not trust Blob.type or a saved session MIME label when the bytes do not identify a known container.
-  throw new Error('Format video sesi tidak dikenali dari isi file. Video tidak diunggah agar tidak tersimpan dengan ekstensi yang salah.');
+  // MediaRecorder can return codec-qualified MIME labels; only use a recognized video container hint as fallback.
+  // The preview is already played by the browser, so accept its explicit MediaRecorder MIME when the signature
+  // is not exposed at the beginning of the Blob (notably on some iOS/browser implementations).
+  const mimeHint = (blob.type || recordedMime).toLowerCase();
+  if (mimeHint.includes('video/webm') || mimeHint.includes('matroska')) return 'video/webm';
+  if (mimeHint.includes('video/mp4') || mimeHint.includes('video/quicktime')) return 'video/mp4';
+  throw new Error('Format video sesi tidak dikenali. Periksa ulang rekaman video lalu coba kirim kembali.');
 }
 
 async function ensureCloudMediaUploaded(session: SessionData): Promise<void> {
@@ -86,7 +93,7 @@ async function ensureCloudMediaUploaded(session: SessionData): Promise<void> {
   if (gifBlob.size < 100 || (gifHead !== 'GIF89a' && gifHead !== 'GIF87a') || gifTail !== 0x3b) {
     throw new Error('GIF belum valid atau belum selesai dibuat. GIF tidak diunggah agar file pelanggan tidak rusak.');
   }
-  const mime = await detectVideoMime(videoBlob);
+  const mime = await detectVideoMime(videoBlob, session.videoMimeType);
   await uploadMediaBlob(sid, 'photo', photoBlob, 'image/png');
   await uploadMediaBlob(sid, 'gif', gifBlob, 'image/gif');
   await uploadMediaBlob(sid, 'video', videoBlob, mime);
@@ -167,7 +174,7 @@ export class DeliveryService {
     const videoBytes = new Uint8Array(await videoResponse.arrayBuffer());
     if (videoBytes.length < 128) throw new Error('ZIP dibatalkan: video sesi kosong atau belum selesai difinalisasi.');
     const videoBlobForType = new Blob([videoBytes], { type: videoResponse.headers.get('content-type') || '' });
-    const detectedVideoMime = await detectVideoMime(videoBlobForType);
+    const detectedVideoMime = await detectVideoMime(videoBlobForType, session.videoMimeType);
     const extension = detectedVideoMime === 'video/mp4' ? 'mp4' : 'webm';
     const videoName = `03_Live_Session_Video_${session.sessionId}.${extension}`;
     folder.file(videoName, videoBytes, { binary: true });

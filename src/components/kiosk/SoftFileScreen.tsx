@@ -20,7 +20,7 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
   const [phone, setPhone] = useState<string>(session.customerPhone || '');
   const [email, setEmail] = useState<string>(session.customerEmail || '');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
-  const [isZipping, setIsZipping] = useState<boolean>(false);
+  const [isZipping, setIsZipping] = useState<boolean>(false);\n  const [zipError, setZipError] = useState<string>('');
 
   const [waSending, setWaSending] = useState<boolean>(false);
   const [waResult, setWaResult] = useState<{ message: string; directUrl?: string; success?: boolean } | null>(null);
@@ -64,22 +64,37 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
 
   // Download All as ZIP
   const handleDownloadAllZip = async () => {
+    if (isZipping) return;
     setIsZipping(true);
+    setZipError('');
     audioEffects.playClick();
+    // iOS browsers can block a delayed anchor click after ZIP generation; reserve a tab during the user gesture.
+    const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const reservedWindow = isIOS ? window.open('about:blank', '_blank') : null;
     try {
       const zipBlob = await DeliveryService.createMediaBundleZip(session);
       const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `BoothPro_Bundle_${session.sessionId}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      // iOS Safari can consume Blob downloads asynchronously; keep the URL alive long enough.
-      window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+      if (reservedWindow && !reservedWindow.closed) {
+        reservedWindow.location.href = url;
+      } else {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `BoothPro_Bundle_${session.sessionId}.zip`;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+      // Keep the Blob URL alive while Safari / the browser begins opening or downloading it.
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
       audioEffects.playSuccessChime();
     } catch (err) {
+      if (reservedWindow && !reservedWindow.closed) reservedWindow.close();
+      const message = err instanceof Error ? err.message : 'ZIP gagal dibuat. Silakan coba lagi.';
+      setZipError(message);
       console.error('Failed to create ZIP bundle', err);
+      window.alert(message);
     } finally {
       setIsZipping(false);
     }
@@ -341,6 +356,7 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
             <Download className="w-4 h-4" />
             <span>{isZipping ? 'Mengemas File ZIP...' : 'Unduh Sekaligus (1 ZIP Bundle)'}</span>
           </button>
+          {zipError && <p role="alert" className="text-xs text-rose-300 bg-rose-950/40 border border-rose-800 rounded-xl p-3">{zipError}</p>}
         </div>
 
         {/* Right Side: QR Code & WhatsApp / Email Delivery */}

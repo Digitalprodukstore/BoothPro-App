@@ -4,6 +4,8 @@
  * Solves timeout issues by using an efficient canvas rasterizer and optimized LZW quantizer.
  */
 
+import { GIFEncoder, quantize, applyPalette } from 'gifenc';
+
 interface GifFrameOptions {
   delayMs?: number;
   width?: number;
@@ -91,13 +93,32 @@ export async function generateAnimatedGif(
     frameDataList.push(frameData);
   }
 
-  // Encode frames using compact GIF89a encoder
-  const gifBytes = encodeGif(frameDataList, width, height, Math.round(delayMs / 10));
-  const gifBlob = new Blob([gifBytes as BlobPart], { type: 'image/gif' });
+  // Use a standards-tested GIF encoder rather than the previous hand-written LZW
+  // implementation, which can produce files some browser decoders fail to animate.
+  const combinedPixels = new Uint8Array(frameDataList.reduce((sum, frame) => sum + frame.data.length, 0));
+  let pixelOffset = 0;
+  for (const frame of frameDataList) {
+    combinedPixels.set(frame.data, pixelOffset);
+    pixelOffset += frame.data.length;
+  }
+
+  const palette = quantize(combinedPixels, 256);
+  const gif = GIFEncoder();
+  for (const frame of frameDataList) {
+    const indexedPixels = applyPalette(frame.data, palette);
+    gif.writeFrame(indexedPixels, width, height, {
+      palette,
+      delay: delayMs,
+      repeat: options.repeat ?? 0,
+    });
+  }
+  gif.finish();
+
+  const gifBytes = gif.bytes();
+  const gifBlob = new Blob([gifBytes], { type: 'image/gif' });
   const gifUrl = URL.createObjectURL(gifBlob);
 
   return { blob: gifBlob, url: gifUrl };
-}
 
 /**
  * Compact GIF89a encoder implementing Netscape looping, Graphic Control, and LZW compression

@@ -21,10 +21,14 @@ async function ensureManifest(sid){
  const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(d?.message||d?.hint||'Manifest soft file gagal disiapkan.');return {session_id:sid,...media}
 }
 function bundleUrl(req,sid){const configured=clean(process.env.BOOTHPRO_PUBLIC_ORIGIN)||((req.headers['x-forwarded-proto']||'https')+'://'+(req.headers['x-forwarded-host']||req.headers.host));return configured.replace(/\/$/,'')+'/api/softfile?sessionId='+encodeURIComponent(sid)}
-async function fonnteSend(target,message,url,filename){const token=env('FONNTE_TOKEN');const form=new URLSearchParams();form.set('target',target);form.set('message',message);form.set('countryCode','62');form.set('sequence','true');if(url){form.set('url',url);if(filename)form.set('filename',filename)}const r=await fetch('https://api.fonnte.com/send',{method:'POST',headers:{Authorization:token},body:form});const d=await r.json().catch(()=>null);if(!r.ok||d?.status===false)throw new Error(d?.reason||d?.message||'Fonnte gagal mengirim WhatsApp.');return d}
+async function fonnteSend(target,message,url,filename){const token=env('FONNTE_TOKEN');const form=new URLSearchParams();form.set('target',target);form.set('message',message);// target is already normalized to international 62... format; do not
+ // ask Fonnte to prepend a country code a second time.
+form.set('sequence','true');if(url){form.set('url',url);if(filename)form.set('filename',filename)}const r=await fetch('https://api.fonnte.com/send',{method:'POST',headers:{Authorization:token},body:form});const d=await r.json().catch(()=>null);if(!r.ok||d?.status===false)throw new Error(d?.reason||d?.message||'Fonnte gagal mengirim WhatsApp.');return d}
 async function sendWhatsApp(target,name,s,bundle){const p=phone(target);if(!/^62\d{8,15}$/.test(p))throw new Error('Nomor WhatsApp tidak valid.');const videoPath=s.video_mp4_url?s.session_id+'/live-session.mp4':s.session_id+'/live-session.webm';const [photo,gif,video]=await Promise.all([signedMediaUrl(s.session_id+'/photo.png'),signedMediaUrl(s.session_id+'/animation.gif'),signedMediaUrl(videoPath)]);const videoExt=s.video_mp4_url?'mp4':'webm';await fonnteSend(p,'Halo '+name+', soft file BOOTHPRO Anda sudah siap.\n\n📸 Foto Final:',photo,'BoothPro-Final.png');await fonnteSend(p,'🎞️ GIF Boomerang:',gif,'BoothPro-Boomerang.gif');await fonnteSend(p,'🎥 Live Session Video:',video,'BoothPro-Live-Session.'+videoExt);await fonnteSend(p,'✨ Bundle lengkap 3 media tanpa login:\n'+bundle,null);return {provider:'fonnte',directPhoto:true,directGif:true,directVideo:true,videoFormat:videoExt,bundleLink:true}}
 async function sendBrevo(to,name,s,bundle){
- const key=env('BREVO_API_KEY'),from=env('BREVO_FROM_EMAIL');
+ const key=env('BREVO_API_KEY'),fromSetting=env('BREVO_FROM_EMAIL');
+ const from=(fromSetting.match(/<([^<>]+)>/)||[])[1]||fromSetting;
+ if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(from))throw new Error('BREVO_FROM_EMAIL harus berupa alamat email valid, misalnya noreply@domain.com.');
  const videoPath=s.video_mp4_url?s.session_id+'/live-session.mp4':s.session_id+'/live-session.webm';
  const [photo,gif,video]=await Promise.all([signedMediaUrl(s.session_id+'/photo.png'),signedMediaUrl(s.session_id+'/animation.gif'),signedMediaUrl(videoPath)]);
  const videoName=s.video_mp4_url?'BoothPro-Live-Session.mp4':'BoothPro-Live-Session.webm';

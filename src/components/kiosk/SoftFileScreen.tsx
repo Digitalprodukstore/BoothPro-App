@@ -75,20 +75,30 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
     const reservedWindow = isIOS ? window.open('about:blank', '_blank') : null;
     try {
       const zipBlob = await DeliveryService.createMediaBundleZip(session);
-      const url = URL.createObjectURL(zipBlob);
-      if (reservedWindow && !reservedWindow.closed) {
-        reservedWindow.location.href = url;
+      const fileName = `BoothPro_Bundle_${session.sessionId}.zip`;
+      const zipFile = new File([zipBlob], fileName, { type: 'application/zip' });
+      // On iOS, hand the archive to the native share sheet / Files app. Navigating a tab
+      // directly to a Blob URL makes Safari try to preview the ZIP and may show
+      // "jenis file tidak didukung" instead of saving it.
+      const canShareFile = typeof navigator.share === 'function' &&
+        typeof navigator.canShare === 'function' && navigator.canShare({ files: [zipFile] });
+      if (isIOS && canShareFile) {
+        if (reservedWindow && !reservedWindow.closed) reservedWindow.close();
+        await navigator.share({ files: [zipFile], title: 'BoothPro Soft File', text: 'Simpan bundle foto BoothPro Anda.' });
       } else {
+        if (reservedWindow && !reservedWindow.closed) reservedWindow.close();
+        const url = URL.createObjectURL(zipBlob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `BoothPro_Bundle_${session.sessionId}.zip`;
+        a.download = fileName;
+        a.type = 'application/zip';
         a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
         a.remove();
+        // Keep the Blob URL alive while Safari / the browser begins consuming it.
+        window.setTimeout(() => URL.revokeObjectURL(url), 60000);
       }
-      // Keep the Blob URL alive while Safari / the browser begins opening or downloading it.
-      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
       audioEffects.playSuccessChime();
     } catch (err) {
       if (reservedWindow && !reservedWindow.closed) reservedWindow.close();

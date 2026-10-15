@@ -33,7 +33,7 @@ async function signedDownload(base,key,path){
  if(!raw)throw new Error('Supabase tidak mengembalikan signed download URL.');
  if(/^https?:\/\//i.test(raw))return raw;if(raw.startsWith('/storage/v1/'))return base+raw;if(raw.startsWith('/object/'))return base+'/storage/v1'+raw;if(raw.startsWith('object/'))return base+'/storage/v1/'+raw;throw new Error('Format signed download URL Supabase tidak valid.');
 }
-function detectFileType(bytes,expected){
+function detectFileType(bytes,expected,contentType=''){
  if(expected==='image/png'){
   return bytes.length>=8&&bytes[0]===0x89&&bytes[1]===0x50&&bytes[2]===0x4e&&bytes[3]===0x47&&bytes[4]===0x0d&&bytes[5]===0x0a&&bytes[6]===0x1a&&bytes[7]===0x0a?{type:'image/png',ext:'png'}:null;
  }
@@ -44,6 +44,9 @@ function detectFileType(bytes,expected){
  if(expected==='video/*'){
   if(bytes.length>=4&&bytes[0]===0x1a&&bytes[1]===0x45&&bytes[2]===0xdf&&bytes[3]===0xa3)return {type:'video/webm',ext:'webm'};
   if(bytes.length>=12&&bytes.subarray(4,8).toString('ascii')==='ftyp')return {type:'video/mp4',ext:'mp4'};
+  const storedType=String(contentType||'').toLowerCase();
+  if(storedType.includes('video/webm')||storedType.includes('matroska'))return {type:'video/webm',ext:'webm'};
+  if(storedType.includes('video/mp4')||storedType.includes('video/quicktime'))return {type:'video/mp4',ext:'mp4'};
   return null;
  }
  return null;
@@ -53,7 +56,7 @@ async function sendDownload(res,url,filename,expectedType){
  if(!r.ok)throw new Error('File soft file tidak dapat diambil dari storage (HTTP '+r.status+').');
  const bytes=Buffer.from(await r.arrayBuffer());
  if(bytes.length<16)throw new Error('File soft file kosong atau rusak.');
- const actual=detectFileType(bytes,expectedType);
+ const actual=detectFileType(bytes,expectedType,r.headers.get('content-type')||'');
  if(!actual)throw new Error(expectedType==='video/*'?'Format video tidak dikenali. File tidak dikirim dengan ekstensi yang berpotensi salah.':'Isi file tidak cocok dengan format '+expectedType+'. File ditolak agar tidak terunduh sebagai file rusak.');
  if(expectedType==='video/*')filename=filename.replace(/\\.(mp4|webm)$/i,'.'+actual.ext);
  return res.status(200).setHeader('Content-Type',actual.type).setHeader('X-Content-Type-Options','nosniff').setHeader('Content-Length',String(bytes.length)).setHeader('Content-Disposition','attachment; filename="'+filename+'"').setHeader('Cache-Control','private, no-store').send(bytes);

@@ -24,19 +24,22 @@ function bundleUrl(req,sid){const configured=clean(process.env.BOOTHPRO_PUBLIC_O
 async function fonnteSend(target,message,url,filename){const token=env('FONNTE_TOKEN');const form=new URLSearchParams();form.set('target',target);form.set('message',message);// target is already normalized to international 62... format; do not
  // ask Fonnte to prepend a country code a second time.
 form.set('sequence','true');if(url){form.set('url',url);if(filename)form.set('filename',filename)}const r=await fetch('https://api.fonnte.com/send',{method:'POST',headers:{Authorization:token},body:form});const d=await r.json().catch(()=>null);if(!r.ok||d?.status===false)throw new Error(d?.reason||d?.message||'Fonnte gagal mengirim WhatsApp.');return d}
-async function sendWhatsApp(target,name,s,bundle){const p=phone(target);if(!/^62\d{8,15}$/.test(p))throw new Error('Nomor WhatsApp tidak valid.');const videoPath=s.video_mp4_url?s.session_id+'/live-session.mp4':s.session_id+'/live-session.webm';const [photo,gif,video]=await Promise.all([signedMediaUrl(s.session_id+'/photo.png'),signedMediaUrl(s.session_id+'/animation.gif'),signedMediaUrl(videoPath)]);const videoExt=s.video_mp4_url?'mp4':'webm';await fonnteSend(p,'Halo '+name+', soft file BOOTHPRO Anda sudah siap.\n\n📸 Foto Final:',photo,'BoothPro-Final.png');await fonnteSend(p,'🎞️ GIF Boomerang:',gif,'BoothPro-Boomerang.gif');await fonnteSend(p,'🎥 Live Session Video:',video,'BoothPro-Live-Session.'+videoExt);await fonnteSend(p,'✨ Bundle lengkap 3 media tanpa login:\n'+bundle,null);return {provider:'fonnte',directPhoto:true,directGif:true,directVideo:true,videoFormat:videoExt,bundleLink:true}}
+async function sendWhatsApp(target,name,s,bundle){
+ const p=phone(target);
+ if(!/^62\d{8,15}$/.test(p))throw new Error('Nomor WhatsApp tidak valid.');
+ // Send one stable bundle link instead of forcing WhatsApp to accept browser-recorded WebM as a native video attachment.
+ const message='Halo '+name+', soft file BOOTHPRO Anda sudah siap.\n\nBuka satu link ini untuk menyimpan Foto Final, GIF, dan Live Session Video tanpa login:\n'+bundle;
+ await fonnteSend(p,message,null,null);
+ return {provider:'fonnte',bundleLink:true};
+}
 async function sendBrevo(to,name,s,bundle){
  const key=env('BREVO_API_KEY'),fromSetting=env('BREVO_FROM_EMAIL');
  const from=(fromSetting.match(/<([^<>]+)>/)||[])[1]||fromSetting;
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from))throw new Error('BREVO_FROM_EMAIL harus berupa alamat email valid, misalnya noreply@domain.com.');
- const videoPath=s.video_mp4_url?s.session_id+'/live-session.mp4':s.session_id+'/live-session.webm';
- const [photo,gif,video]=await Promise.all([signedMediaUrl(s.session_id+'/photo.png'),signedMediaUrl(s.session_id+'/animation.gif'),signedMediaUrl(videoPath)]);
- const videoName=s.video_mp4_url?'BoothPro-Live-Session.mp4':'BoothPro-Live-Session.webm';
- const attachment=[{url:photo,name:'BoothPro-Final.png'},{url:gif,name:'BoothPro-GIF.gif'},{url:video,name:videoName}];
  const safeName=htmlEscape(name),safeBundle=htmlEscape(bundle);
- const html='<div style="font-family:Arial,sans-serif;line-height:1.6"><h2>BOOTHPRO</h2><p>Halo '+safeName+', soft file sesi foto Anda sudah siap.</p><p>📸 Foto Final, 🎞️ GIF, dan 🎥 Live Session Video terlampir.</p><p>Bundle lengkap: <a href="'+safeBundle+'">Buka &amp; Simpan Semua Soft File</a></p></div>';
- const text='Halo '+name+', soft file BOOTHPRO Anda sudah siap. Foto Final, GIF, dan Live Session Video terlampir. Bundle lengkap: '+bundle;
- const r=await fetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'api-key':key,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({sender:{name:'BOOTHPRO',email:from},to:[{email:to,name}],subject:'BOOTHPRO · Soft File Anda',htmlContent:html,textContent:text,attachment})});
- const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(d?.message||'Brevo gagal mengirim email.');return d
+ const html='<div style="font-family:Arial,sans-serif;line-height:1.6"><h2>BOOTHPRO</h2><p>Halo '+safeName+', soft file sesi foto Anda sudah siap.</p><p>Isi bundle: Foto Final, GIF bergerak, dan Live Session Video.</p><p><a href="'+safeBundle+'">Buka &amp; Simpan Semua Soft File</a></p><p>Link ini dapat dibuka tanpa login BoothPro.</p></div>';
+ const text='Halo '+name+', soft file BOOTHPRO Anda sudah siap.\n\nBuka satu link ini untuk menyimpan Foto Final, GIF, dan Live Session Video tanpa login:\n'+bundle;
+ const r=await fetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'api-key':key,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({sender:{name:'BOOTHPRO',email:from},to:[{email:to,name}],subject:'BOOTHPRO · Soft File Anda',htmlContent:html,textContent:text})});
+ const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(d?.message||d?.code||'Brevo gagal mengirim email.');return d
 }
 export default async function handler(req,res){if(req.method!=='POST')return json(res,405,{ok:false,error:'Method tidak didukung.'});const b=req.body||{},sid=clean(b.sessionId),name=clean(b.customerName)||'Pelanggan',method=clean(b.deliveryMethod).toLowerCase(),target=clean(b.target);if(!sid||!['email','whatsapp'].includes(method)||!target)return json(res,400,{ok:false,error:'sessionId, deliveryMethod, target wajib.'});try{const s=await ensureManifest(sid);const bundle=bundleUrl(req,sid);if(method==='email'){if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target))throw new Error('Email tidak valid.');const result=await sendBrevo(target,name,s,bundle);return json(res,200,{ok:true,sessionId:sid,method,bundleUrl:bundle,messageId:result?.messageId||null,delivery:'attachments'})}const result=await sendWhatsApp(target,name,s,bundle);return json(res,200,{ok:true,sessionId:sid,method,bundleUrl:bundle,delivery:'direct-media-plus-bundle-link',details:result})}catch(e){return json(res,500,{ok:false,error:e?.message||String(e)})}};

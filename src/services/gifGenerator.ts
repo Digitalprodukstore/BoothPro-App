@@ -256,7 +256,10 @@ function lzwEncode(minCodeSize: number, data: Uint8Array, stream: number[]): voi
 
         if (nextCode < 4096) {
           codeTable.set(key, nextCode++);
-          if (nextCode === (1 << codeSize) && codeSize < 12) {
+          // The decoder builds its dictionary one emitted code behind the encoder.
+          // Grow the code width only after crossing the boundary, otherwise
+          // some GIF decoders read subsequent codes at the wrong bit width.
+          if (nextCode > (1 << codeSize) && codeSize < 12) {
             codeSize++;
           }
         } else {

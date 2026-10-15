@@ -1,5 +1,5 @@
 const clean=v=>String(v??'').trim();
-const json=(res,status,b)=>res.status(status).setHeader('Content-Type','application/json').send(JSON.stringify(b));
+const json=(res,status,b)=>res.status(status).setHeader('Content-Type','application/json').setHeader('Cache-Control','no-store').send(JSON.stringify(b));
 module.exports=async function(req,res){
  if(req.method!=='POST')return json(res,405,{ok:false,error:'Method tidak didukung.'});
  try{
@@ -17,21 +17,34 @@ module.exports=async function(req,res){
   const verify=async p=>{const vr=await fetch(base+'/storage/v1/object/info/boothpro-softfiles/'+p.split('/').map(encodeURIComponent).join('/'),{headers:{apikey:key,Authorization:'Bearer '+key},cache:'no-store'});return vr.ok};
   const verified=await Promise.all([verify(photoPath),verify(gifPath),verify(videoPath)]);
   if(verified.some(v=>!v))throw new Error('Supabase belum memastikan ketiga file soft file tersedia.');
-  const lookup=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'},cache:'no-store'});
-  const existing=await lookup.json().catch(()=>null);
-  if(!lookup.ok)throw new Error(existing?.message||existing?.hint||'Gagal membaca manifest soft file.');
-  let saved;
-  if(Array.isArray(existing)&&existing[0]){
-   const mr=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid),{method:'PATCH',headers:{...h,Prefer:'return=representation'},body:JSON.stringify(media)});
-   saved=await mr.json().catch(()=>null);
-   if(!mr.ok)throw new Error(saved?.message||saved?.hint||'Gagal memperbarui manifest 3 soft file.');
-  }else{
-   const mr=await fetch(base+'/rest/v1/boothpro_session_manifest',{method:'POST',headers:{...h,Prefer:'return=representation'},body:JSON.stringify({session_id:sid,...media})});
-   saved=await mr.json().catch(()=>null);
-   if(!mr.ok)throw new Error(saved?.message||saved?.hint||'Gagal membuat manifest 3 soft file.');
-  }
+
+  // Kiosk delivery must not be blocked by the legacy owner-scoped manifest schema.
+  // Storage is already verified above; the manifest is best-effort and idempotent.
+  let manifest=null;
+  let manifestError=null;
+  try{
+   const lookup=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'},cache:'no-store'});
+   const existing=await lookup.json().catch(()=>null);
+   if(lookup.ok&&Array.isArray(existing)&&existing[0]){
+    const mr=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid),{method:'PATCH',headers:{...h,Prefer:'return=representation'},body:JSON.stringify(media)});
+    const saved=await mr.json().catch(()=>null);
+    if(mr.ok)manifest=Array.isArray(saved)?saved[0]:saved;else manifestError=saved?.message||saved?.hint||`Manifest update HTTP ${mr.status}`;
+   }else if(lookup.ok){
+    const mr=await fetch(base+'/rest/v1/boothpro_session_manifest',{method:'POST',headers:{...h,Prefer:'return=representation'},body:JSON.stringify({session_id:sid,...media})});
+    const saved=await mr.json().catch(()=>null);
+    if(mr.ok)manifest=Array.isArray(saved)?saved[0]:saved;
+    else{
+      manifestError=saved?.message||saved?.hint||`Manifest create HTTP ${mr.status}`;
+      // A concurrent request may have created it. Re-read once before giving up.
+      const retry=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id,photo_url,gif_url,video_url&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key,Accept:'application/json'},cache:'no-store'});
+      const retryData=await retry.json().catch(()=>null);
+      if(retry.ok&&Array.isArray(retryData)&&retryData[0])manifest=retryData[0];
+    }
+   }else manifestError=existing?.message||existing?.hint||`Manifest lookup HTTP ${lookup.status}`;
+  }catch(e){manifestError=e?.message||String(e)}
+
   const origin=clean(process.env.BOOTHPRO_PUBLIC_ORIGIN)||((req.headers['x-forwarded-proto']||'https')+'://'+(req.headers['x-forwarded-host']||req.headers.host));
   const bundleUrl=origin.replace(/\/$/,'')+'/api/softfile?sessionId='+encodeURIComponent(sid);
-  return json(res,200,{ok:true,bundleReady:true,bundleUrl,paths:{photo:photoPath,gif:gifPath,video:videoPath},media:{photoUrl:media.photo_url,gifUrl:media.gif_url,videoUrl:media.video_url},manifest:Array.isArray(saved)?saved[0]:saved});
+  return json(res,200,{ok:true,bundleReady:true,bundleUrl,paths:{photo:photoPath,gif:gifPath,video:videoPath},media:{photoUrl:media.photo_url,gifUrl:media.gif_url,videoUrl:media.video_url},manifestReady:!!manifest,manifest,manifestWarning:manifestError||null});
  }catch(e){return json(res,500,{ok:false,error:e.message||String(e)})}
 };

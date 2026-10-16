@@ -4,6 +4,18 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/payment/create",
+      "destination": "/api/payment?route=create"
+    },
+    {
+      "source": "/api/payment/status",
+      "destination": "/api/payment?route=status"
+    },
+    {
+      "source": "/api/payment/notification",
+      "destination": "/api/payment?route=notification"
+    },
+    {
       "source": "/api/config",
       "destination": "/api/session?route=config"
     },

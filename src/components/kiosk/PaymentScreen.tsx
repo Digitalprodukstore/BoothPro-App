@@ -26,6 +26,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
   const [orderId, setOrderId] = useState<string>('');
   const [paymentStatus, setPaymentStatus] = useState<'creating' | 'pending' | 'paid' | 'error'>('creating');
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentAttempt, setPaymentAttempt] = useState<number>(0);
   const [timeLeft, setTimeLeft] = useState<number>(900); // Midtrans default QRIS expiry: 15 minutes
   const [voucherInput, setVoucherInput] = useState<string>('');
   const [voucherError, setVoucherError] = useState<string | null>(null);
@@ -82,7 +83,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
         }
       });
     return () => { cancelled = true; };
-  }, [activeTab, selectedPackage.id, extraPrints, voucherApplied?.code, finalPrice]);
+  }, [activeTab, selectedPackage.id, extraPrints, voucherApplied?.code, finalPrice, paymentAttempt]);
 
   // Confirm payment from Midtrans server-side status; never trust a browser-only success event.
   useEffect(() => {
@@ -335,7 +336,7 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
                   {paymentStatus === 'paid' ? 'Pembayaran terverifikasi oleh Midtrans.' : paymentStatus === 'error' ? (paymentError || 'Gagal membuat transaksi.') : paymentStatus === 'creating' ? 'Menyiapkan transaksi aman...' : 'Menunggu pembayaran terkonfirmasi...'}
                 </p>
                 {paymentError && paymentStatus === 'error' && (
-                  <button type="button" onClick={() => { setActiveTab('voucher'); setTimeout(() => setActiveTab('qris'), 0); }} className="mt-2 text-xs underline text-pink-300">
+                  <button type="button" onClick={() => setPaymentAttempt((attempt) => attempt + 1)} className="mt-2 text-xs underline text-pink-300">
                     Coba buat QRIS lagi
                   </button>
                 )}

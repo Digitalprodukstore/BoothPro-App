@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, QrCode, Ticket, KeyRound, CheckCircle2, AlertCircle, Sparkles, Timer } from 'lucide-react';
-import QRCode from 'qrcode';
 import confetti from 'canvas-confetti';
 import { PackageConfig, PaymentMethod, OperatorConfig } from '../../types';
 import { audioEffects } from '../../services/audioEffects';
@@ -23,8 +22,12 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
   onBack,
 }) => {
   const [activeTab, setActiveTab] = useState<PaymentMethod>('qris');
-  const [qrisQrDataUrl, setQrisQrDataUrl] = useState<string>('');
-  const [timeLeft, setTimeLeft] = useState<number>(120); // 2 minutes countdown for QRIS
+  const [qrisQrUrl, setQrisQrUrl] = useState<string>('');
+  const [orderId, setOrderId] = useState<string>('');
+  const [paymentStatus, setPaymentStatus] = useState<'creating' | 'pending' | 'paid' | 'error'>('creating');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentAttempt, setPaymentAttempt] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState<number>(900); // Midtrans default QRIS expiry: 15 minutes
   const [voucherInput, setVoucherInput] = useState<string>('');
   const [voucherError, setVoucherError] = useState<string | null>(null);
   const [voucherApplied, setVoucherApplied] = useState<{ code: string; discountPercent: number } | null>(null);
@@ -46,18 +49,63 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
     : 0;
   const finalPrice = Math.max(0, totalPrice - discountAmount);
 
-  // Generate QRIS QR code
+  // Create a real, amount-specific QRIS transaction through the BoothPro server.
+  // The Midtrans Server Key never reaches the browser.
   useEffect(() => {
-    const qrisPayload = `00020101021226670014ID.LINKAJA.WWW01189360091100202688849200215${config.qrisNmid}520458145303360540${finalPrice}5802ID5914${config.qrisMerchantName.replace(/ /g, '')}6007JAKARTA62070703A016304`;
-    QRCode.toDataURL(qrisPayload, {
-      width: 280,
-      margin: 2,
-      color: {
-        dark: '#0f172a',
-        light: '#ffffff',
-      },
-    }).then(setQrisQrDataUrl).catch(() => {});
-  }, [finalPrice, config.qrisNmid, config.qrisMerchantName]);
+    if (activeTab !== 'qris' || finalPrice <= 0) return;
+    let cancelled = false;
+    setQrisQrUrl('');
+    setOrderId('');
+    setPaymentStatus('creating');
+    setPaymentError(null);
+    fetch('/api/payment/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        packageId: selectedPackage.id,
+        extraPrints,
+        voucherCode: voucherApplied?.code || '',
+      }),
+    })
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.error || 'Tidak dapat membuat QRIS dinamis.');
+        if (!cancelled) {
+          setQrisQrUrl(data.qrUrl);
+          setOrderId(data.orderId);
+          setPaymentStatus('pending');
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setPaymentStatus('error');
+          setPaymentError(error instanceof Error ? error.message : 'Gagal membuat QRIS.');
+        }
+      });
+    return () => { cancelled = true; };
+  }, [activeTab, selectedPackage.id, extraPrints, voucherApplied?.code, finalPrice, paymentAttempt]);
+
+  // Confirm payment from Midtrans server-side status; never trust a browser-only success event.
+  useEffect(() => {
+    if (activeTab !== 'qris' || !orderId || paymentStatus === 'paid') return;
+    let cancelled = false;
+    const checkStatus = async () => {
+      try {
+        const response = await fetch('/api/payment/status?orderId=' + encodeURIComponent(orderId), { cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) return;
+        if (data.paid && data.orderId === orderId && Number(data.amount) === finalPrice && !cancelled) {
+          setPaymentStatus('paid');
+          setPaymentError(null);
+        }
+      } catch (_) {
+        // Keep the transaction pending; a transient network failure must never unlock the kiosk.
+      }
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 3000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [activeTab, orderId, paymentStatus, finalPrice]);
 
   // Countdown timer for QRIS
   useEffect(() => {
@@ -250,15 +298,16 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
           {activeTab === 'qris' && (
             <div className="flex flex-col items-center text-center">
               <div className="bg-white p-3 rounded-2xl shadow-xl border-4 border-slate-800 relative">
-                {qrisQrDataUrl ? (
+                {qrisQrUrl ? (
                   <img
-                    src={qrisQrDataUrl}
-                    alt="QRIS Pembayaran BoothPro"
+                    src={qrisQrUrl}
+                    alt="QRIS Dinamis Midtrans BoothPro"
                     className="w-48 h-48 sm:w-56 sm:h-56 object-contain"
                   />
                 ) : (
-                  <div className="w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center bg-slate-100 text-slate-500 font-bold">
-                    Membuat QR...
+                  <div className="w-48 h-48 sm:w-56 sm:h-56 flex flex-col items-center justify-center gap-2 bg-slate-100 px-4 text-slate-600 font-bold text-xs">
+                    <QrCode className="w-7 h-7" />
+                    {paymentStatus === 'error' ? 'QRIS tidak tersedia' : 'Membuat QRIS dinamis...'}
                   </div>
                 )}
                 {/* QRIS Logo overlay */}
@@ -279,18 +328,28 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
               </div>
 
               <p className="text-xs text-slate-400 mt-2 max-w-sm">
-                Scan menggunakan BCA, Mandiri, GoPay, OVO, ShopeePay, Dana, atau mobile banking apapun.
+                Scan dengan aplikasi bank atau e-wallet yang mendukung QRIS. Nominal mengikuti total pesanan. BoothPro memeriksa status transaksi langsung ke Midtrans.
               </p>
 
-              {/* Instant Simulation Button for Testing & Fast Operator verification */}
-              <button
-                onClick={() => triggerSuccess('qris', finalPrice)}
-                disabled={isProcessing}
-                className="mt-6 w-full max-w-sm py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95 transition cursor-pointer"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{isProcessing ? 'Verifikasi Berhasil...' : 'Simulasi Bayar / Konfirmasi Otomatis'}</span>
-              </button>
+              <div className="mt-4 w-full max-w-sm text-center">
+                <p className={`text-xs font-semibold ${paymentStatus === 'paid' ? 'text-emerald-400' : paymentStatus === 'error' ? 'text-rose-400' : 'text-amber-300'}`}>
+                  {paymentStatus === 'paid' ? 'Pembayaran terverifikasi oleh Midtrans.' : paymentStatus === 'error' ? (paymentError || 'Gagal membuat transaksi.') : paymentStatus === 'creating' ? 'Menyiapkan transaksi aman...' : 'Menunggu pembayaran terkonfirmasi...'}
+                </p>
+                {paymentError && paymentStatus === 'error' && (
+                  <button type="button" onClick={() => setPaymentAttempt((attempt) => attempt + 1)} className="mt-2 text-xs underline text-pink-300">
+                    Coba buat QRIS lagi
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => { if (paymentStatus === 'paid') triggerSuccess('qris', finalPrice); }}
+                  disabled={paymentStatus !== 'paid' || isProcessing}
+                  className="mt-4 w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95 transition"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{isProcessing ? 'Memproses...' : 'SAYA SUDAH BAYAR'}</span>
+                </button>
+              </div>
             </div>
           )}
 

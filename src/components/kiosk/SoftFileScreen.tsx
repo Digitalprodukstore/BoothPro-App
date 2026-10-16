@@ -6,6 +6,8 @@ import { DeliveryService } from '../../services/deliveryService';
 import { storageService } from '../../services/storageService';
 import { audioEffects } from '../../services/audioEffects';
 
+const WHATSAPP_DELIVERY_ENABLED = false;
+
 interface SoftFileScreenProps {
   session: SessionData;
   config: OperatorConfig;
@@ -20,6 +22,9 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
   const [phone, setPhone] = useState<string>(session.customerPhone || '');
   const [email, setEmail] = useState<string>(session.customerEmail || '');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+  const [bundleStatus, setBundleStatus] = useState<'uploading' | 'ready' | 'error'>('uploading');
+  const [bundleError, setBundleError] = useState<string>('');
+  const [bundleRetry, setBundleRetry] = useState<number>(0);
   const [isZipping, setIsZipping] = useState<boolean>(false);
   const [zipError, setZipError] = useState<string>('');
 
@@ -34,9 +39,29 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
 
   const publicUrl = DeliveryService.getPublicSoftfileUrl(session.sessionId);
 
-  // Generate QR code for phone scan & celebratory confetti
+  // Upload and verify all three files before presenting the QR as ready.
   useEffect(() => {
-    DeliveryService.generateSoftfileQrCode(publicUrl).then(setQrCodeDataUrl);
+    let cancelled = false;
+    setBundleStatus('uploading');
+    setBundleError('');
+    setQrCodeDataUrl('');
+
+    (async () => {
+      try {
+        await DeliveryService.publishSoftfileBundle(session);
+        const qr = await DeliveryService.generateSoftfileQrCode(publicUrl);
+        if (!qr) throw new Error('QR Code gagal dibuat. Silakan coba lagi.');
+        if (!cancelled) {
+          setQrCodeDataUrl(qr);
+          setBundleStatus('ready');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setBundleStatus('error');
+          setBundleError(error instanceof Error ? error.message : 'Soft file gagal disiapkan. Silakan coba lagi.');
+        }
+      }
+    })();
 
     try {
       confetti({
@@ -45,7 +70,9 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
         origin: { y: 0.5 },
       });
     } catch (e) {}
-  }, [publicUrl]);
+
+    return () => { cancelled = true; };
+  }, [publicUrl, session, bundleRetry]);
 
   // Auto-reset countdown
   useEffect(() => {
@@ -375,11 +402,12 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
           {/* Scan QR on Phone Card */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-xl flex items-center gap-4">
             <div className="bg-white p-2 rounded-2xl shrink-0 shadow-md">
-              {qrCodeDataUrl ? (
+              {bundleStatus === 'ready' && qrCodeDataUrl ? (
                 <img src={qrCodeDataUrl} alt="Scan QR" className="w-24 h-24 object-contain" />
               ) : (
-                <div className="w-24 h-24 flex items-center justify-center text-slate-400 text-[10px]">
-                  Membuat QR...
+                <div className="w-24 h-24 flex flex-col items-center justify-center gap-2 text-slate-400 text-[10px] text-center">
+                  {bundleStatus === 'uploading' ? <RefreshCw className="w-5 h-5 animate-spin" /> : <AlertCircle className="w-5 h-5 text-rose-400" />}
+                  <span>{bundleStatus === 'uploading' ? 'Menyiapkan...' : 'QR belum siap'}</span>
                 </div>
               )}
             </div>
@@ -390,17 +418,33 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
               </span>
               <h4 className="font-black text-white text-base">Buka Langsung di Ponsel</h4>
               <p className="text-xs text-slate-400 mt-1">
-                Arahkan kamera HP ke QR Code ini untuk membuka bundle tanpa perlu login.
+                {bundleStatus === 'ready'
+                  ? 'Arahkan kamera HP ke QR Code untuk membuka galeri dan mengunduh Foto Final, GIF, serta video tanpa login.'
+                  : bundleStatus === 'uploading'
+                    ? 'Mengunggah dan memverifikasi Foto Final, GIF, serta video ke cloud. QR akan aktif setelah selesai.'
+                    : 'Soft file belum siap dipindai. Periksa koneksi internet lalu coba lagi.'}
               </p>
+              {bundleStatus === 'error' && (
+                <div className="mt-2">
+                  <p role="alert" className="text-[11px] text-rose-300 mb-2">{bundleError}</p>
+                  <button
+                    type="button"
+                    onClick={() => setBundleRetry((value) => value + 1)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-950/50 border border-rose-800 text-rose-200 text-xs font-bold"
+                  >
+                    <RefreshCw className="w-3 h-3" /> Coba lagi
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Delivery Forms: WhatsApp & Email */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4">
-            <h4 className="font-bold text-white text-sm">Kirim Otomatis ke WhatsApp / Email</h4>
+            <h4 className="font-bold text-white text-sm">Kirim Tautan Galeri via Email (Opsional)</h4>
 
-            {/* WhatsApp Form */}
-            <form onSubmit={handleSendWhatsApp} className="space-y-2">
+            {WHATSAPP_DELIVERY_ENABLED && (
+              <form onSubmit={handleSendWhatsApp} className="space-y-2">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Phone className="w-3 h-3 text-emerald-400" />
                 <span>Nomor WhatsApp Pelanggan</span>
@@ -439,9 +483,10 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
                   )}
                 </div>
               )}
-            </form>
+              </form>
+            )}
 
-            <div className="h-px bg-slate-800/80 my-1" />
+            {WHATSAPP_DELIVERY_ENABLED && <div className="h-px bg-slate-800/80 my-1" />}
 
             {/* Email Form */}
             <form onSubmit={handleSendEmail} className="space-y-2">
@@ -460,7 +505,7 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
                 />
                 <button
                   type="submit"
-                  disabled={emailSending || !email}
+                  disabled={bundleStatus !== 'ready' || emailSending || !email}
                   className="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-500 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />

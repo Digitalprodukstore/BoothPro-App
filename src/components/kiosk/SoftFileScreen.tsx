@@ -32,6 +32,7 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
   const [waResult, setWaResult] = useState<{ message: string; directUrl?: string; success?: boolean } | null>(null);
 
   const [emailSending, setEmailSending] = useState<boolean>(false);
+  const [pendingEmail, setPendingEmail] = useState<boolean>(false);
   const [emailResult, setEmailResult] = useState<string | null>(null);
   const [emailResultSuccess, setEmailResultSuccess] = useState<boolean>(false);
 
@@ -39,22 +40,22 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
 
   const publicUrl = DeliveryService.getPublicSoftfileUrl(session.sessionId);
 
-  // Upload and verify all three files before presenting the QR as ready.
+  // Render the QR immediately; cloud publishing runs independently in the background.
   useEffect(() => {
     let cancelled = false;
     setBundleStatus('uploading');
     setBundleError('');
     setQrCodeDataUrl('');
 
+    DeliveryService.generateSoftfileQrCode(publicUrl).then((qr) => {
+      if (!cancelled && qr) setQrCodeDataUrl(qr);
+      if (!qr && !cancelled) setBundleError('QR Code gagal dibuat. Silakan coba lagi.');
+    });
+
     (async () => {
       try {
         await DeliveryService.publishSoftfileBundle(session);
-        const qr = await DeliveryService.generateSoftfileQrCode(publicUrl);
-        if (!qr) throw new Error('QR Code gagal dibuat. Silakan coba lagi.');
-        if (!cancelled) {
-          setQrCodeDataUrl(qr);
-          setBundleStatus('ready');
-        }
+        if (!cancelled) setBundleStatus('ready');
       } catch (error) {
         if (!cancelled) {
           setBundleStatus('error');
@@ -64,18 +65,15 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
     })();
 
     try {
-      confetti({
-        particleCount: 70,
-        spread: 60,
-        origin: { y: 0.5 },
-      });
+      confetti({ particleCount: 70, spread: 60, origin: { y: 0.5 } });
     } catch (e) {}
 
     return () => { cancelled = true; };
   }, [publicUrl, session, bundleRetry]);
 
-  // Auto-reset countdown
+  // Do not reset the kiosk while the cloud bundle or a queued email is still processing.
   useEffect(() => {
+    if (bundleStatus === 'uploading' || emailSending || pendingEmail) return;
     const timer = setInterval(() => {
       setResetCountdown((prev) => {
         if (prev <= 1) {
@@ -86,9 +84,8 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
-  }, [onFinishSession]);
+  }, [onFinishSession, bundleStatus, emailSending, pendingEmail]);
 
   // Download All as ZIP
   const handleDownloadAllZip = async () => {
@@ -209,19 +206,16 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
     }
   };
 
-  // Send to Email
-  const handleSendEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
+  // Email can be requested while cloud publishing is in progress; send it automatically when ready.
+  const sendEmailWhenReady = async (address: string) => {
     setEmailSending(true);
+    setEmailResult('Menyiapkan pengiriman email…');
     audioEffects.playClick();
-
     try {
-      const result = await DeliveryService.sendEmail(email, session, config);
+      const result = await DeliveryService.sendEmail(address, session, config);
       setEmailResult(result.message);
       setEmailResultSuccess(result.success);
-
-      session.customerEmail = email;
+      session.customerEmail = address;
       if (result.success) {
         session.deliveryStatus.email = 'sent';
         audioEffects.playSuccessChime();
@@ -234,6 +228,25 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
       setEmailSending(false);
     }
   };
+
+  const handleSendEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || emailSending) return;
+    audioEffects.playClick();
+    if (bundleStatus !== 'ready') {
+      setPendingEmail(true);
+      setEmailResult('Permintaan email tersimpan. Email akan dikirim otomatis setelah Foto Final, GIF, dan video siap di cloud.');
+      setEmailResultSuccess(false);
+      return;
+    }
+    await sendEmailWhenReady(email);
+  };
+
+  useEffect(() => {
+    if (!pendingEmail || bundleStatus !== 'ready' || emailSending || !email) return;
+    setPendingEmail(false);
+    void sendEmailWhenReady(email);
+  }, [pendingEmail, bundleStatus, emailSending, email]);
 
   return (
     <div className="relative w-full h-full min-h-screen flex flex-col justify-between p-4 sm:p-8 bg-slate-950 text-white select-none">
@@ -402,7 +415,7 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
           {/* Scan QR on Phone Card */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-xl flex items-center gap-4">
             <div className="bg-white p-2 rounded-2xl shrink-0 shadow-md">
-              {bundleStatus === 'ready' && qrCodeDataUrl ? (
+              {qrCodeDataUrl ? (
                 <img src={qrCodeDataUrl} alt="Scan QR" className="w-24 h-24 object-contain" />
               ) : (
                 <div className="w-24 h-24 flex flex-col items-center justify-center gap-2 text-slate-400 text-[10px] text-center">
@@ -421,7 +434,7 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
                 {bundleStatus === 'ready'
                   ? 'Arahkan kamera HP ke QR Code untuk membuka galeri dan mengunduh Foto Final, GIF, serta video tanpa login.'
                   : bundleStatus === 'uploading'
-                    ? 'Mengunggah dan memverifikasi Foto Final, GIF, serta video ke cloud. QR akan aktif setelah selesai.'
+                    ? 'QR sudah dibuat. File sedang disiapkan di cloud; galeri akan aktif otomatis setelah unggahan selesai.'
                     : 'Soft file belum siap dipindai. Periksa koneksi internet lalu coba lagi.'}
               </p>
               {bundleStatus === 'error' && (
@@ -505,11 +518,11 @@ export const SoftFileScreen: React.FC<SoftFileScreenProps> = ({
                 />
                 <button
                   type="submit"
-                  disabled={bundleStatus !== 'ready' || emailSending || !email}
+                  disabled={emailSending || pendingEmail || !email}
                   className="px-4 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-500 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>{emailSending ? 'Kirim...' : 'Kirim Email'}</span>
+                  <span>{emailSending ? 'Mengirim...' : pendingEmail ? 'Menunggu file...' : 'Kirim Email'}</span>
                 </button>
               </div>
 

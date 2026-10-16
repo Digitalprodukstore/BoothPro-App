@@ -102,13 +102,20 @@ async function ensureCloudMediaUploaded(session: SessionData): Promise<void> {
     body: JSON.stringify({ action: 'complete', sessionId: sid, media: 'video', mimeType: mime }),
   });
   const result = await finalized.json().catch(() => null);
-  if (!finalized.ok || result?.ok !== true) throw new Error(result?.error || `Media terunggah, tetapi manifest gagal disimpan (HTTP ${finalized.status}).`);
+    if (!finalized.ok || result?.ok !== true || result?.manifestReady !== true) {
+      throw new Error(result?.error || result?.manifestWarning || `Media terunggah, tetapi manifest galeri belum siap (HTTP ${finalized.status}).`);
+    }
 }
 
 export class DeliveryService {
   /**
    * Generates a public QR Code data URL for the customer to scan on their phone
    */
+  /** Upload and verify the three cloud files plus their public-gallery manifest. */
+  public static async publishSoftfileBundle(session: SessionData): Promise<void> {
+    await ensureCloudMediaUploaded(session);
+  }
+
   public static async generateSoftfileQrCode(softfileUrl: string): Promise<string> {
     try {
       return await QRCode.toDataURL(softfileUrl, {

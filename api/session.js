@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 /** BoothPro public Soft File viewer and operator config API. */
 const json=(res,status,body)=>res.status(status).setHeader('Content-Type','application/json').setHeader('Cache-Control','no-store').send(JSON.stringify(body));
 const SUPA='https://jnajtcuxlgkpplyvvsik.supabase.co';
@@ -74,7 +75,7 @@ async function getSessionMedia(sid){const key=process.env.SUPABASE_SERVICE_ROLE_
 const paymentProduction = () => clean(process.env.MIDTRANS_IS_PRODUCTION).toLowerCase() === 'true';
 const paymentApiBase = () => paymentProduction() ? 'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com';
 const paymentServerKey = () => { const key = clean(process.env.MIDTRANS_SERVER_KEY); if (!key) throw new Error('MIDTRANS_SERVER_KEY belum dikonfigurasi di Vercel.'); return key; };
-const paymentSafeEqual = (a, b) => { const x = Buffer.from(String(a)); const y = Buffer.from(String(b)); return x.length === y.length && require('node:crypto').timingSafeEqual(x, y); };
+const paymentSafeEqual = (a, b) => { const x = Buffer.from(String(a)); const y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 async function paymentLoadPricing() {
  const r=await fetch(configBase()+'/rest/v1/boothpro_operator_config?id=eq.1&select=config&limit=1',{headers:configHeaders(),cache:'no-store'});
  const data=await r.json().catch(()=>null);
@@ -83,8 +84,7 @@ async function paymentLoadPricing() {
  return {config,packages:Array.isArray(config.packages)?config.packages:[],extraPrintPrice:Number(config.extraPrintPrice??10000)};
 }
 async function paymentCreate(req,res) {
- const crypto = await import('node:crypto');
- const packageId=clean(req.body?.packageId),voucherCode=clean(req.body?.voucherCode).toUpperCase(),extraPrints=Number(req.body?.extraPrints??0);
+  const packageId=clean(req.body?.packageId),voucherCode=clean(req.body?.voucherCode).toUpperCase(),extraPrints=Number(req.body?.extraPrints??0);
  if(!['mini','strip','dual_strip'].includes(packageId)||!Number.isInteger(extraPrints)||extraPrints<0||extraPrints>20)return json(res,400,{ok:false,error:'Paket atau jumlah cetak tambahan tidak valid.'});
  const pricing=await paymentLoadPricing(),pkg=pricing.packages.find(p=>p.id===packageId);
  if(!pkg||!Number.isSafeInteger(Number(pkg.price))||Number(pkg.price)<0)return json(res,400,{ok:false,error:'Harga paket tidak valid pada konfigurasi Dashboard.'});
@@ -119,7 +119,6 @@ async function paymentNotification(req,res) {
  if(!key)return json(res,503,{ok:false,error:'MIDTRANS_SERVER_KEY belum dikonfigurasi.'});
  const b=req.body||{},orderId=clean(b.order_id),statusCode=clean(b.status_code),grossAmount=clean(b.gross_amount),signature=clean(b.signature_key);
  if(!/^BP-[A-Z0-9]+-[A-F0-9]{16}$/.test(orderId)||!statusCode||!grossAmount||!signature)return json(res,400,{ok:false,error:'Payload notifikasi Midtrans tidak lengkap atau ID tidak valid.'});
- const crypto=await import('node:crypto');
  const expected=crypto.createHash('sha512').update(orderId+statusCode+grossAmount+key).digest('hex');
  if(!paymentSafeEqual(signature.toLowerCase(),expected.toLowerCase()))return json(res,401,{ok:false,error:'Signature notifikasi Midtrans tidak valid.'});
  const row={order_id:orderId,gross_amount:Number(grossAmount),transaction_status:clean(b.transaction_status),payment_type:clean(b.payment_type)||null,fraud_status:clean(b.fraud_status)||null,status_code:statusCode,updated_at:new Date().toISOString()};

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, QrCode, Ticket, KeyRound, CheckCircle2, AlertCircle, Sparkles, Timer } from 'lucide-react';
-import QRCode from 'qrcode';
 import confetti from 'canvas-confetti';
 import { PackageConfig, PaymentMethod, OperatorConfig } from '../../types';
 import { audioEffects } from '../../services/audioEffects';
@@ -46,18 +45,11 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
     : 0;
   const finalPrice = Math.max(0, totalPrice - discountAmount);
 
-  // Generate QRIS QR code
+  // QRIS statis harus berasal dari gambar/URL QR resmi yang dikonfigurasi operator.
+  // Jangan membuat payload QR pembayaran sendiri atau menganggap scan sebagai bukti pembayaran.
   useEffect(() => {
-    const qrisPayload = `00020101021226670014ID.LINKAJA.WWW01189360091100202688849200215${config.qrisNmid}520458145303360540${finalPrice}5802ID5914${config.qrisMerchantName.replace(/ /g, '')}6007JAKARTA62070703A016304`;
-    QRCode.toDataURL(qrisPayload, {
-      width: 280,
-      margin: 2,
-      color: {
-        dark: '#0f172a',
-        light: '#ffffff',
-      },
-    }).then(setQrisQrDataUrl).catch(() => {});
-  }, [finalPrice, config.qrisNmid, config.qrisMerchantName]);
+    setQrisQrDataUrl(config.qrisStaticQrUrl?.trim() || '');
+  }, [config.qrisStaticQrUrl]);
 
   // Countdown timer for QRIS
   useEffect(() => {
@@ -104,6 +96,21 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
       }
     } else {
       setVoucherError('Kode voucher tidak valid atau sudah kedaluwarsa.');
+    }
+  };
+
+  // QRIS statis tidak menyediakan callback otomatis; operator wajib memeriksa transaksi di aplikasi bank dahulu.
+  const handleQrisOperatorConfirm = () => {
+    audioEffects.playClick();
+    setBypassError(null);
+    if (!qrisQrDataUrl) {
+      setBypassError('QRIS statis belum dikonfigurasi. Minta operator memeriksa pengaturan Dashboard.');
+      return;
+    }
+    if (bypassPin === config.cashBypassPin || bypassPin === config.adminPin) {
+      triggerSuccess('qris', finalPrice);
+    } else {
+      setBypassError('PIN operator salah. Pembayaran belum dikonfirmasi.');
     }
   };
 
@@ -253,12 +260,13 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
                 {qrisQrDataUrl ? (
                   <img
                     src={qrisQrDataUrl}
-                    alt="QRIS Pembayaran BoothPro"
+                    alt="QRIS Statis Resmi Merchant"
                     className="w-48 h-48 sm:w-56 sm:h-56 object-contain"
                   />
                 ) : (
-                  <div className="w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center bg-slate-100 text-slate-500 font-bold">
-                    Membuat QR...
+                  <div className="w-48 h-48 sm:w-56 sm:h-56 flex flex-col items-center justify-center gap-2 bg-slate-100 px-4 text-slate-600 font-bold text-xs">
+                    <AlertCircle className="w-6 h-6 text-rose-500" />
+                    <span>QRIS statis belum dikonfigurasi di Dashboard</span>
                   </div>
                 )}
                 {/* QRIS Logo overlay */}
@@ -279,18 +287,39 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
               </div>
 
               <p className="text-xs text-slate-400 mt-2 max-w-sm">
-                Scan menggunakan BCA, Mandiri, GoPay, OVO, ShopeePay, Dana, atau mobile banking apapun.
+                Scan QRIS statis resmi merchant. Operator harus memeriksa bukti transaksi di aplikasi bank/merchant sebelum mengonfirmasi pembayaran. QR ini tidak memverifikasi pembayaran secara otomatis.
               </p>
 
-              {/* Instant Simulation Button for Testing & Fast Operator verification */}
-              <button
-                onClick={() => triggerSuccess('qris', finalPrice)}
-                disabled={isProcessing}
-                className="mt-6 w-full max-w-sm py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95 transition cursor-pointer"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{isProcessing ? 'Verifikasi Berhasil...' : 'Simulasi Bayar / Konfirmasi Otomatis'}</span>
-              </button>
+              <div className="mt-5 w-full max-w-sm space-y-3 text-left">
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  PIN Konfirmasi Operator
+                </label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={bypassPin}
+                  onChange={(e) => {
+                    setBypassPin(e.target.value);
+                    setBypassError(null);
+                  }}
+                  placeholder="Masukkan PIN operator"
+                  disabled={!qrisQrDataUrl || isProcessing}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white text-center text-lg tracking-widest font-mono focus:outline-none focus:border-emerald-500 disabled:opacity-50"
+                />
+                {bypassError && activeTab === 'qris' && (
+                  <p role="alert" className="text-rose-400 text-xs">{bypassError}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleQrisOperatorConfirm}
+                  disabled={!qrisQrDataUrl || !bypassPin || isProcessing}
+                  className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 disabled:opacity-40 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95 transition cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{isProcessing ? 'Memproses...' : 'Konfirmasi Setelah Dana Diterima'}</span>
+                </button>
+              </div>
             </div>
           )}
 

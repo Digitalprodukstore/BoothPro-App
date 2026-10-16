@@ -524,6 +524,24 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                    URL Gambar QRIS Statis Resmi (PNG/JPG)
+                  </label>
+                  <input
+                    type="url"
+                    value={formConfig.qrisStaticQrUrl || ''}
+                    onChange={(e) =>
+                      setFormConfig({ ...formConfig, qrisStaticQrUrl: e.target.value })
+                    }
+                    placeholder="https://domain-anda.com/qris-statis.png"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm"
+                  />
+                  <p className="text-xs text-amber-300 mt-2">
+                    Gunakan gambar QRIS statis resmi dari bank/merchant. NMID saja tidak cukup untuk membuat ulang QRIS resmi. Setelah pelanggan membayar, operator wajib memeriksa transaksi di aplikasi merchant sebelum memasukkan PIN konfirmasi.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
                     PIN Bypass Kasir / Tunai
                   </label>
                   <input

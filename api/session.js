@@ -39,21 +39,28 @@ async function handleSoftfileUpload(req,res){
   }
   if(action==='complete'){
    const photo=sid+'/photo.png',gif=sid+'/animation.gif';const [p,g]=await Promise.all([photo,gif].map(async p=>{const r=await fetch(base+'/storage/v1/object/info/boothpro-softfiles/'+p.split('/').map(encodeURIComponent).join('/'),{headers:h,cache:'no-store'});return r.ok;}));const videoExt=clean(req.body?.mimeType).includes('mp4')?'live-session.mp4':'live-session.webm',video=sid+'/'+videoExt;const vr=await fetch(base+'/storage/v1/object/info/boothpro-softfiles/'+video.split('/').map(encodeURIComponent).join('/'),{headers:h,cache:'no-store'});if(!p||!g||!vr.ok)return json(res,409,{ok:false,error:'Belum semua media terunggah.'});
-   const publicUrl=p=>base+'/storage/v1/object/public/boothpro-softfiles/'+p.split('/').map(encodeURIComponent).join('/');const row={session_id:sid,photo_url:publicUrl(photo),gif_url:publicUrl(gif),video_url:publicUrl(video),media_status:'uploaded',updated_at:new Date().toISOString()};
-   // Manifest is legacy metadata only. Never block customer delivery because of its owner constraint or a concurrent insert.
+   const publicUrl=p=>base+'/storage/v1/object/public/boothpro-softfiles/'+p.split('/').map(encodeURIComponent).join('/');
+   const ownerUserId=clean(process.env.BOOTHPRO_OWNER_USER_ID);
+   const workspaceId=clean(process.env.BOOTHPRO_WORKSPACE_ID)||'boothpro';
+   const boothId=clean(process.env.BOOTHPRO_BOOTH_ID)||'default';
+   if(!ownerUserId){return json(res,503,{ok:false,error:'Manifest owner belum dikonfigurasi. Atur BOOTHPRO_OWNER_USER_ID di Vercel menggunakan UUID user pemilik kiosk; tidak perlu mengubah skema Supabase.'});}
+   const row={user_id:ownerUserId,workspace_id:workspaceId,booth_id:boothId,session_id:sid,photo_url:publicUrl(photo),gif_url:publicUrl(gif),video_url:publicUrl(video),media_status:'uploaded',updated_at:new Date().toISOString()};
+   // Manifest is written once using the real owner identity required by the existing schema.
+   // Existing rows are updated; new rows use the configured kiosk owner. No schema relaxation is performed.
    let manifestWarning=null;
    try{
-    const find=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id&limit=1',{headers:h,cache:'no-store'});const found=await find.json().catch(()=>null);
-    if(find.ok){
-     const exists=Array.isArray(found)&&found[0];
-     const up=await fetch(exists?base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid):base+'/rest/v1/boothpro_session_manifest',{method:exists?'PATCH':'POST',headers:{...h,Prefer:'return=representation'},body:JSON.stringify(row),cache:'no-store'});
-     const data=await up.json().catch(()=>null);
-     if(!up.ok){
-      manifestWarning=data?.message||data?.hint||('Manifest HTTP '+up.status);
-      const retry=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id&limit=1',{headers:h,cache:'no-store'});const retryData=await retry.json().catch(()=>null);
-      if(retry.ok&&Array.isArray(retryData)&&retryData[0])manifestWarning=null;
-     }
-    }else manifestWarning=found?.message||found?.hint||('Manifest lookup HTTP '+find.status);
+    const find=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id,user_id,workspace_id,booth_id&limit=1',{headers:h,cache:'no-store'});const found=await find.json().catch(()=>null);
+    if(!find.ok)throw new Error(found?.message||found?.hint||('Manifest lookup HTTP '+find.status));
+    const exists=Array.isArray(found)&&found[0];
+    const url=exists?base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid):base+'/rest/v1/boothpro_session_manifest';
+    const body=exists?{workspace_id:workspaceId,booth_id:boothId,photo_url:row.photo_url,gif_url:row.gif_url,video_url:row.video_url,media_status:'uploaded',updated_at:row.updated_at}:{...row};
+    const up=await fetch(url,{method:exists?'PATCH':'POST',headers:{...h,Prefer:'return=representation'},body:JSON.stringify(body),cache:'no-store'});
+    const data=await up.json().catch(()=>null);
+    if(!up.ok){
+      const detail=data?.message||data?.hint||('Manifest HTTP '+up.status);
+      const retry=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id,user_id,workspace_id,booth_id&limit=1',{headers:h,cache:'no-store'});const retryData=await retry.json().catch(()=>null);
+      if(retry.ok&&Array.isArray(retryData)&&retryData[0]){manifestWarning=null;}else{manifestWarning=detail;}
+    }
    }catch(e){manifestWarning=e?.message||String(e)}
    return json(res,200,{ok:true,sessionId:sid,mediaStatus:'uploaded',manifestReady:!manifestWarning,manifestWarning});
   }

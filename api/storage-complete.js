@@ -18,8 +18,12 @@ module.exports=async function(req,res){
   const verified=await Promise.all([verify(photoPath),verify(gifPath),verify(videoPath)]);
   if(verified.some(v=>!v))throw new Error('Supabase belum memastikan ketiga file soft file tersedia.');
 
-  // Kiosk delivery must not be blocked by the legacy owner-scoped manifest schema.
-  // Storage is already verified above; the manifest is best-effort and idempotent.
+  // Preserve the existing NOT NULL owner schema: new manifest rows must include a real owner UUID.
+  // Media verification above remains independent; do not loosen or migrate the database schema.
+  const ownerUserId=clean(process.env.BOOTHPRO_OWNER_USER_ID);
+  const workspaceId=clean(process.env.BOOTHPRO_WORKSPACE_ID)||'boothpro';
+  const boothId=clean(process.env.BOOTHPRO_BOOTH_ID)||'default';
+  if(!ownerUserId) return json(res,503,{ok:false,error:'BOOTHPRO_OWNER_USER_ID belum dikonfigurasi untuk Preview.'});
   let manifest=null;
   let manifestError=null;
   try{
@@ -30,7 +34,7 @@ module.exports=async function(req,res){
     const saved=await mr.json().catch(()=>null);
     if(mr.ok)manifest=Array.isArray(saved)?saved[0]:saved;else manifestError=saved?.message||saved?.hint||`Manifest update HTTP ${mr.status}`;
    }else if(lookup.ok){
-    const mr=await fetch(base+'/rest/v1/boothpro_session_manifest',{method:'POST',headers:{...h,Prefer:'return=representation'},body:JSON.stringify({session_id:sid,...media})});
+    const mr=await fetch(base+'/rest/v1/boothpro_session_manifest',{method:'POST',headers:{...h,Prefer:'return=representation'},body:JSON.stringify({user_id:ownerUserId,workspace_id:workspaceId,booth_id:boothId,session_id:sid,...media})});
     const saved=await mr.json().catch(()=>null);
     if(mr.ok)manifest=Array.isArray(saved)?saved[0]:saved;
     else{

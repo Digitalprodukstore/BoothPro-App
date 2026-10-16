@@ -7,7 +7,7 @@ function phone(v){let p=clean(v).replace(/\D/g,'');if(p.startsWith('0'))p='62'+p
 function baseUrl(){return env('SUPABASE_URL').replace(/\/$/,'')}
 function publicUrl(path){return baseUrl()+'/storage/v1/object/public/boothpro-softfiles/'+path.split('/').map(encodeURIComponent).join('/')}
 async function objectExists(path){const r=await fetch(baseUrl()+'/storage/v1/object/info/boothpro-softfiles/'+path.split('/').map(encodeURIComponent).join('/'),{headers:headers(),cache:'no-store'});return r.ok}
-function bundleUrl(req,sid){const configured=clean(process.env.BOOTHPRO_PUBLIC_ORIGIN);const requestOrigin=((req.headers['x-forwarded-proto']||'https')+'://'+(req.headers['x-forwarded-host']||req.headers.host)).replace(/\/$/,'');const origin=clean(process.env.VERCEL_ENV)==='preview'?requestOrigin:(configured||requestOrigin);return origin+'/api/softfile?sessionId='+encodeURIComponent(sid)}
+function bundleUrl(req,sid){const configured=clean(process.env.BOOTHPRO_PUBLIC_ORIGIN)||'https://boothpro.my.id';const origin=configured.replace(/\/$/,'');return origin+'/api/softfile?sessionId='+encodeURIComponent(sid)}
 async function resolveMedia(sid){
  const paths={photo:sid+'/photo.png',gif:sid+'/animation.gif',webm:sid+'/live-session.webm',mp4:sid+'/live-session.mp4'};
  const [photoOk,gifOk,webmOk,mp4Ok]=await Promise.all([objectExists(paths.photo),objectExists(paths.gif),objectExists(paths.webm),objectExists(paths.mp4)]);
@@ -28,12 +28,18 @@ async function sendWhatsApp(target,name,s,bundle){
  return {provider:'fonnte',bundleLink:true,attachments:attachmentResults};
 }
 async function sendBrevo(to,name,s,bundle){
- const key=env('BREVO_API_KEY'),fromSetting=env('BREVO_FROM_EMAIL');const from=(fromSetting.match(/<([^<>]+)>/)||[])[1]||fromSetting;
+ const key=env('BREVO_API_KEY'),fromSetting=env('BREVO_FROM_EMAIL');
+ const match=fromSetting.match(/^\s*(.*?)\s*<([^<>]+)>\s*$/);
+ const from=match?match[2].trim():fromSetting;
+ const senderName=match&&match[1].trim()?match[1].trim():'BoothPro';
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from))throw new Error('BREVO_FROM_EMAIL harus berupa alamat email valid, misalnya noreply@domain.com.');
- const safeName=htmlEscape(name),safeBundle=htmlEscape(bundle);const attachment=[{url:s.photo_url},{url:s.gif_url},{url:s.video_url}];
- const html='<div style="font-family:Arial,sans-serif;line-height:1.6"><h2>BOOTHPRO</h2><p>Halo '+safeName+', soft file sesi foto Anda sudah siap.</p><p>Foto Final, GIF bergerak, dan Live Session Video terlampir pada email ini.</p><p>Link cadangan: <a href="'+safeBundle+'">Buka &amp; Simpan Semua Soft File</a></p><p>Link dapat dibuka tanpa login BoothPro.</p></div>';
- const text='Halo '+name+', soft file BOOTHPRO Anda sudah siap. Foto Final, GIF, dan Live Session Video terlampir. Link cadangan: '+bundle;
- const r=await fetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'api-key':key,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({sender:{name:'BOOTHPRO',email:from},to:[{email:to,name}],subject:'BOOTHPRO · Soft File Anda',htmlContent:html,textContent:text,attachment})});
- const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(d?.message||d?.code||'Brevo gagal mengirim email.');return d
+ const safeName=htmlEscape(name),safeBundle=htmlEscape(bundle);
+ const html='<div style="font-family:Arial,sans-serif;line-height:1.6"><h2>BoothPro</h2><p>Halo '+safeName+', galeri soft file sesi foto Anda sudah siap.</p><p>Foto Final, GIF, dan video Live Session dapat dibuka dan diunduh melalui galeri pribadi Anda.</p><p><a href="'+safeBundle+'" style="display:inline-block;padding:12px 18px;background:#ea580c;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold">Buka &amp; Unduh Soft File</a></p><p>Jika tombol tidak bisa dibuka, salin tautan ini ke browser:<br><a href="'+safeBundle+'">'+safeBundle+'</a></p><p>Tautan galeri dapat dibuka tanpa login BoothPro.</p></div>';
+ const text='Halo '+name+', galeri soft file BoothPro Anda sudah siap. Buka dan unduh Foto Final, GIF, serta video Live Session melalui tautan ini (tanpa login): '+bundle;
+ const r=await fetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'api-key':key,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({sender:{name:senderName,email:from},to:[{email:to,name}],subject:'BoothPro · Soft File Anda',htmlContent:html,textContent:text})});
+ const d=await r.json().catch(()=>null);
+ if(!r.ok)throw new Error(d?.message||d?.code||'Brevo gagal menerima permintaan email.');
+ if(!d?.messageId)throw new Error('Brevo tidak mengembalikan ID pesan; status pengiriman belum dapat dikonfirmasi.');
+ return d
 }
-export default async function handler(req,res){if(req.method!=='POST')return json(res,405,{ok:false,error:'Method tidak didukung.'});const b=req.body||{},sid=clean(b.sessionId),name=clean(b.customerName)||'Pelanggan',method=clean(b.deliveryMethod).toLowerCase(),target=clean(b.target);if(!sid||!['email','whatsapp'].includes(method)||!target)return json(res,400,{ok:false,error:'sessionId, deliveryMethod, target wajib.'});try{const s=await resolveMedia(sid);const bundle=bundleUrl(req,sid);if(method==='email'){if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target))throw new Error('Email tidak valid.');const result=await sendBrevo(target,name,s,bundle);return json(res,200,{ok:true,sessionId:sid,method,bundleUrl:bundle,messageId:result?.messageId||null,delivery:'attachments'})}const result=await sendWhatsApp(target,name,s,bundle);return json(res,200,{ok:true,sessionId:sid,method,bundleUrl:bundle,delivery:'direct-media-plus-bundle-link',details:result})}catch(e){return json(res,500,{ok:false,error:e?.message||String(e)})}};
+export default async function handler(req,res){if(req.method!=='POST')return json(res,405,{ok:false,error:'Method tidak didukung.'});const b=req.body||{},sid=clean(b.sessionId),name=clean(b.customerName)||'Pelanggan',method=clean(b.deliveryMethod).toLowerCase(),target=clean(b.target);if(!sid||!['email','whatsapp'].includes(method)||!target)return json(res,400,{ok:false,error:'sessionId, deliveryMethod, target wajib.'});try{const s=await resolveMedia(sid);const bundle=bundleUrl(req,sid);if(method==='email'){if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target))throw new Error('Email tidak valid.');const result=await sendBrevo(target,name,s,bundle);return json(res,200,{ok:true,sessionId:sid,method,bundleUrl:bundle,messageId:result?.messageId||null,delivery:'gallery-link'})}const result=await sendWhatsApp(target,name,s,bundle);return json(res,200,{ok:true,sessionId:sid,method,bundleUrl:bundle,delivery:'direct-media-plus-bundle-link',details:result})}catch(e){return json(res,500,{ok:false,error:e?.message||String(e)})}};

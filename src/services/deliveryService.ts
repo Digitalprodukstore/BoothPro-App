@@ -102,13 +102,20 @@ async function ensureCloudMediaUploaded(session: SessionData): Promise<void> {
     body: JSON.stringify({ action: 'complete', sessionId: sid, media: 'video', mimeType: mime }),
   });
   const result = await finalized.json().catch(() => null);
-  if (!finalized.ok || result?.ok !== true) throw new Error(result?.error || `Media terunggah, tetapi manifest gagal disimpan (HTTP ${finalized.status}).`);
+    if (!finalized.ok || result?.ok !== true || result?.manifestReady !== true) {
+      throw new Error(result?.error || result?.manifestWarning || `Media terunggah, tetapi manifest galeri belum siap (HTTP ${finalized.status}).`);
+    }
 }
 
 export class DeliveryService {
   /**
    * Generates a public QR Code data URL for the customer to scan on their phone
    */
+  /** Upload and verify the three cloud files plus their public-gallery manifest. */
+  public static async publishSoftfileBundle(session: SessionData): Promise<void> {
+    await ensureCloudMediaUploaded(session);
+  }
+
   public static async generateSoftfileQrCode(softfileUrl: string): Promise<string> {
     try {
       return await QRCode.toDataURL(softfileUrl, {
@@ -129,7 +136,8 @@ export class DeliveryService {
    * Generates public shareable softfile URL
    */
   public static getPublicSoftfileUrl(sessionId: string): string {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://boothpro.id';
+    // Always use the public customer domain. Preview URLs may be protected by Vercel login.
+    const origin = 'https://boothpro.my.id';
     return `${origin}/api/softfile?sessionId=${encodeURIComponent(sessionId)}`;
   }
 
@@ -286,7 +294,8 @@ Simpan link ini baik-baik ya! Sampai jumpa di sesi berikutnya! ✨`;
     _config: OperatorConfig
   ): Promise<{ success: boolean; message: string }> {
     try {
-      await ensureCloudMediaUploaded(session);
+      // SoftFileScreen only enables email after publishSoftfileBundle has verified
+      // all three uploads and the manifest. Do not upload the same objects twice.
       const response = await fetch('/api/send-direct-media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

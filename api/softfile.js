@@ -33,6 +33,12 @@ async function signedDownload(base,key,path){
  if(!raw)throw new Error('Supabase tidak mengembalikan signed download URL.');
  if(/^https?:\/\//i.test(raw))return raw;if(raw.startsWith('/storage/v1/'))return base+raw;if(raw.startsWith('/object/'))return base+'/storage/v1'+raw;if(raw.startsWith('object/'))return base+'/storage/v1/'+raw;throw new Error('Format signed download URL Supabase tidak valid.');
 }
+
+function waitingPage(res,sid){
+ const refreshUrl='/api/softfile?sessionId='+encodeURIComponent(sid);
+ return res.status(202).setHeader('Content-Type','text/html; charset=utf-8').setHeader('Cache-Control','no-store').send(`<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BOOTHPRO · Menyiapkan Soft File</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#08080b;color:#f5f5f7;font-family:system-ui,-apple-system,sans-serif;padding:22px}.panel{width:min(460px,100%);padding:28px;border:1px solid #27272a;border-radius:24px;background:#111116;text-align:center}.brand{font-size:12px;letter-spacing:.16em;font-weight:900;color:#a78bfa}.spin{width:42px;height:42px;border:3px solid #27272a;border-top-color:#a78bfa;border-radius:50%;margin:24px auto 18px;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}h1{font-size:25px;margin:0 0 10px}p{color:#a1a1aa;font-size:14px;line-height:1.6}.btn{display:inline-block;margin-top:14px;padding:12px 18px;border-radius:12px;background:#6366f1;color:white;text-decoration:none;font-weight:800;font-size:13px}</style></head><body><main class="panel"><div class="brand">BOOTHPRO</div><div class="spin" id="spin"></div><h1 id="title">Soft file sedang disiapkan</h1><p id="desc">Foto Final, GIF, dan video sedang diunggah dengan aman. Halaman ini akan terbuka otomatis setelah semua file siap.</p><p id="timer">Memeriksa kembali dalam 3 detik…</p><a class="btn" id="retry" href="${refreshUrl}" hidden>Coba periksa lagi</a></main><script>let elapsed=0;const timer=document.getElementById('timer');const tick=()=>{elapsed+=3;if(elapsed>=90){document.getElementById('spin').style.display='none';document.getElementById('title').textContent='File belum tersedia';document.getElementById('desc').textContent='Persiapan soft file memerlukan waktu lebih lama dari biasanya. Silakan coba periksa lagi atau hubungi operator BoothPro.';timer.textContent='';document.getElementById('retry').hidden=false;return}timer.textContent='Memeriksa kembali dalam 3 detik…';setTimeout(()=>location.replace(${JSON.stringify(refreshUrl)}),3000)};setTimeout(tick,3000);</script></body></html>`);
+}
+
 function detectFileType(bytes,expected,contentType=''){
  if(expected==='image/png'){
   return bytes.length>=8&&bytes[0]===0x89&&bytes[1]===0x50&&bytes[2]===0x4e&&bytes[3]===0x47&&bytes[4]===0x0d&&bytes[5]===0x0a&&bytes[6]===0x1a&&bytes[7]===0x0a?{type:'image/png',ext:'png'}:null;
@@ -72,7 +78,7 @@ export default async function handler(req,res){
   if(!sid)return json(res,400,{ok:false,error:'Session ID wajib diisi.'});
   if(!/^[a-zA-Z0-9_-]{8,100}$/.test(sid))return json(res,400,{ok:false,error:'Session ID tidak valid.'});
   const m=await manifest(sid);
-  if(!m.photo_url||!m.gif_url||!m.video_url)return json(res,409,{ok:false,error:'Bundle belum lengkap.'});
+  if(!m.photo_url||!m.gif_url||!m.video_url)return waitingPage(res,sid);
   const {base,key}=config();
   const requested=clean(req.query?.download).toLowerCase();
   if(requested){
@@ -112,7 +118,8 @@ ${card('Live Video Session','Video sesi / momen terbaik yang direkam.', '?', 'vi
 </main></body></html>`);
  }catch(e){
   const message=e?.message||String(e);
-  const status=/tidak ditemukan/i.test(message)?404:/kedaluwarsa/i.test(message)?410:/belum lengkap/i.test(message)?409:/konfigurasi cloud belum tersedia/i.test(message)?503:500;
+  if(/soft file sesi tidak ditemukan|soft file tidak ditemukan/i.test(message))return waitingPage(res,clean(req.query?.sessionId));
+  const status=/kedaluwarsa/i.test(message)?410:/belum lengkap/i.test(message)?409:/konfigurasi cloud belum tersedia/i.test(message)?503:500;
   res.setHeader('Cache-Control','no-store');
   return json(res,status,{ok:false,error:message});
  }

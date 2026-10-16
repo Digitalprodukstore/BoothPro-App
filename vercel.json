@@ -5,15 +5,15 @@
   "rewrites": [
     {
       "source": "/api/payment/create",
-      "destination": "/api/payment?route=create"
+      "destination": "/api/session?route=payment-create"
     },
     {
       "source": "/api/payment/status",
-      "destination": "/api/payment?route=status"
+      "destination": "/api/session?route=payment-status"
     },
     {
       "source": "/api/payment/notification",
-      "destination": "/api/payment?route=notification"
+      "destination": "/api/session?route=payment-notification"
     },
     {
       "source": "/api/config",

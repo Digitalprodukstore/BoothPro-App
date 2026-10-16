@@ -7,7 +7,7 @@ function phone(v){let p=clean(v).replace(/\D/g,'');if(p.startsWith('0'))p='62'+p
 function baseUrl(){return env('SUPABASE_URL').replace(/\/$/,'')}
 function publicUrl(path){return baseUrl()+'/storage/v1/object/public/boothpro-softfiles/'+path.split('/').map(encodeURIComponent).join('/')}
 async function objectExists(path){const r=await fetch(baseUrl()+'/storage/v1/object/info/boothpro-softfiles/'+path.split('/').map(encodeURIComponent).join('/'),{headers:headers(),cache:'no-store'});return r.ok}
-function bundleUrl(req,sid){const configured=clean(process.env.BOOTHPRO_PUBLIC_ORIGIN);const requestOrigin=((req.headers['x-forwarded-proto']||'https')+'://'+(req.headers['x-forwarded-host']||req.headers.host)).replace(/\/$/,'');const origin=clean(process.env.VERCEL_ENV)==='preview'?requestOrigin:(configured||requestOrigin);return origin+'/api/softfile?sessionId='+encodeURIComponent(sid)}
+function bundleUrl(req,sid){const configured=clean(process.env.BOOTHPRO_PUBLIC_ORIGIN)||'https://boothpro.my.id';const origin=configured.replace(/\/$/,'');return origin+'/api/softfile?sessionId='+encodeURIComponent(sid)}
 async function resolveMedia(sid){
  const paths={photo:sid+'/photo.png',gif:sid+'/animation.gif',webm:sid+'/live-session.webm',mp4:sid+'/live-session.mp4'};
  const [photoOk,gifOk,webmOk,mp4Ok]=await Promise.all([objectExists(paths.photo),objectExists(paths.gif),objectExists(paths.webm),objectExists(paths.mp4)]);

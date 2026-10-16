@@ -14,18 +14,23 @@ async function loadPricing() {
   const data = await r.json().catch(() => null);
   if (!r.ok || !Array.isArray(data) || !data[0]?.config) throw new Error('Konfigurasi harga BoothPro belum tersedia di cloud.');
   const config = data[0].config;
-  return { packages: Array.isArray(config.packages) ? config.packages : [], extraPrintPrice: Number(config.extraPrintPrice ?? 10000) };
+  return { config, packages: Array.isArray(config.packages) ? config.packages : [], extraPrintPrice: Number(config.extraPrintPrice ?? 10000) };
 }
 export default async function handler(req, res) {
   if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'Method tidak didukung.' });
   try {
     const packageId = clean(req.body?.packageId);
+    const voucherCode = clean(req.body?.voucherCode).toUpperCase();
     const extraPrints = Number(req.body?.extraPrints ?? 0);
     if (!['mini', 'strip', 'dual_strip'].includes(packageId) || !Number.isInteger(extraPrints) || extraPrints < 0 || extraPrints > 20) return json(res, 400, { ok: false, error: 'Paket atau jumlah cetak tambahan tidak valid.' });
     const pricing = await loadPricing();
     const pkg = pricing.packages.find((p) => p.id === packageId);
     if (!pkg || !Number.isSafeInteger(Number(pkg.price)) || Number(pkg.price) < 0) return json(res, 400, { ok: false, error: 'Harga paket tidak valid pada konfigurasi Dashboard.' });
-    const amount = Math.round(Number(pkg.price) + extraPrints * Number(pricing.extraPrintPrice));
+    const subtotal = Math.round(Number(pkg.price) + extraPrints * Number(pricing.extraPrintPrice));
+    const voucher = voucherCode ? (Array.isArray(pricing.config?.voucherCodes) ? pricing.config.voucherCodes.find((v) => clean(v.code).toUpperCase() === voucherCode) : null) : null;
+    if (voucherCode && !voucher) return json(res, 400, { ok: false, error: 'Kode voucher tidak valid pada konfigurasi server.' });
+    const discountPercent = voucher ? Math.max(0, Math.min(100, Number(voucher.discountPercent) || 0)) : 0;
+    const amount = Math.round(Math.max(0, subtotal - Math.round(subtotal * discountPercent / 100)));
     if (!Number.isSafeInteger(amount) || amount < 1000 || amount > 10000000) return json(res, 400, { ok: false, error: 'Nominal transaksi di luar batas yang diizinkan.' });
     const orderId = 'BP-' + Date.now().toString(36).toUpperCase() + '-' + crypto.randomBytes(8).toString('hex').toUpperCase();
     const payload = {

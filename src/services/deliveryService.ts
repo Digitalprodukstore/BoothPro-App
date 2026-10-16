@@ -136,7 +136,8 @@ export class DeliveryService {
    * Generates public shareable softfile URL
    */
   public static getPublicSoftfileUrl(sessionId: string): string {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://boothpro.id';
+    // Always use the public customer domain. Preview URLs may be protected by Vercel login.
+    const origin = 'https://boothpro.my.id';
     return `${origin}/api/softfile?sessionId=${encodeURIComponent(sessionId)}`;
   }
 
@@ -293,7 +294,8 @@ Simpan link ini baik-baik ya! Sampai jumpa di sesi berikutnya! ✨`;
     _config: OperatorConfig
   ): Promise<{ success: boolean; message: string }> {
     try {
-      await ensureCloudMediaUploaded(session);
+      // SoftFileScreen only enables email after publishSoftfileBundle has verified
+      // all three uploads and the manifest. Do not upload the same objects twice.
       const response = await fetch('/api/send-direct-media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

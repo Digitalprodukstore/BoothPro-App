@@ -49,7 +49,7 @@ async function handleSoftfileUpload(req,res){
    // Existing rows are updated; new rows use the configured kiosk owner. No schema relaxation is performed.
    let manifestWarning=null;
    try{
-    const find=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id,user_id,workspace_id,booth_id&limit=1',{headers:h,cache:'no-store'});const found=await find.json().catch(()=>null);
+    const find=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id,user_id,workspace_id,booth_id,photo_url,gif_url,video_url&limit=1',{headers:h,cache:'no-store'});const found=await find.json().catch(()=>null);
     if(!find.ok)throw new Error(found?.message||found?.hint||('Manifest lookup HTTP '+find.status));
     const exists=Array.isArray(found)&&found[0];
     const url=exists?base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid):base+'/rest/v1/boothpro_session_manifest';
@@ -58,8 +58,10 @@ async function handleSoftfileUpload(req,res){
     const data=await up.json().catch(()=>null);
     if(!up.ok){
       const detail=data?.message||data?.hint||('Manifest HTTP '+up.status);
-      const retry=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id,user_id,workspace_id,booth_id&limit=1',{headers:h,cache:'no-store'});const retryData=await retry.json().catch(()=>null);
-      if(retry.ok&&Array.isArray(retryData)&&retryData[0]){manifestWarning=null;}else{manifestWarning=detail;}
+      const retry=await fetch(base+'/rest/v1/boothpro_session_manifest?session_id=eq.'+encodeURIComponent(sid)+'&select=session_id,user_id,workspace_id,booth_id,photo_url,gif_url,video_url&limit=1',{headers:h,cache:'no-store'});const retryData=await retry.json().catch(()=>null);
+      const existing=retry.ok&&Array.isArray(retryData)?retryData[0]:null;
+      const alreadyMatches=Boolean(existing&&existing.photo_url===row.photo_url&&existing.gif_url===row.gif_url&&existing.video_url===row.video_url);
+      if(alreadyMatches){manifestWarning=null;}else{manifestWarning=detail;}
     }
    }catch(e){manifestWarning=e?.message||String(e)}
    return json(res,200,{ok:true,sessionId:sid,mediaStatus:'uploaded',manifestReady:!manifestWarning,manifestWarning});

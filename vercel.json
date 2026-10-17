@@ -8,6 +8,10 @@
       "destination": "/api/session?route=config"
     },
     {
+      "source": "/api/softfile-upload",
+      "destination": "/api/session?route=softfile-upload"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -14,7 +14,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
 <script src="/boothpro-hotfix-c9.js?c9=1"></script>
 <script src="/boothpro-hotfix-digital-delivery.js?dd=ce45c625"></script>
-<script>(function(){try{const p=new URLSearchParams(location.search||"");if(p.get("bp-kiosk")!=="1")return;window.__BP_ENTRY_MODE__="kiosk";function block(){try{if(typeof closeDashboard==="function")closeDashboard();if(typeof closeDashboardAuth==="function")closeDashboardAuth();["dashboardModal","dashboardAuthModal"].forEach(function(id){const el=document.getElementById(id);if(el){el.classList.add("hidden");el.style.display="none";el.style.pointerEvents="none"}});document.querySelectorAll("[id^=step-]").forEach(function(el){if(el.id==="step-welcome"){el.classList.remove("hidden");el.style.display="flex"}else el.classList.add("hidden")})}catch(e){}}window.openDashboard=function(){block();return false};window.openDashboardUnlocked=window.openDashboard;window.openDashboardAuth=window.openDashboard;if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",block,{once:true});else block();setTimeout(block,250);setTimeout(block,1000)}catch(e){}})();</script>
+<script>(function(){try{const p=new URLSearchParams(location.search||"");const isDash=p.get("bp-dashboard")==="1"||location.pathname.includes("/dashboard")||location.pathname.includes("/admin");if(isDash)return;window.__BP_ENTRY_MODE__="kiosk";document.documentElement.classList.add("bp-kiosk-mode");function block(){try{if(typeof closeDashboard==="function")closeDashboard();if(typeof closeDashboardAuth==="function")closeDashboardAuth();["dashboardModal","dashboardAuthModal"].forEach(function(id){const el=document.getElementById(id);if(el){el.classList.add("hidden");el.style.setProperty("display","none","important");el.style.pointerEvents="none"}});document.querySelectorAll("[id^=step-]").forEach(function(el){if(el.id==="step-welcome"){el.classList.remove("hidden");el.style.setProperty("display","flex","important")}else el.classList.add("hidden")})}catch(e){}}window.openDashboard=function(){block();return false};window.openDashboardUnlocked=window.openDashboard;window.openDashboardAuth=window.openDashboard;if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",block,{once:true});else block();setTimeout(block,50);setTimeout(block,150);setTimeout(block,300);setTimeout(block,800);setTimeout(block,1500)}catch(e){}})();</script><style id="bp-kiosk-enforce-style">html.bp-kiosk-mode #dashboardModal,html.bp-kiosk-mode #dashboardAuthModal,html.bp-kiosk-mode [onclick="openDashboard()"]{display:none!important;visibility:hidden!important;pointer-events:none!important}html.bp-kiosk-mode #step-welcome{display:flex!important}</style>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Pacifico&family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
 body{font-family:'Plus Jakarta Sans',sans-serif;background-color:var(--bp-bg,#09090b);background-image:var(--bp-bg-image,none);background-size:cover;background-position:center;background-attachment:fixed;-webkit-tap-highlight-color:transparent}
@@ -632,7 +632,7 @@ function saveConfig(opts={}){
 }
 function fmt(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n)}
 /* ============ STEPS ============ */
-function goToStep(n){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));const actual=n===6?5:n;const map={1:'step-welcome',2:'step-package',3:'step-payment',4:'step-capture',5:'step-frame',6:'step-frame',7:'step-final'};$(map[n]).classList.remove('hidden');currentStep=actual;updateStatusBadge();resetIdleTimer();if(actual===2)renderPackageStep();if(actual===3)renderPayment();if(actual===4)startCaptureSession();if(actual===5){stopWebcam();renderEditor();renderFilterChoicesStep5();renderCaptureReview();updateActiveFrameLabel()}if(actual===7)prepareFinal()}
+function goToStep(n){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));const actual=n===6?5:n;const map={1:'step-welcome',2:'step-package',3:'step-payment',4:'step-capture',5:'step-frame',6:'step-frame',7:'step-final'};$(map[n]).classList.remove('hidden');currentStep=actual;updateStatusBadge();resetIdleTimer();if(actual===2)renderPackageStep();if(actual===3)renderPayment();if(actual===4)startCaptureSession();if(actual===5){stopSessionRecorder().then(blob=>{if(blob?.size)stopWebcam();else console.warn('BoothPro video is not finalized; camera remains active.')}).catch(e=>{window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);console.warn('BoothPro capture recorder finalization:',e)});renderEditor();renderFilterChoicesStep5();renderCaptureReview();updateActiveFrameLabel()}if(actual===7){window.__BP_FINAL_PREPARE_ERROR__=null;window.__BP_FINAL_PREPARE_PROMISE__=Promise.resolve().then(()=>prepareFinal()).catch(e=>{window.__BP_FINAL_PREPARE_ERROR__=e;throw e});}}
 function updateStatusBadge(){const b=$('statusBadge'),t=$('statusText');b.classList.remove('hidden');if(currentStep===1)b.classList.add('hidden');else if(currentStep===2)t.innerText='Pilih Paket';else if(currentStep===3)t.innerText='Menunggu Pembayaran';else if(currentStep===4)t.innerText=`Take ${capturedPhotos.length}/${requiredPhotosCount}`;else if(currentStep===5||currentStep===6)t.innerText='Sesuaikan Foto & Filter';else t.innerText='Selesai'}
 function resetToHome(){stopSessionRecorder();stopWebcam();stopMidtransPoll();if(sessionTimerId)clearInterval(sessionTimerId);if(countdownTimer)clearInterval(countdownTimer);sessionTimerId=null;countdownTimer=null;capturedPhotos=[];window.__BP_PHOTO_PICK__=null;retakeCount=0;paymentConfirmed=false;sessionVideoBlob=null;if(sessionVideoUrl){try{URL.revokeObjectURL(sessionVideoUrl)}catch(e){}sessionVideoUrl='';}finalCompositeDataUrl='';finalGifDataUrl='';extraPrintPaid=false;selectedPackageId=null;frameSelectionConfirmed=false;preFrameCategoryOpen='';sessionId='';sessionStartedAt=null;selectedFrameId='plain-white';selectedFrameSrc='';currentFilter='none';frameBg='#ffffff';frameFg='#18181b';adjState={brightness:100,contrast:100,saturate:100};stickers=[];if($('adjBrightness')){$('adjBrightness').value=100;$('adjContrast').value=100;$('adjSaturate').value=100;updateAdjLabels()}goToStep(1)}
 /* ============ PACKAGES ============ */
@@ -832,7 +832,50 @@ async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await 
 function setupZoom(){try{const track=streamInstance?.getVideoTracks()[0];const caps=track?.getCapabilities?.();if(caps&&caps.zoom){const z=$('zoomRange');z.min=caps.zoom.min;z.max=caps.zoom.max;z.step=(caps.zoom.max-caps.zoom.min)/50;z.value=caps.zoom.min;$('zoomWrap').classList.remove('hidden');$('zoomWrap').classList.add('flex');z.oninput=()=>track.applyConstraints({advanced:[{zoom:Number(z.value)}]}).catch(()=>{})}}catch(e){}}
 /* ============ CAPTURE ============ */
 function startCaptureSession(){if(!paymentConfirmed){goToStep(3);return}capturedPhotos=[];retakeCount=0;$('filmStripGallery').innerHTML='';$('capturedCount').innerText='0';$('retakeCount').innerText='0';$('maxPhotosCount').innerText=requiredPhotosCount;$('nextToFrameBtn').disabled=true;$('cameraPlaceholder').classList.remove('hidden');$('cameraMessage').innerText='Membuka akses kamera...';startWebcam().then(()=>{$('shutterBtn').disabled=false;startSessionRecorder()});startSessionTimer();requestWakeLock()}
-function startSessionRecorder(){sessionVideoBlob=null;sessionVideoChunks=[];if(sessionVideoUrl){try{URL.revokeObjectURL(sessionVideoUrl)}catch(e){}sessionVideoUrl=''}try{if(!window.MediaRecorder||!streamInstance||useSimulation)return;const mime=['video/mp4;codecs=h264','video/webm;codecs=vp9','video/webm'].find(t=>MediaRecorder.isTypeSupported?.(t))||'';sessionRecorder=new MediaRecorder(streamInstance,mime?{mimeType:mime}:undefined);sessionRecorder.ondataavailable=e=>{if(e.data?.size)sessionVideoChunks.push(e.data)};sessionRecorder.onstop=()=>{if(sessionVideoChunks.length){sessionVideoBlob=new Blob(sessionVideoChunks,{type:sessionRecorder?.mimeType||'video/webm'});sessionVideoUrl=URL.createObjectURL(sessionVideoBlob)}};sessionRecorder.start(1000);window.__BP_SESSION_RECORD_TIMER__=setTimeout(()=>{if(sessionRecorder&&sessionRecorder.state==='recording')stopSessionRecorder()},12000)}catch(e){console.warn('Session recorder unavailable',e);sessionRecorder=null}}function stopSessionRecorder(){return new Promise(resolve=>{if(window.__BP_SESSION_RECORD_TIMER__){clearTimeout(window.__BP_SESSION_RECORD_TIMER__);window.__BP_SESSION_RECORD_TIMER__=null}const rec=sessionRecorder;if(!rec||rec.state==='inactive'){sessionRecorder=null;resolve();return}const done=()=>{sessionRecorder=null;resolve()};try{const prev=rec.onstop;rec.onstop=()=>{try{if(typeof prev==='function')prev()}finally{done()}};rec.stop()}catch(e){sessionRecorder=null;resolve()}})}
+function startSessionRecorder(){
+ const tracks=streamInstance?.getVideoTracks?.()||[];
+ const liveTracks=tracks.filter(t=>t&&t.readyState==='live');
+ const audit=(status,extra={})=>{window.__BP_SESSION_RECORDER_AUDIT__={status,at:Date.now(),state:sessionRecorder?.state||'none',mime:sessionRecorder?.mimeType||'',videoTracks:tracks.map(t=>({readyState:t?.readyState||'unknown',muted:!!t?.muted})),...extra}};
+ if(sessionRecorder?.state==='recording'){window.__BP_SESSION_RECORDER_INSTANCE__=sessionRecorder;audit('recording');return true}
+ if(sessionRecorder?.state==='paused'){try{sessionRecorder.resume();if(sessionRecorder.state==='recording'){window.__BP_SESSION_RECORDER_INSTANCE__=sessionRecorder;audit('recording');return true}}catch(e){window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e)}}
+ if(useSimulation){window.__BP_SESSION_RECORDER_ERROR__='Kamera simulasi tidak menghasilkan video Live Session.';audit('unavailable');return false}
+ if(!window.MediaRecorder){window.__BP_SESSION_RECORDER_ERROR__='MediaRecorder tidak didukung browser ini.';audit('unsupported');return false}
+ if(!streamInstance||!liveTracks.length){window.__BP_SESSION_RECORDER_ERROR__='Stream kamera belum memiliki video track aktif.';audit('no-live-video-track');return false}
+ try{
+  window.__BP_SESSION_STOP_PROMISE__=null;sessionVideoBlob=null;sessionVideoChunks=[];
+  if(sessionVideoUrl){try{URL.revokeObjectURL(sessionVideoUrl)}catch(e){}sessionVideoUrl=''}
+  const mime=['video/mp4;codecs=h264','video/webm;codecs=vp9','video/webm'].find(t=>MediaRecorder.isTypeSupported?.(t))||'';
+  const rec=new MediaRecorder(streamInstance,mime?{mimeType:mime}:undefined);sessionRecorder=rec;window.__BP_SESSION_RECORDER_INSTANCE__=rec;
+  rec.ondataavailable=e=>{if(e.data?.size)sessionVideoChunks.push(e.data)};
+  rec.onerror=e=>{window.__BP_SESSION_RECORDER_ERROR__=e?.error?.message||e?.message||'MediaRecorder mengalami error.';audit('error',{error:window.__BP_SESSION_RECORDER_ERROR__})};
+  rec.onstop=()=>{try{if(sessionRecorder===rec&&sessionVideoChunks.length){sessionVideoBlob=new Blob(sessionVideoChunks,{type:rec.mimeType||mime||'video/webm'});if(sessionVideoBlob.size)sessionVideoUrl=URL.createObjectURL(sessionVideoBlob)}audit(sessionVideoBlob?.size?'finalized':'stopped-empty',{blobBytes:sessionVideoBlob?.size||0})}catch(e){window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);audit('finalization-error',{error:window.__BP_SESSION_RECORDER_ERROR__})}};
+  rec.start(1000);
+  if(rec.state!=='recording')throw new Error('MediaRecorder tidak masuk state recording.');
+  window.__BP_SESSION_RECORDER_ERROR__=null;window.__BP_SESSION_RECORDER_MIME__=rec.mimeType||mime||'';audit('recording',{startedAt:Date.now()});
+  return true;
+ }catch(e){window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);audit('start-error',{error:window.__BP_SESSION_RECORDER_ERROR__});console.warn('Session recorder unavailable',e);return false}
+}
+function stopSessionRecorder(){
+ if(window.__BP_SESSION_STOP_PROMISE__)return window.__BP_SESSION_STOP_PROMISE__;
+ window.__BP_SESSION_STOP_PROMISE__=new Promise((resolve,reject)=>{
+  if(window.__BP_SESSION_RECORD_TIMER__){clearTimeout(window.__BP_SESSION_RECORD_TIMER__);window.__BP_SESSION_RECORD_TIMER__=null}
+  const rec=sessionRecorder;let promiseSettled=false,finalized=false,fallbackTimer=null;
+  const finalize=()=>{
+   if(finalized)return;finalized=true;if(fallbackTimer)clearTimeout(fallbackTimer);
+   try{if(!sessionVideoBlob&&sessionVideoChunks.length)sessionVideoBlob=new Blob(sessionVideoChunks,{type:rec?.mimeType||window.__BP_SESSION_RECORDER_MIME__||'video/webm'});if(sessionVideoBlob?.size&&!sessionVideoUrl)sessionVideoUrl=URL.createObjectURL(sessionVideoBlob)}catch(e){window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);console.warn('BoothPro video finalization:',e)}
+   if(sessionRecorder===rec)sessionRecorder=null;if(window.__BP_SESSION_RECORDER_INSTANCE__===rec)window.__BP_SESSION_RECORDER_INSTANCE__=null;
+   window.__BP_SESSION_RECORDER_AUDIT__={...(window.__BP_SESSION_RECORDER_AUDIT__||{}),status:sessionVideoBlob?.size?'finalized':'stopped-empty',stoppedAt:Date.now(),state:rec?.state||'none',blobBytes:sessionVideoBlob?.size||0};
+   if(!promiseSettled){promiseSettled=true;resolve(sessionVideoBlob||null)}
+  };
+  if(!rec){promiseSettled=true;resolve(sessionVideoBlob||null);return}
+  if(rec.state==='inactive'){finalize();return}
+  const previous=rec.onstop;
+  rec.onstop=function(event){try{if(typeof previous==='function')previous.call(rec,event)}catch(e){console.warn('BoothPro recorder onstop:',e)}finally{finalize()}};
+  fallbackTimer=setTimeout(()=>{if(promiseSettled)return;promiseSettled=true;window.__BP_SESSION_RECORDER_ERROR__='MediaRecorder tidak mengirim event stop dalam 20 detik.';window.__BP_SESSION_RECORDER_AUDIT__={...(window.__BP_SESSION_RECORDER_AUDIT__||{}),status:'stop-timeout',timedOutAt:Date.now(),state:rec.state};reject(new Error(window.__BP_SESSION_RECORDER_ERROR__))},20000);
+  try{if(rec.state==='recording'&&typeof rec.requestData==='function')rec.requestData();if(rec.state!=='inactive')rec.stop();else finalize()}catch(e){clearTimeout(fallbackTimer);fallbackTimer=null;if(!promiseSettled){promiseSettled=true;window.__BP_SESSION_RECORDER_ERROR__=e?.message||String(e);reject(e)}}
+ });
+ return window.__BP_SESSION_STOP_PROMISE__
+}
 function startSessionTimer(){if(sessionTimerId)clearInterval(sessionTimerId);sessionSecondsLeft=Math.max(7,Number(config.duration)||7)*60;renderTimer();sessionTimerId=setInterval(()=>{sessionSecondsLeft--;renderTimer();if(sessionSecondsLeft<=0){clearInterval(sessionTimerId);sessionTimerId=null;$('shutterBtn').disabled=true;alert('Waktu sesi habis. Lanjutkan ke frame jika foto sudah lengkap.')}},1000)}
 function renderTimer(){const m=Math.floor(sessionSecondsLeft/60),s=sessionSecondsLeft%60;$('sessionTimer').innerText=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');$('sessionTimer').classList.toggle('timer-danger',sessionSecondsLeft<=60)}
 function takePhoto(){if(sessionSecondsLeft<=0||capturedPhotos.length>=requiredPhotosCount||countdownTimer)return;const btn=$('shutterBtn'),overlay=$('countdownOverlay'),ct=$('countdownText');btn.disabled=true;overlay.classList.remove('hidden');let count=Math.max(1,Number(config.countdown)||3);ct.innerText=count;countdownTimer=setInterval(()=>{count--;if(count>0){ct.innerText=count}else{clearInterval(countdownTimer);countdownTimer=null;overlay.classList.add('hidden');const flash=$('flashLayer');flash.style.opacity='1';setTimeout(()=>flash.style.opacity='0',150);captureCurrentFrame()}},700)}
@@ -1172,7 +1215,7 @@ async function printComposite(){
  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
  setTimeout(cleanup,10000);
 }
-function generateQR(overrideUrl){const q=$('qrBox');if(!q)return;q.innerHTML='';const holder=document.createElement('div');holder.style.cssText='width:220px;height:220px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:12px;overflow:hidden';q.appendChild(holder);let payload=String(overrideUrl||'').trim();const base=(config.softBase||'').trim(),share=(config.shareBase||'').trim();if(!payload&&share){payload=share.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId||'session');if($('qrNote'))$('qrNote').innerText='QR mengarah ke halaman share/backend.'}else if(!payload&&base){payload=base.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId||'session');if($('qrNote'))$('qrNote').innerText='QR memakai endpoint soft file Dashboard.'}else if(!payload){payload=location.href.split('#')[0]+'#session='+encodeURIComponent(sessionId||'local');if($('qrNote'))$('qrNote').innerText='QR lokal aktif. Setelah Cloud/Share tersambung, QR akan memakai link bundling.'}try{if(typeof QRCode==='undefined')throw new Error('QRCode library belum termuat');new QRCode(holder,{text:payload,width:210,height:210,correctLevel:QRCode.CorrectLevel.M})}catch(e){holder.innerText='QR belum dapat dibuat. '+(e.message||e)}}function generateGifBlob(){return new Promise((resolve,reject)=>{if(!capturedPhotos.length)return reject(new Error('Tidak ada foto'));if(typeof GIF==='undefined')return reject(new Error('Generator GIF belum termuat'));const width=240,height=180;const gif=new GIF({workers:2,quality:28,width,height,workerScript:'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'});let pending=capturedPhotos.length,settled=false,started=false;const appliedFilter=getAppliedFilter();const fail=e=>{if(!settled){settled=true;try{gif.abort?.()}catch(err){}reject(e)}};const start=()=>{if(started||settled)return;started=true;try{gif.render()}catch(e){fail(e)}};gif.on('finished',blob=>{if(!settled){settled=true;resolve(blob)}});gif.on('abort',()=>fail(new Error('GIF worker dihentikan.')));capturedPhotos.forEach(src=>{const im=new Image();im.onload=()=>{if(settled)return;try{const c=document.createElement('canvas');c.width=width;c.height=height;const x=c.getContext('2d',{willReadFrequently:false});x.save();x.filter=appliedFilter==='none'?'none':appliedFilter;const scale=Math.max(width/im.width,height/im.height),dw=im.width*scale,dh=im.height*scale;x.drawImage(im,(width-dw)/2,(height-dh)/2,dw,dh);x.restore();const add=()=>{if(settled)return;gif.addFrame(c,{delay:500,copy:true});pending--;if(pending===0)start()};if(selectedFrameSrc){const ov=new Image();ov.onload=()=>{try{x.drawImage(ov,0,0,width,height)}catch(e){}add()};ov.onerror=add;ov.src=selectedFrameSrc}else add()}catch(e){fail(e)}};im.onerror=()=>fail(new Error('Gagal membaca foto untuk GIF'));im.src=src})})}
+function generateQR(overrideUrl){const q=$('qrBox');if(!q)return;q.innerHTML='';const holder=document.createElement('div');holder.style.cssText='width:220px;height:220px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:12px;overflow:hidden';q.appendChild(holder);let payload=String(overrideUrl||'').trim();const base=(config.softBase||'').trim(),share=(config.shareBase||'').trim();if(!payload&&share){payload=share.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId||'session');if($('qrNote'))$('qrNote').innerText='QR mengarah ke halaman share/backend.'}else if(!payload&&base){payload=base.replace(/\/$/,'')+'/'+encodeURIComponent(sessionId||'session');if($('qrNote'))$('qrNote').innerText='QR memakai endpoint soft file Dashboard.'}else if(!payload){payload=location.href.split('#')[0]+'#session='+encodeURIComponent(sessionId||'local');if($('qrNote'))$('qrNote').innerText='QR lokal aktif. Setelah Cloud/Share tersambung, QR akan memakai link bundling.'}try{if(typeof QRCode==='undefined')throw new Error('QRCode library belum termuat');new QRCode(holder,{text:payload,width:210,height:210,correctLevel:QRCode.CorrectLevel.M})}catch(e){holder.innerText='QR belum dapat dibuat. '+(e.message||e)}}function generateGifBlob(){return new Promise((resolve,reject)=>{if(!capturedPhotos.length)return reject(new Error('Tidak ada foto'));if(typeof GIF==='undefined')return reject(new Error('Generator GIF belum termuat'));const width=240,height=180;const gif=new GIF({workers:2,quality:28,width,height,workerScript:'/gif.worker.js'});let pending=capturedPhotos.length,settled=false,started=false;const appliedFilter=getAppliedFilter();const fail=e=>{if(!settled){settled=true;try{gif.abort?.()}catch(err){}reject(e)}};const start=()=>{if(started||settled)return;started=true;try{gif.render()}catch(e){fail(e)}};gif.on('finished',blob=>{if(!settled){settled=true;resolve(blob)}});gif.on('abort',()=>fail(new Error('GIF worker dihentikan.')));capturedPhotos.forEach(src=>{const im=new Image();im.onload=()=>{if(settled)return;try{const c=document.createElement('canvas');c.width=width;c.height=height;const x=c.getContext('2d',{willReadFrequently:false});x.save();x.filter=appliedFilter==='none'?'none':appliedFilter;const scale=Math.max(width/im.width,height/im.height),dw=im.width*scale,dh=im.height*scale;x.drawImage(im,(width-dw)/2,(height-dh)/2,dw,dh);x.restore();const add=()=>{if(settled)return;gif.addFrame(c,{delay:500,copy:true});pending--;if(pending===0)start()};if(selectedFrameSrc){const ov=new Image();ov.onload=()=>{try{x.drawImage(ov,0,0,width,height)}catch(e){}add()};ov.onerror=add;ov.src=selectedFrameSrc}else add()}catch(e){fail(e)}};im.onerror=()=>fail(new Error('Gagal membaca foto untuk GIF'));im.src=src})})}
 function downloadGif(){if(finalGifDataUrl){const a=document.createElement('a');a.href=finalGifDataUrl;a.download=`BoothPro-${sessionId}-loop.gif`;a.click();return}generateGifBlob().then(blob=>{finalGifDataUrl=URL.createObjectURL(blob);const a=document.createElement('a');a.href=finalGifDataUrl;a.download=`BoothPro-${sessionId}-loop.gif`;a.click()}).catch(e=>alert(e.message||'GIF gagal dibuat.'))}
 function downloadSessionReport(){const p=config.packages.find(x=>x.id===selectedPackageId)||{};const report={app:'BoothPro',version:'3.0',session_id:sessionId,started_at:sessionStartedAt,completed_at:new Date().toISOString(),package:p.name||'',price:p.price||0,payment_method:lastPaymentMethod,photos:capturedPhotos.length,prints:p.prints||1,retakes:retakeCount,filter:currentFilter,frame:selectedFrameId,stickers:stickers.map(s=>s.emoji)};const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`BoothPro-${sessionId}-report.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 /* ============ HISTORY ============ */
@@ -2566,7 +2609,11 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
     renderCaptureReview();
     if(!sessionTimerId)startSessionTimer();
     requestWakeLock();
-    startWebcam().then(()=>{c7RenderState();if(capturedPhotos.length>=requiredPhotosCount){c7SetState('Semua foto lengkap · Review siap.',true)}else if(c7AutoCapture)c7ScheduleAuto()}).catch(()=>c7RenderState());
+    startWebcam().then(()=>{
+      startSessionRecorder();
+      c7RenderState();
+      if(capturedPhotos.length>=requiredPhotosCount){c7SetState('Semua foto lengkap · Review siap.',true)}else if(c7AutoCapture)c7ScheduleAuto()
+    }).catch(()=>c7RenderState());
   };
 
   /* Safer timer: warning at 60s and no blocking alert at expiry. */
@@ -4479,6 +4526,165 @@ function start(){if(timer)clearInterval(timer);timer=setInterval(pullLive,10000)
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 </script>
-<script id="bp-digital-delivery-state-bridge">(function(){'use strict';window.BoothProDeliveryState=function(){return {sessionId:typeof sessionId==='string'?sessionId:'',finalCompositeDataUrl:typeof finalCompositeDataUrl==='string'?finalCompositeDataUrl:'',finalGifDataUrl:typeof finalGifDataUrl==='string'?finalGifDataUrl:'',capturedPhotos:Array.isArray(capturedPhotos)?capturedPhotos.slice():[],sessionVideoBlob:sessionVideoBlob||null,sessionVideoMime:sessionVideoBlob?.type||''};};})();</script>
+<script id="bp-digital-delivery-state-bridge">(function(){'use strict';window.BoothProDeliveryState=function(){return {sessionId:typeof sessionId==='string'?sessionId:'',finalCompositeDataUrl:typeof finalCompositeDataUrl==='string'?finalCompositeDataUrl:'',finalGifDataUrl:typeof finalGifDataUrl==='string'?finalGifDataUrl:'',capturedPhotos:Array.isArray(capturedPhotos)?capturedPhotos.slice():[],sessionVideoBlob:sessionVideoBlob||null,sessionVideoMime:sessionVideoBlob?.type||'',streamInstance:streamInstance||null,sessionRecorder:sessionRecorder||null,useSimulation:!!useSimulation};};})();</script>
 <script id="bp-digital-delivery-hotfix" src="/boothpro-hotfix-digital-delivery.js"></script>
+<style id="bp-frame-portrait-layout-fix">
+@media (orientation:portrait) and (max-width:900px){
+  #step-package{padding-bottom:20px}
+  #step-package>div:first-child{margin-bottom:18px}
+  #step-package>div:first-child h2{font-size:clamp(1.6rem,6vw,2.2rem);line-height:1.15}
+  #step-package>div:first-child p{font-size:12px;line-height:1.5}
+  #step-package>div.grid{display:flex!important;flex-direction:column!important;gap:16px!important}
+  #step-package #packageGrid{grid-template-columns:repeat(1,minmax(0,1fr))!important;gap:12px!important}
+  #step-package #packageGrid>button{min-height:108px;padding:16px!important}
+  #step-package>div.grid>div:last-child{width:100%;padding:16px!important;border-radius:22px}
+  #step-package #preFrameGrid{width:100%;min-width:0}
+  #step-package #preFrameGrid>div{width:100%;box-sizing:border-box}
+  #step-package .pre-category-index{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+  #step-package .pre-frame-category-card{min-height:122px!important;padding:12px!important}
+  #step-package .pre-frame-category-thumb{width:54px!important;height:68px!important}
+  #step-package .pre-frame-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;max-height:none!important;overflow:visible!important}
+  #step-package .pre-frame-detail-grid .pre-frame-card{aspect-ratio:2/3;min-height:0}
+  #step-package .pre-frame-detail-head{margin-bottom:12px}
+  #step-package #selectedPackageSummary{margin-top:14px!important}
+  #step-package #toPaymentBtn{min-height:56px;margin-top:12px!important}
+}
+@media (min-width:641px) and (max-width:900px) and (orientation:portrait){
+  #step-package #packageGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+</style>
+<style id="bp-kiosk-premium-ui">
+/* BoothPro Signature UI — scoped to Kiosk mode. Functional DOM/IDs remain untouched. */
+html.bp-kiosk-mode{
+  --bp-bg:#08090c;--bp-panel:rgba(18,19,24,.88);--bp-panel2:rgba(25,26,33,.9);
+  --bp-line:rgba(255,255,255,.09);--bp-muted:#a1a1aa;--bp-accent:#8b7cff;--bp-accent2:#c084fc;
+}
+html.bp-kiosk-mode body{
+  background:
+    radial-gradient(900px 500px at 8% -10%,rgba(99,102,241,.14),transparent 62%),
+    radial-gradient(800px 500px at 95% 5%,rgba(168,85,247,.10),transparent 60%),
+    #08090c;
+}
+html.bp-kiosk-mode body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.018),transparent 28%)}
+html.bp-kiosk-mode header{
+  height:68px;padding:10px clamp(16px,3vw,40px);background:rgba(8,9,12,.78);
+  border-color:var(--bp-line);box-shadow:0 10px 35px rgba(0,0,0,.18)
+}
+html.bp-kiosk-mode #brandLogoWrap{width:42px;height:42px;border-radius:14px;box-shadow:0 8px 24px rgba(99,102,241,.22)}
+html.bp-kiosk-mode #brandNameDisplay{font-size:17px;letter-spacing:.12em}
+html.bp-kiosk-mode main{max-width:1380px;padding:clamp(20px,3vw,42px);align-items:flex-start}
+html.bp-kiosk-mode #step-welcome{
+  max-width:980px;min-height:calc(100vh - 130px);padding:clamp(28px,6vh,70px) 18px;
+  gap:28px;position:relative
+}
+html.bp-kiosk-mode #step-welcome:after{
+  content:"";position:absolute;width:360px;height:360px;border:1px solid rgba(139,124,255,.12);
+  border-radius:50%;top:8%;left:50%;transform:translateX(-50%);pointer-events:none
+}
+html.bp-kiosk-mode #step-welcome>div:first-child{z-index:1}
+html.bp-kiosk-mode #step-welcome h1{font-size:clamp(2.45rem,6vw,5.2rem);line-height:.98;letter-spacing:-.055em}
+html.bp-kiosk-mode #step-welcome p{max-width:600px;font-size:clamp(.92rem,1.3vw,1.08rem);line-height:1.75}
+html.bp-kiosk-mode #step-welcome button[onclick="goToStep(2)"]{
+  min-width:260px;min-height:64px;justify-content:center;border-radius:18px;
+  box-shadow:0 20px 55px rgba(99,102,241,.25);transition:transform .2s,box-shadow .2s
+}
+html.bp-kiosk-mode #step-welcome button[onclick="goToStep(2)"]:hover{transform:translateY(-2px);box-shadow:0 25px 65px rgba(99,102,241,.34)}
+html.bp-kiosk-mode #step-package,#step-payment,#step-capture,#step-final{max-width:1220px}
+html.bp-kiosk-mode #step-package>div:first-child,#step-payment>div:first-child{margin-bottom:30px}
+html.bp-kiosk-mode #step-package h2,html.bp-kiosk-mode #step-payment h2{font-size:clamp(1.9rem,3.2vw,2.7rem);letter-spacing:-.035em}
+html.bp-kiosk-mode #step-package>div.grid{grid-template-columns:minmax(0,1.25fr) minmax(360px,.75fr);gap:24px}
+html.bp-kiosk-mode #packageGrid{gap:14px}
+html.bp-kiosk-mode #packageGrid>button{
+  min-height:168px;padding:22px!important;border-radius:24px;border-color:var(--bp-line);
+  background:linear-gradient(145deg,rgba(24,25,32,.96),rgba(12,13,17,.96));
+  box-shadow:0 12px 32px rgba(0,0,0,.18);transition:transform .2s,border-color .2s,box-shadow .2s
+}
+html.bp-kiosk-mode #packageGrid>button:hover{transform:translateY(-3px);border-color:rgba(139,124,255,.5);box-shadow:0 18px 42px rgba(0,0,0,.28)}
+html.bp-kiosk-mode #step-package>div.grid>div:last-child{
+  padding:24px;border-radius:26px;border:1px solid var(--bp-line);
+  background:linear-gradient(160deg,rgba(20,21,27,.94),rgba(10,11,14,.96));
+  box-shadow:0 20px 55px rgba(0,0,0,.2)
+}
+html.bp-kiosk-mode #preFrameGrid{min-height:320px}
+html.bp-kiosk-mode #step-package .pre-frame-category-card,
+html.bp-kiosk-mode #step-package .pre-frame-card{border-color:var(--bp-line);transition:transform .18s,border-color .18s,box-shadow .18s}
+html.bp-kiosk-mode #step-package .pre-frame-category-card:hover,
+html.bp-kiosk-mode #step-package .pre-frame-card:hover{transform:translateY(-2px);border-color:rgba(139,124,255,.48);box-shadow:0 12px 30px rgba(0,0,0,.22)}
+html.bp-kiosk-mode #step-package #toPaymentBtn{min-height:60px;border-radius:17px;box-shadow:0 12px 28px rgba(79,70,229,.2)}
+html.bp-kiosk-mode #step-payment>div.grid{gap:22px}
+html.bp-kiosk-mode #step-payment .bg-zinc-950,
+html.bp-kiosk-mode #step-capture .bg-zinc-950,
+html.bp-kiosk-mode #step-final .bg-zinc-950{border-color:var(--bp-line);box-shadow:0 18px 45px rgba(0,0,0,.2)}
+html.bp-kiosk-mode #step-payment .bg-zinc-950{border-radius:26px}
+html.bp-kiosk-mode #step-capture .aspect-\[4\/3\]{box-shadow:0 22px 55px rgba(0,0,0,.32)}
+html.bp-kiosk-mode #step-final .preview-shell{filter:drop-shadow(0 22px 40px rgba(0,0,0,.3))}
+@media(max-width:1024px){
+  html.bp-kiosk-mode #step-package>div.grid{grid-template-columns:1fr}
+  html.bp-kiosk-mode #step-package>div.grid>div{width:100%;min-width:0}
+}
+@media(max-width:640px){
+  html.bp-kiosk-mode header{height:60px;padding:8px 12px}
+  html.bp-kiosk-mode main{padding:16px 12px 28px}
+  html.bp-kiosk-mode #step-welcome{min-height:calc(100vh - 90px);padding:34px 6px;gap:24px}
+  html.bp-kiosk-mode #step-welcome:after{width:250px;height:250px;top:12%}
+  html.bp-kiosk-mode #step-welcome h1{font-size:clamp(2.15rem,11vw,3.25rem)}
+  html.bp-kiosk-mode #step-welcome button[onclick="goToStep(2)"]{width:min(100%,350px);min-height:60px}
+  html.bp-kiosk-mode #packageGrid{grid-template-columns:1fr!important}
+  html.bp-kiosk-mode #packageGrid>button{min-height:132px}
+  html.bp-kiosk-mode #step-package>div.grid>div:last-child{padding:18px;border-radius:22px}
+  html.bp-kiosk-mode #step-package .pre-frame-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+}
+
+/* BoothPro Signature Layer: capture the booth identity without touching app logic. */
+html.bp-kiosk-mode #step-package>div:first-child:before,
+html.bp-kiosk-mode #step-payment>div:first-child:before,
+html.bp-kiosk-mode #step-capture>div:first-child:before,
+html.bp-kiosk-mode #step-final>div:first-child:before{
+ content:"BOOTHPRO • SIGNATURE EXPERIENCE";display:block;margin-bottom:10px;
+ font-size:9px;font-weight:900;letter-spacing:.24em;color:#8b7cff
+}
+html.bp-kiosk-mode #step-package>div:first-child p,
+html.bp-kiosk-mode #step-payment>div:first-child p,
+html.bp-kiosk-mode #step-capture>div:first-child p,
+html.bp-kiosk-mode #step-final>div:first-child p{max-width:720px}
+html.bp-kiosk-mode #step-package>div.grid>div:last-child>h3{letter-spacing:-.01em}
+html.bp-kiosk-mode .pre-frame-category-card,
+html.bp-kiosk-mode .pre-frame-card{background:linear-gradient(145deg,rgba(27,28,36,.9),rgba(12,13,17,.96))}
+html.bp-kiosk-mode button{touch-action:manipulation}
+</style>
+<style id="bp-kiosk-hard-lock">
+html.bp-kiosk-mode #dashboardModal,
+html.bp-kiosk-mode #dashboardAuthModal,
+html.bp-kiosk-mode [onclick="openDashboard()"]{display:none!important}
+html.bp-kiosk-mode #dashboardModal *{pointer-events:none!important}
+</style>
+<script>
+(function(){
+  try{
+    const p=new URLSearchParams(location.search||'');
+    if(p.get('bp-kiosk')!=='1') return;
+    document.documentElement.classList.add('bp-kiosk-mode');
+    window.__BP_ENTRY_MODE__='kiosk';
+    const lock=function(){
+      try{
+        document.documentElement.classList.add('bp-kiosk-mode');
+        const d=document.getElementById('dashboardModal');
+        const a=document.getElementById('dashboardAuthModal');
+        [d,a].forEach(function(el){if(el){el.classList.add('hidden');el.style.setProperty('display','none','important');}});
+        document.querySelectorAll('[onclick="openDashboard()"]').forEach(function(el){el.style.setProperty('display','none','important');});
+        if(typeof resetToHome==='function') resetToHome();
+      }catch(e){}
+    };
+    window.openDashboard=function(){lock();return false};
+    window.openDashboardAuth=function(){lock();return false};
+    window.showAuthModal=function(){lock();return false};
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',lock,{once:true});
+    else lock();
+    setTimeout(lock,100);
+    setTimeout(lock,500);
+    setTimeout(lock,1500);
+  }catch(e){}
+})();
+</script>
+<script src="/boothpro-hotfix-c10.js?c10=2"></script>
 </body>\n</html>

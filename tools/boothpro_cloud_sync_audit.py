@@ -7,6 +7,10 @@ from pathlib import Path
 REPO_RAW = "https://raw.githubusercontent.com/Digitalprodukstore/BoothPro-App/main/index.html"
 
 def load_source():
+    for f in ["index-legacy.html", "index.html"]:
+        p = Path(f)
+        if p.exists() and len(p.read_text(encoding="utf-8", errors="replace")) > 1000:
+            return p.read_text(encoding="utf-8", errors="replace")
     local = Path("index.html")
     if local.exists():
         return local.read_text(encoding="utf-8", errors="replace")

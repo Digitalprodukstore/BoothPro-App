@@ -210,6 +210,7 @@ export const DEFAULT_OPERATOR_CONFIG: OperatorConfig = {
   adminPin: '1234',
   cashBypassPin: '1234',
   packages: DEFAULT_PACKAGES,
+  frames: DEFAULT_FRAMES,
   extraPrintPrice: 10000,
   maxRetakes: 3,
   countdownSeconds: 3,

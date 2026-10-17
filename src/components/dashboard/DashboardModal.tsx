@@ -460,34 +460,95 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
             {/* 3. FRAMES */}
             {activeTab === 'frames' && (
               <div className="space-y-4">
-                <h3 className="text-base font-black text-white">Galeri Template Frame</h3>
-                <p className="text-xs text-slate-400">
-                  Frame yang aktif di Kiosk secara otomatis disesuaikan dengan layout paket (2
-                  vertikal, 4 strip, 4 grid, 6 dual strip).
-                </p>
+                <div>
+                  <h3 className="text-base font-black text-white">Galeri Template Frame</h3>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Aktif/nonaktifkan frame, ubah nama dan kategori, atau unggah overlay PNG transparan. Galeri Kiosk membaca konfigurasi ini.
+                  </p>
+                </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-                  {DEFAULT_FRAMES.map((f) => (
-                    <div
-                      key={f.id}
-                      className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between"
-                    >
-                      <div className="mb-3">
-                        <span className="text-[10px] uppercase font-bold text-pink-400">
-                          {f.category} • {f.slots.length} slots
-                        </span>
-                        <h4 className="font-bold text-white text-xs mt-0.5">{f.name}</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {(formConfig.frames || DEFAULT_FRAMES).map((frame, index) => (
+                    <div key={frame.id} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="text-[10px] uppercase font-bold text-pink-400">{frame.slots.length} slots · {frame.layoutType}</span>
+                          <div className="mt-1 text-[10px] text-slate-500 font-mono truncate">{frame.id}</div>
+                        </div>
+                        <label className="flex items-center gap-2 text-[11px] font-bold text-slate-300 shrink-0">
+                          <input type="checkbox" checked={frame.isActive !== false}
+                            onChange={(e) => {
+                              const updated = [...(formConfig.frames || DEFAULT_FRAMES)];
+                              updated[index] = { ...updated[index], isActive: e.target.checked };
+                              setFormConfig({ ...formConfig, frames: updated });
+                            }} />
+                          Aktif
+                        </label>
                       </div>
-
-                      <div
-                        className="h-28 rounded-xl flex items-center justify-center border border-slate-700 text-xs font-black shadow-inner"
-                        style={{ backgroundColor: f.backgroundColor, color: f.accentColor }}
-                      >
-                        {f.titleText}
+                      <div className="h-32 rounded-xl flex items-center justify-center overflow-hidden border border-slate-700 p-2"
+                        style={{ backgroundColor: frame.backgroundColor }}>
+                        {frame.overlayImage ? <img src={frame.overlayImage} alt={frame.name} className="max-h-full max-w-full object-contain" /> :
+                          <div className="text-center font-black text-xs" style={{ color: frame.accentColor }}>
+                            <div className="mb-2 grid gap-1" style={{ gridTemplateColumns: frame.layoutType === '4_grid' || frame.layoutType === '6_dual_strip' ? 'repeat(2,minmax(0,1fr))' : '1fr' }}>
+                              {frame.slots.map((slot) => <div key={slot.id} className="h-4 w-12 rounded border border-current/50 bg-white/10" />)}
+                            </div>
+                            {frame.titleText || frame.name}
+                          </div>}
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-slate-400 block mb-1">Nama Frame</label>
+                        <input type="text" value={frame.name}
+                          onChange={(e) => {
+                            const updated = [...(formConfig.frames || DEFAULT_FRAMES)];
+                            updated[index] = { ...updated[index], name: e.target.value };
+                            setFormConfig({ ...formConfig, frames: updated });
+                          }}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-bold" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-slate-400 block mb-1">Kategori Galeri</label>
+                        <select value={frame.category}
+                          onChange={(e) => {
+                            const updated = [...(formConfig.frames || DEFAULT_FRAMES)];
+                            updated[index] = { ...updated[index], category: e.target.value as FrameTemplate['category'] };
+                            setFormConfig({ ...formConfig, frames: updated });
+                          }}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs">
+                          <option value="classic">Classic</option><option value="aesthetic">Aesthetic</option>
+                          <option value="neon">Neon</option><option value="retro">Retro</option><option value="custom">Custom</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-slate-400 block mb-1">Overlay PNG transparan (opsional)</label>
+                        <input type="file" accept="image/png,image/svg+xml"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 4 * 1024 * 1024) {
+                              window.alert('Ukuran file maksimal 4 MB. Gunakan PNG yang sudah dioptimalkan.');
+                              e.currentTarget.value = '';
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              if (typeof reader.result !== 'string') return;
+                              const updated = [...(formConfig.frames || DEFAULT_FRAMES)];
+                              updated[index] = { ...updated[index], overlayImage: reader.result as string };
+                              setFormConfig({ ...formConfig, frames: updated });
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                          className="block w-full text-[10px] text-slate-400 file:mr-2 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-[10px] file:font-bold file:text-white" />
+                        {frame.overlayImage && <button type="button" onClick={() => {
+                          const updated = [...(formConfig.frames || DEFAULT_FRAMES)];
+                          updated[index] = { ...updated[index], overlayImage: undefined };
+                          setFormConfig({ ...formConfig, frames: updated });
+                        }} className="mt-2 text-[10px] font-bold text-rose-400 hover:text-rose-300">Hapus overlay</button>}
                       </div>
                     </div>
                   ))}
                 </div>
+                <p className="text-[11px] text-amber-300/80">Catatan: overlay disimpan dalam konfigurasi; unggahan gambar berukuran besar sebaiknya dioptimalkan. Sinkronisasi cloud perlu diuji setelah menyimpan konfigurasi.</p>
               </div>
             )}
 

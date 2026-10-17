@@ -9,6 +9,7 @@ interface EditorScreenProps {
   config: OperatorConfig;
   selectedPackage: PackageConfig;
   capturedPhotos: string[];
+  initialFrame?: FrameTemplate;
   onCompleteEdit: (selectedFrame: FrameTemplate, transforms: SlotTransform[], finalPhotoUrl: string) => void;
   onBack: () => void;
 }
@@ -27,16 +28,19 @@ export const EditorScreen: React.FC<EditorScreenProps> = ({
   config,
   selectedPackage,
   capturedPhotos,
+  initialFrame,
   onCompleteEdit,
   onBack,
 }) => {
   // Filter frames matching layout of package
-  const matchingFrames = DEFAULT_FRAMES.filter(
-    (f) => f.slots.length === selectedPackage.photoCount || f.layoutType === selectedPackage.recommendedLayout
+  const matchingFrames = (config.frames || DEFAULT_FRAMES).filter(
+    (f) => f.isActive !== false && (f.slots.length === selectedPackage.photoCount || f.layoutType === selectedPackage.recommendedLayout)
   );
-  const initialFrame = matchingFrames[0] || DEFAULT_FRAMES[0];
+  const resolvedInitialFrame = (initialFrame && matchingFrames.some((frame) => frame.id === initialFrame.id))
+    ? initialFrame
+    : matchingFrames[0] || DEFAULT_FRAMES[0];
 
-  const [selectedFrame, setSelectedFrame] = useState<FrameTemplate>(initialFrame);
+  const [selectedFrame, setSelectedFrame] = useState<FrameTemplate>(resolvedInitialFrame);
   const [activeSlotId, setActiveSlotId] = useState<number>(1);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'frame' | 'adjust' | 'filter'>('frame');
@@ -44,7 +48,7 @@ export const EditorScreen: React.FC<EditorScreenProps> = ({
 
   // Initialize transforms for each slot
   const [slotTransforms, setSlotTransforms] = useState<SlotTransform[]>(() => {
-    return initialFrame.slots.map((slot, idx) => ({
+    return resolvedInitialFrame.slots.map((slot, idx) => ({
       slotId: slot.id,
       photoIndex: idx % capturedPhotos.length,
       zoom: 1.0,

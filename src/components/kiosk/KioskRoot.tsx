@@ -142,8 +142,18 @@ export const KioskRoot: React.FC = () => {
     setCurrentStep('start');
   };
 
-  // STEP 1 -> 2
-  const handleStart = () => {
+  // STEP 1 -> 2: refresh the shared config immediately before every new session.
+  // This avoids starting with stale device cache while the initial cloud request is still pending.
+  const handleStart = async () => {
+    audioEffects.playClick();
+    const result = await storageService.loadOperatorConfigFromCloud();
+    if (result.success && result.config) {
+      const merged = { ...storageService.getOperatorConfig(), ...result.config };
+      storageService.saveOperatorConfig(merged);
+      setConfig(merged);
+      setSelectedPackage((current) => merged.packages.find((p) => p.id === current.id) || merged.packages[1] || merged.packages[0] || current);
+    }
+    // If the cloud is temporarily unavailable, retain the last local cache and allow offline use.
     setCurrentStep('package');
   };
 

@@ -45,19 +45,21 @@ export class CanvasRenderer {
     canvas.height = frame.height;
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
 
-    // 1. Draw Frame Background
-    ctx.fillStyle = frame.backgroundColor || '#0f172a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // PNG overlays contain transparent cut-outs for photo slots; keep the canvas transparent beneath them.
+    if (!frame.overlayImage) {
+      ctx.fillStyle = frame.backgroundColor || '#0f172a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Optional decorative gradient border or pattern
-    ctx.strokeStyle = frame.accentColor || '#ec4899';
-    ctx.lineWidth = frame.borderWidth || 8;
-    ctx.strokeRect(
-      ctx.lineWidth / 2,
-      ctx.lineWidth / 2,
-      canvas.width - ctx.lineWidth,
-      canvas.height - ctx.lineWidth
-    );
+      // Preserve the built-in frame styling when no custom overlay is configured.
+      ctx.strokeStyle = frame.accentColor || '#ec4899';
+      ctx.lineWidth = frame.borderWidth || 8;
+      ctx.strokeRect(
+        ctx.lineWidth / 2,
+        ctx.lineWidth / 2,
+        canvas.width - ctx.lineWidth,
+        canvas.height - ctx.lineWidth
+      );
+    }
 
     // Pre-load all photo images
     const imageElements: (HTMLImageElement | null)[] = await Promise.all(
@@ -98,9 +100,11 @@ export class CanvasRenderer {
       ctx.roundRect(slot.x, slot.y, slot.width, slot.height, radius);
       ctx.clip();
 
-      // Slot background
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(slot.x, slot.y, slot.width, slot.height);
+      // Slot backgrounds are only needed for generated frames; overlay PNGs provide their own transparent windows.
+      if (!frame.overlayImage) {
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(slot.x, slot.y, slot.width, slot.height);
+      }
 
       if (photoImg) {
         this.applyFilterToContext(ctx, transform.filter);
@@ -137,16 +141,18 @@ export class CanvasRenderer {
 
       ctx.restore();
 
-      // Inner subtle border on slot
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(slot.x, slot.y, slot.width, slot.height, radius);
-      ctx.stroke();
+      // Inner slot borders are only used for generated frames.
+      if (!frame.overlayImage) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(slot.x, slot.y, slot.width, slot.height, radius);
+        ctx.stroke();
+      }
     }
 
-    // 3. Render Bottom Branding & Date
-    ctx.save();
+    // 3. Render generated-frame branding only when a custom PNG is not already the design layer.
+    if (!frame.overlayImage) ctx.save();
     const title = customTitle || frame.titleText || 'BOOTHPRO MEMORIES';
     const subtitle = frame.subtitleText || new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
 
@@ -163,7 +169,22 @@ export class CanvasRenderer {
     ctx.font = `500 ${Math.round(canvas.width * 0.024)}px "Plus Jakarta Sans", sans-serif`;
     ctx.letterSpacing = '1px';
     ctx.fillText(subtitle, canvas.width / 2, footerY + 12);
-    ctx.restore();
+    if (!frame.overlayImage) {
+      ctx.restore();
+    } else {
+      // Draw the transparent PNG above the captured photos so its borders and decorations frame them.
+      try {
+        const overlay = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error('Frame overlay image could not be loaded'));
+          image.src = frame.overlayImage!;
+        });
+        ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
+      } catch (error) {
+        console.error('Failed to render frame overlay; rendering photos without the overlay.', error);
+      }
+    }
 
     return canvas.toDataURL('image/png', 0.95);
   }

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ArrowRight, Printer, Sparkles, Plus, Minus, Check } from 'lucide-react';
-import { PackageConfig, OperatorConfig } from '../../types';
+import { PackageConfig, OperatorConfig, FrameTemplate } from '../../types';
+import { DEFAULT_FRAMES } from '../../data/defaultConfig';
 import { audioEffects } from '../../services/audioEffects';
 
 interface PackageScreenProps {
   config: OperatorConfig;
-  onSelectPackage: (pkg: PackageConfig, extraPrints: number, totalPrice: number) => void;
+  onSelectPackage: (pkg: PackageConfig, frame: FrameTemplate, extraPrints: number, totalPrice: number) => void;
   onBack: () => void;
 }
 
@@ -18,6 +19,20 @@ export const PackageScreen: React.FC<PackageScreenProps> = ({
     config.packages[1] || config.packages[0] // Default to Classic Strip
   );
   const [extraPrints, setExtraPrints] = useState<number>(0);
+  const [selectedFrameId, setSelectedFrameId] = useState<string>('');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const matchingFrames = DEFAULT_FRAMES.filter(
+    (frame) => frame.slots.length === selectedPkg.photoCount || frame.layoutType === selectedPkg.recommendedLayout
+  );
+  const visibleFrames = activeCategory === 'all'
+    ? matchingFrames
+    : matchingFrames.filter((frame) => frame.category === activeCategory);
+
+  React.useEffect(() => {
+    if (!matchingFrames.some((frame) => frame.id === selectedFrameId)) {
+      setSelectedFrameId(matchingFrames[0]?.id || '');
+    }
+  }, [selectedPkg.id, selectedFrameId]);
 
   const formatRupiah = (val: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -32,7 +47,9 @@ export const PackageScreen: React.FC<PackageScreenProps> = ({
 
   const handleNext = () => {
     audioEffects.playClick();
-    onSelectPackage(selectedPkg, extraPrints, totalPrice);
+    const selectedFrame = matchingFrames.find((frame) => frame.id === selectedFrameId) || matchingFrames[0];
+    if (!selectedFrame) return;
+    onSelectPackage(selectedPkg, selectedFrame, extraPrints, totalPrice);
   };
 
   return (
@@ -136,6 +153,56 @@ export const PackageScreen: React.FC<PackageScreenProps> = ({
             );
           })}
         </div>
+
+        {/* Frame Gallery: choose a frame before continuing to payment */}
+        <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-900/50 p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-pink-400">Langkah berikutnya</span>
+              <h3 className="mt-1 text-xl sm:text-2xl font-black text-white">Pilih Frame Foto</h3>
+              <p className="mt-1 text-sm text-slate-400">Frame disesuaikan otomatis dengan paket {selectedPkg.name} ({selectedPkg.photoCount} pose).</p>
+            </div>
+            <span className="text-xs text-slate-400">{matchingFrames.length} frame tersedia</span>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {['all', 'classic', 'aesthetic', 'neon', 'retro', 'custom'].map((category) => (
+              <button key={category} type="button" onClick={() => setActiveCategory(category)}
+                className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold capitalize transition ${activeCategory === category ? 'border-pink-500 bg-pink-500/15 text-pink-300' : 'border-slate-700 bg-slate-950 text-slate-400 hover:border-slate-500'}`}>
+                {category === 'all' ? 'Semua Frame' : category}
+              </button>
+            ))}
+          </div>
+          {visibleFrames.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-700 p-8 text-center text-sm text-slate-400">Belum ada frame untuk kategori ini pada paket yang dipilih.</div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {visibleFrames.map((frame) => {
+                const active = selectedFrameId === frame.id;
+                return (
+                  <button key={frame.id} type="button" onClick={() => { audioEffects.playClick(); setSelectedFrameId(frame.id); }}
+                    aria-pressed={active}
+                    className={`relative rounded-2xl border p-3 text-left transition ${active ? 'border-pink-500 bg-pink-500/10 ring-2 ring-pink-500/30' : 'border-slate-800 bg-slate-950 hover:border-slate-600'}`}>
+                    <div className="mb-3 flex h-36 items-center justify-center overflow-hidden rounded-xl border border-slate-800 p-2"
+                      style={{ backgroundColor: frame.backgroundColor }}>
+                      {frame.overlayImage ? <img src={frame.overlayImage} alt={frame.name} className="max-h-full max-w-full object-contain" /> :
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center" style={{ color: frame.accentColor }}>
+                          <div className="grid w-full flex-1 gap-1" style={{ gridTemplateColumns: frame.layoutType === '4_grid' || frame.layoutType === '6_dual_strip' ? 'repeat(2,minmax(0,1fr))' : '1fr', gridTemplateRows: frame.layoutType === '2_vertical' ? 'repeat(2,minmax(0,1fr))' : frame.layoutType === '6_dual_strip' ? 'repeat(3,minmax(0,1fr))' : frame.layoutType === '4_grid' ? 'repeat(2,minmax(0,1fr))' : 'repeat(4,minmax(0,1fr))' }}>
+                            {frame.slots.map((slot) => <div key={slot.id} className="rounded-sm border border-current/50 bg-white/10" />)}
+                          </div>
+                          <span className="max-w-full truncate text-[9px] font-black tracking-wide">{frame.titleText || frame.name}</span>
+                        </div>}
+                    </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0"><div className="truncate text-sm font-bold text-white">{frame.name}</div><div className="mt-1 text-[10px] uppercase tracking-wide text-slate-500">{frame.category} · {frame.slots.length} pose</div></div>
+                      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs ${active ? 'border-pink-500 bg-pink-500 text-white' : 'border-slate-700 text-transparent'}`}>✓</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <p className="text-xs text-slate-500">Frame yang dipilih akan dibawa ke Editor dan menjadi frame awal untuk hasil foto.</p>
+        </section>
 
         {/* Extra Print Add-on Section */}
         <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">

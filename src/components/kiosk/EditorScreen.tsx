@@ -34,7 +34,7 @@ export const EditorScreen: React.FC<EditorScreenProps> = ({
 }) => {
   // Filter frames matching layout of package
   const matchingFrames = (config.frames || DEFAULT_FRAMES).filter(
-    (f) => f.isActive !== false && (f.slots.length === selectedPackage.photoCount || f.layoutType === selectedPackage.recommendedLayout)
+    (f) => f.isActive !== false && String(f.isActive).toLowerCase() !== 'false' && (f.slots.length === selectedPackage.photoCount || f.layoutType === selectedPackage.recommendedLayout)
   );
   const resolvedInitialFrame = (initialFrame && matchingFrames.some((frame) => frame.id === initialFrame.id))
     ? initialFrame

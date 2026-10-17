@@ -21,7 +21,7 @@ export const PackageScreen: React.FC<PackageScreenProps> = ({
   const [extraPrints, setExtraPrints] = useState<number>(0);
   const [selectedFrameId, setSelectedFrameId] = useState<string>('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const availableFrames = (config.frames || DEFAULT_FRAMES).filter((frame) => frame.isActive !== false);
+  const availableFrames = (config.frames || DEFAULT_FRAMES).filter((frame) => frame.isActive !== false && String(frame.isActive).toLowerCase() !== 'false');
   const matchingFrames = availableFrames.filter(
     (frame) => frame.slots.length === selectedPkg.photoCount || frame.layoutType === selectedPkg.recommendedLayout
   );
@@ -33,7 +33,7 @@ export const PackageScreen: React.FC<PackageScreenProps> = ({
     if (!matchingFrames.some((frame) => frame.id === selectedFrameId)) {
       setSelectedFrameId(matchingFrames[0]?.id || '');
     }
-  }, [selectedPkg.id, selectedFrameId]);
+  }, [selectedPkg.id, selectedFrameId, config.frames]);
 
   const formatRupiah = (val: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -273,6 +273,7 @@ export const PackageScreen: React.FC<PackageScreenProps> = ({
         </div>
 
         <button
+          disabled={!matchingFrames.length || !selectedFrameId}
           onClick={handleNext}
           className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 sm:px-10 py-4 sm:py-5 rounded-2xl bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 text-white font-extrabold text-lg shadow-lg shadow-pink-500/30 hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
         >

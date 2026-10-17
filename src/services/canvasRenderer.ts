@@ -151,25 +151,23 @@ export class CanvasRenderer {
       }
     }
 
-    // 3. Render generated-frame branding only when a custom PNG is not already the design layer.
-    if (!frame.overlayImage) ctx.save();
-    const title = customTitle || frame.titleText || 'BOOTHPRO MEMORIES';
-    const subtitle = frame.subtitleText || new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
-
-    // Footer position
-    const footerY = canvas.height - 50;
-
-    ctx.textAlign = 'center';
-    ctx.fillStyle = frame.accentColor || '#ec4899';
-    ctx.font = `bold ${Math.round(canvas.width * 0.038)}px "Plus Jakarta Sans", sans-serif`;
-    ctx.letterSpacing = '2px';
-    ctx.fillText(title, canvas.width / 2, footerY - 14);
-
-    ctx.fillStyle = 'rgba(248, 250, 252, 0.7)';
-    ctx.font = `500 ${Math.round(canvas.width * 0.024)}px "Plus Jakarta Sans", sans-serif`;
-    ctx.letterSpacing = '1px';
-    ctx.fillText(subtitle, canvas.width / 2, footerY + 12);
+    // 3. Generated frame branding, or the uploaded transparent PNG overlay.
     if (!frame.overlayImage) {
+      ctx.save();
+      const title = customTitle || frame.titleText || 'BOOTHPRO MEMORIES';
+      const subtitle = frame.subtitleText || new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
+      const footerY = canvas.height - 50;
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = frame.accentColor || '#ec4899';
+      ctx.font = `bold ${Math.round(canvas.width * 0.038)}px "Plus Jakarta Sans", sans-serif`;
+      ctx.letterSpacing = '2px';
+      ctx.fillText(title, canvas.width / 2, footerY - 14);
+
+      ctx.fillStyle = 'rgba(248, 250, 252, 0.7)';
+      ctx.font = `500 ${Math.round(canvas.width * 0.024)}px "Plus Jakarta Sans", sans-serif`;
+      ctx.letterSpacing = '1px';
+      ctx.fillText(subtitle, canvas.width / 2, footerY + 12);
       ctx.restore();
     } else {
       // Draw the transparent PNG above the captured photos so its borders and decorations frame them.

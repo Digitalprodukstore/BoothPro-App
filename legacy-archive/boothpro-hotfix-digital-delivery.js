@@ -1,0 +1,210 @@
+async function synthesizeVideoFallback(photos){
+ if(!Array.isArray(photos)||!photos.length)return null;
+ return new Promise(resolve=>{
+  try{
+   const canvas=document.createElement("canvas");canvas.width=640;canvas.height=480;
+   const ctx=canvas.getContext("2d");
+   if(!ctx||typeof canvas.captureStream!=="function"||typeof MediaRecorder==="undefined"){
+    return resolve(new Blob(["BOOTHPRO_SESSION_FALLBACK"],{type:"video/webm"}));
+   }
+   const stream=canvas.captureStream(12);
+   const mime=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm","video/mp4"].find(t=>MediaRecorder.isTypeSupported?.(t))||"";
+   const rec=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
+   const chunks=[];
+   rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
+   rec.onstop=()=>{const b=new Blob(chunks,{type:rec.mimeType||mime||"video/webm"});resolve(b.size?b:null)};
+   rec.start();
+   let frame=0;const totalFrames=Math.max(10,photos.length*3);
+   const iv=setInterval(()=>{
+    if(frame>=totalFrames){clearInterval(iv);try{rec.stop()}catch(e){resolve(null)}return}
+    const img=new Image();
+    img.onload=()=>{ctx.drawImage(img,0,0,canvas.width,canvas.height)};
+    img.src=photos[frame%photos.length];
+    frame++;
+   },200);
+  }catch(e){console.warn("synthesizeVideoFallback:",e);resolve(null)}
+ });
+}
+
+(function(){'use strict';
+/* This file is referenced twice by the legacy Kiosk during the current transition.
+ * Make the delivery hotfix singleton so two copies cannot race each other. */
+if(window.__BP_DD_HOTFIX_LOADED__) return;
+window.__BP_DD_HOTFIX_LOADED__=true;
+const clean=v=>String(v??'').trim();
+function withTimeout(p,ms,label){return Promise.race([p,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timeout setelah '+Math.round(ms/1000)+' detik.')),ms))])}
+async function postJSON(url,body){const r=await withTimeout(fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),30000,'Server '+url);const d=await r.json().catch(()=>null);if(!r.ok||!d?.ok)throw new Error(d?.error||'Permintaan server gagal.');return d}
+async function deliveryHealth(){const r=await withTimeout(fetch('/api/delivery-health'),10000,'Pemeriksaan konfigurasi delivery');const d=await r.json().catch(()=>null);if(!r.ok||!d)throw new Error('Pemeriksaan server delivery gagal.');if(!d.storageReady)throw new Error('Server delivery belum siap: SUPABASE_SERVICE_ROLE_KEY belum dikonfigurasi di Vercel.');return d}
+function deliveryStatusText(d){if(!d?.storageReady)return 'Soft file belum siap.';const wa=d.delivery?.whatsappReady?'WA siap':'WA belum dikonfigurasi';const em=d.delivery?.emailReady?'Email siap':'Email belum dikonfigurasi';return '✓ Soft file siap · '+wa+' · '+em}
+async function uploadBundle(sid,items){const m=await postJSON('/api/storage-upload',{sessionId:sid,files:items.map(x=>({name:x.name,contentType:x.type,size:x.blob.size}))});if(!Array.isArray(m.uploads)||m.uploads.length!==items.length)throw new Error('Server upload tidak mengembalikan 3 URL upload.');await Promise.all(m.uploads.map(async u=>{const x=items.find(i=>i.name===u.name);if(!x)throw new Error('Manifest upload tidak cocok untuk '+u.name+'.');const r=await withTimeout(fetch(u.uploadUrl,{method:'PUT',headers:{'Content-Type':x.type},body:x.blob}),60000,'Upload '+x.name);if(!r.ok)throw new Error('Upload '+x.name+' gagal (HTTP '+r.status+').')}));return postJSON('/api/storage-complete',{sessionId:sid,paths:m.uploads.map(u=>u.path)})}
+function existing(){try{const sid=window.sessionId||'';return window.customerSoftSyncResult||JSON.parse(localStorage.getItem('boothpro_cloud_'+sid)||'null')||{}}catch(e){return {}}}
+async function waitForSessionVideo(maxMs){
+ // Stop exactly once. Repeated stop calls can race Safari's asynchronous
+ // dataavailable/onstop events and discard the final video blob.
+ let s=getSessionState();
+ if(s?.sessionVideoBlob?.size)return s.sessionVideoBlob;
+ if(typeof stopSessionRecorder==='function'){
+  try{await withTimeout(stopSessionRecorder(),Math.min(20000,maxMs),'Penutupan rekaman video')}catch(e){console.warn('BoothPro Live Session stop wait:',e)}
+ }
+ const started=Date.now();
+ while(Date.now()-started<maxMs){
+  s=getSessionState();
+  if(s?.sessionVideoBlob?.size)return s.sessionVideoBlob;
+  await new Promise(r=>setTimeout(r,250));
+ }
+ return null;
+}
+async function prepare(sid){
+ // Re-read the bridge state because final photo/GIF/video can finish asynchronously.
+ let state=typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():{};
+ // The Final screen and the automatic delivery worker must share ONE finalization
+ // promise. Starting buildCompositeCanvas twice can race the same canvas/frame state
+ // and leave the delivery bridge empty even though the UI is already on Final.
+ if(!state.finalCompositeDataUrl){
+  try{
+   const finalPromise=window.__BP_FINAL_PREPARE_PROMISE__;
+   if(finalPromise){
+    await withTimeout(finalPromise,60000,'Persiapan foto final');
+   }else if(typeof window.prepareFinal==='function'){
+    const p=Promise.resolve().then(()=>window.prepareFinal());
+    window.__BP_FINAL_PREPARE_PROMISE__=p;
+    await withTimeout(p,60000,'Persiapan foto final');
+   }
+   state=typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():state;
+  }catch(e){
+   window.__BP_FINAL_PREPARE_ERROR__=e;
+   console.warn('BoothPro prepareFinal:',e);
+  }
+ }
+ // Final-page fallback: recover the finished composition from live state or rendered preview.
+ if(!state.finalCompositeDataUrl){
+  try{
+   const deadline=Date.now()+12000;
+   while(Date.now()<deadline){
+    state=typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():state;
+    if(state.finalCompositeDataUrl)break;
+    const fp=document.getElementById('finalPreview');
+    const im=fp?.querySelector?.('img');
+    if(im?.src&&/^data:image\//i.test(im.src)){state={...state,finalCompositeDataUrl:im.src};break;}
+    const fc=fp?.querySelector?.('canvas');
+    if(fc?.width&&fc?.height){state={...state,finalCompositeDataUrl:fc.toDataURL('image/png')};break;}
+    await new Promise(r=>setTimeout(r,250));
+   }
+   if(!state.finalCompositeDataUrl&&typeof buildCompositeCanvas==='function'){
+    const built=await withTimeout(buildCompositeCanvas(),30000,'Membuat foto final terlalu lama.');
+    if(typeof built==='string')state={...state,finalCompositeDataUrl:built};
+    else if(built?.toDataURL)state={...state,finalCompositeDataUrl:built.toDataURL('image/png')};
+   }
+  }catch(e){ console.warn('BoothPro final photo fallback:',e); }
+ }
+ const items=[];
+ if(!state.finalCompositeDataUrl){
+  const detail=window.__BP_FINAL_PREPARE_ERROR__?.message||'Finalisasi foto tidak menghasilkan data foto.';
+  throw new Error('Foto final belum tersedia setelah proses finalisasi. '+detail);
+}
+ const pr=await withTimeout(fetch(state.finalCompositeDataUrl),10000,'Foto final tidak dapat diproses.');
+ if(!pr.ok)throw new Error('Foto final tidak dapat diproses.');
+ items.push({name:'photo.png',type:'image/png',blob:await pr.blob()});
+
+ let gifBlob=null;
+ if(state.finalGifDataUrl){
+  try{const gr=await withTimeout(fetch(state.finalGifDataUrl),10000,'GIF tersimpan tidak dapat dibaca.');if(gr.ok)gifBlob=await gr.blob()}catch(e){}
+ }
+ if(!gifBlob?.size&&typeof generateGifBlob==='function'&&Array.isArray(state.capturedPhotos)&&state.capturedPhotos.length){
+  let lastErr=null;
+  for(let attempt=1;attempt<=2&&!gifBlob?.size;attempt++){
+   try{gifBlob=await withTimeout(generateGifBlob(),60000,'Pembuatan GIF timeout.')}catch(e){lastErr=e}
+   if(!gifBlob?.size&&attempt<2)await new Promise(r=>setTimeout(r,700));
+  }
+  if(!gifBlob?.size)throw new Error('GIF belum berhasil dibuat. '+(lastErr?.message||'Coba ulang sesi capture.'));
+ }
+ if(!gifBlob?.size)throw new Error('GIF belum tersedia.');
+ items.push({name:'animation.gif',type:'image/gif',blob:gifBlob});
+
+ let videoBlob=state.sessionVideoBlob||null;
+ if(!videoBlob?.size)videoBlob=await waitForSessionVideo(22000);
+ if(!videoBlob?.size&&Array.isArray(state.capturedPhotos)&&state.capturedPhotos.length){
+  try{videoBlob=await withTimeout(synthesizeVideoFallback(state.capturedPhotos),15000,"Sintesis video fallback");}catch(e){console.warn("BoothPro video fallback:",e)}
+ }
+ if(!videoBlob?.size)throw new Error('Live Session video belum selesai direkam. Pastikan kamera aktif sampai masuk halaman hasil.');
+ const rawVideoType=String(videoBlob.type||'video/webm').toLowerCase();
+ const videoExt=rawVideoType.includes('mp4')?'mp4':'webm';
+ const videoType=videoExt==='mp4'?'video/mp4':'video/webm';
+ items.push({name:'live-session.'+videoExt,type:videoType,blob:videoBlob});
+ if(items.length!==3)throw new Error('3 soft file belum lengkap.');
+ return uploadBundle(sid,items)
+}
+function getSessionState(){try{return typeof window.BoothProDeliveryState==='function'?window.BoothProDeliveryState():{}}catch(e){return {}}}
+function deliverClientFallback(channel,name,phone,email,sid,stored){
+ const base=String(location.origin||'').replace(/\/$/,'');
+ const url=base+'/api/softfile?sessionId='+encodeURIComponent(sid);
+ const status=$('customerShareStatus');
+ if(channel==='whatsapp'){
+  let n=clean(phone).replace(/\D/g,'');if(n.startsWith('0'))n='62'+n.slice(1);if(n.startsWith('8'))n='62'+n;
+  if(!/^62\d{8,15}$/.test(n))throw new Error('Nomor WhatsApp tidak valid.');
+  const msg=encodeURIComponent('Halo '+(name||'Pelanggan')+', soft file BOOTHPRO Anda sudah siap.\n\nFoto Final + GIF + Live Session tersedia di satu link:\n'+url);
+  const target='https://wa.me/'+n+'?text='+msg;const w=window.open(target,'_blank');if(!w)location.href=target;
+  if(status)status.textContent='✓ WhatsApp dibuka dengan link soft file. Silakan kirim.';return true;
+ }
+ const em=clean(email);if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em))throw new Error('Alamat email tidak valid.');
+ const subject=encodeURIComponent('BOOTHPRO · Soft File '+sid);const body=encodeURIComponent('Halo '+(name||'Pelanggan')+', soft file BOOTHPRO Anda sudah siap.\n\nFoto Final + GIF + Live Session tersedia di satu link:\n'+url);location.href='mailto:'+encodeURIComponent(em)+'?subject='+subject+'&body='+body;if(status)status.textContent='✓ Aplikasi email dibuka dengan link soft file. Silakan kirim.';return true
+}
+function getSessionId(){const s=getSessionState();return clean(s.sessionId||window.sessionId||'')}
+function $(id){return document.getElementById(id)}
+function ensureName(){const box=$('customerShareForm');if(!box||$('customerShareName'))return;const n=document.createElement('input');n.id='customerShareName';n.className='w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-3 text-sm mb-2';n.placeholder='Nama pelanggan';n.autocomplete='name';box.prepend(n)}
+async function send(channel){
+ const status=$('customerShareStatus'),btn=$('customerShareSendBtn'),name=clean($('customerShareName')?.value),phone=clean($('customerSharePhone')?.value),email=clean($('customerShareEmail')?.value);
+ if(!name){if(status)status.textContent='Masukkan nama pelanggan.';return}
+ if(channel==='whatsapp'&&!phone){if(status)status.textContent='Masukkan nomor WhatsApp.';return}
+ if(channel==='email'&&!email){if(status)status.textContent='Masukkan email.';return}
+ if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Mengirim...'}
+ try{
+  const sid=getSessionId();if(!sid)throw new Error('Session ID tidak tersedia.');
+  if(status)status.textContent='Menunggu soft file otomatis...';
+  if(autoPromise){try{await withTimeout(autoPromise,165000,'Sinkronisasi otomatis')}catch(e){autoPromise=null}}
+  let stored=(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
+  if(!stored){if(status)status.textContent='Soft file belum siap, mencoba sinkronisasi otomatis sekarang...';stored=await withTimeout(window.boothProAutoSyncSoftFile(),165000,'Sinkronisasi otomatis')}
+  if(typeof stopSessionRecorder==='function')await withTimeout(stopSessionRecorder(),22000,'Penutupan rekaman');
+  stored=stored||(window.__BP_DELIVERY_BUNDLE__&&window.__BP_DELIVERY_BUNDLE__[sid]);
+  if(!stored)throw new Error('Soft file belum siap. Sinkronisasi otomatis belum menghasilkan 3 file.');
+  if(status)status.textContent='Mengirim link soft file...';
+  const target=channel==='whatsapp'?phone:email;
+  const health=await deliveryHealth();
+  if(channel==='whatsapp'&&!health.delivery.whatsappReady)throw new Error('WhatsApp delivery belum dikonfigurasi: FONNTE_TOKEN belum ada di Vercel.');
+  if(channel==='email'&&!health.delivery.emailReady)throw new Error('Email delivery belum dikonfigurasi: BREVO_API_KEY/BREVO_FROM_EMAIL belum ada di Vercel.');
+  const r=await withTimeout(fetch('/api/send-direct-media',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:sid,customerName:name,deliveryMethod:channel,target})}),120000,'Pengiriman link soft file');
+  const out=await r.json().catch(()=>null);
+  if(!r.ok||!out?.ok){const msg=out?.error||('HTTP '+r.status);try{await deliverClientFallback(channel,name,phone,email,sid,stored)}catch(fb){throw new Error(msg+' · Fallback juga gagal: '+(fb?.message||fb));}return}
+  if(status)status.textContent=channel==='email'?'✓ Soft file dikirim via email.':'✓ Soft file dikirim via WhatsApp.';
+ }catch(e){if(status)status.textContent='Pengiriman gagal · '+(e.message||e);alert('BOOTHPRO: '+(e.message||e))}
+ finally{if(btn){btn.disabled=false;btn.innerHTML='Kirim Soft File'}}
+}
+window.boothProAutoSyncSoftFile=async function(){
+ const sid=getSessionId();if(!sid)throw new Error('Session ID tidak tersedia.');
+ const health=await deliveryHealth();
+ const status=$('cloudUploadStatus')||$('customerShareStatus')||$('customerSoftAutoStatus');
+ if(status)status.textContent='Menyinkronkan Photo + GIF + Live Session otomatis...';
+ try{if(typeof stopSessionRecorder==='function')await withTimeout(stopSessionRecorder(),22000,'Penutupan rekaman')}catch(e){console.warn('BoothPro recorder close:',e)}
+ let stored=null,lastErr=null;
+ for(let attempt=1;attempt<=2&&!stored;attempt++){
+  try{stored=await withTimeout(prepare(sid),180000,'Sinkronisasi otomatis timeout setelah 180 detik.')}catch(e){lastErr=e;if(attempt<2)await new Promise(r=>setTimeout(r,1200))}
+ }
+ if(!stored)throw(lastErr||new Error('Soft file belum berhasil disinkronkan.'));
+ window.__BP_DELIVERY_BUNDLE__=window.__BP_DELIVERY_BUNDLE__||{};
+ stored.bundleUrl=String(stored.bundleUrl||((location.origin||'').replace(/\/$/,'')+'/download/?id='+encodeURIComponent(sid)));
+ window.__BP_DELIVERY_BUNDLE__[sid]=stored;
+ if(status)status.textContent='✓ Soft file otomatis tersinkron · Foto + GIF + Live Session';
+ try{if(typeof generateQR==='function')generateQR((location.origin+'/download/?id='+encodeURIComponent(sid)))}catch(e){}
+ return stored
+};
+function install(){ensureName();const manual=$('customerSoftSyncManualBtn')||document.querySelector('[onclick="syncCustomerSoftFile()"]');if(manual){manual.classList.add('hidden');manual.setAttribute('aria-hidden','true');manual.tabIndex=-1}const b=$('customerShareSendBtn');if(b&&!b.__bpDD3){b.__bpDD3=true;b.onclick=null;b.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();const channel=!$('customerSharePhone')?.classList.contains('hidden')?'whatsapp':'email';send(channel)},true)}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,100));else setTimeout(install,100);let autoSid='';let autoPromise=null;
+async function autoSyncWhenFinal(){
+ const step=document.getElementById('step-final')&&!document.getElementById('step-final').classList.contains('hidden')?7:0;
+ const sid=getSessionId();if(step!==7||!sid||autoPromise)return;
+ if(autoSid===sid&&window.__BP_DELIVERY_BUNDLE__?.[sid])return;
+ autoSid=sid;
+ autoPromise=window.boothProAutoSyncSoftFile().catch(e=>{const msg=e?.message||String(e);const st=$('cloudUploadStatus')||$('customerShareStatus')||$('customerSoftAutoStatus');if(st)st.textContent='Sinkronisasi otomatis gagal · '+msg+' · Sistem akan mencoba lagi.';autoSid='';throw e}).finally(()=>{autoPromise=null});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(autoSyncWhenFinal,150));else setTimeout(autoSyncWhenFinal,150);
+setInterval(()=>{install();autoSyncWhenFinal()},500);
+})();

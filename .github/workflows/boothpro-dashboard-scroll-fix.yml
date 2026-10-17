@@ -1,0 +1,53 @@
+name: BoothPro Dashboard Scroll Fix
+
+on:
+  push:
+    branches:
+      - fix/c8-frame-composer-baseline
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-dashboard-scroll:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/c8-frame-composer-baseline
+          fetch-depth: 0
+      - name: Inject dashboard scroll hardening
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index-legacy.html')
+          s = p.read_text(encoding='utf-8')
+          marker = '<style id="boothpro-dashboard-scroll-hardening">'
+          if marker not in s:
+              patch = '''<style id="boothpro-dashboard-scroll-hardening">
+          html,body{overscroll-behavior-y:auto}
+          #dashboardModal{overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior:contain!important;pointer-events:auto!important}
+          #dashboardModal>.max-w-6xl{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;touch-action:auto!important}
+          #dashboardModal>.max-w-6xl>.grid{height:auto!important;min-height:0!important;overflow:visible!important}
+          #dashboardModal>.max-w-6xl>.grid>div{height:auto!important;min-height:0!important;overflow:visible!important}
+          #dashboardModal .dashboard-grid{max-height:none!important;overflow:visible!important}
+          #dashboardModal [class*="overflow-hidden"]{max-height:none!important}
+          @media(max-width:900px){#dashboardModal{padding:8px!important}#dashboardModal>.max-w-6xl{width:100%!important;margin:0!important}}
+          </style>'''
+              s = s.replace('</head>', patch + '</head>', 1)
+              p.write_text(s, encoding='utf-8')
+          else:
+              print('Dashboard scroll hardening already present')
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index-legacy.html
+          if git diff --cached --quiet; then
+            echo "No dashboard patch needed"
+          else
+            git commit -m "fix: unlock dashboard vertical scrolling on touch"
+            git push origin HEAD:fix/c8-frame-composer-baseline
+          fi

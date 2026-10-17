@@ -1,0 +1,6 @@
+{
+  "name": "BoothPro - Self-Service Photobooth Platform",
+  "description": "Platform photobooth komersial mandiri: Kiosk capture, C10 Live Session video recorder, frame editor, QRIS & voucher payment, thermal/photo printing, dan 3-media soft-file delivery.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

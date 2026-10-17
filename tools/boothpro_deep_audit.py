@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime,timezone
 
 ROOT=Path(__file__).resolve().parents[1]
-INDEX=ROOT/"index.html"
+INDEX=(ROOT/"index-legacy.html") if (ROOT/"index-legacy.html").exists() else (ROOT/"index.html")
 REPORT=ROOT/"deep-audit-report.json"
 
 def finding(level,code,message,evidence=None):

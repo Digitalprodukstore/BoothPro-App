@@ -43,6 +43,8 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [pinInput, setPinInput] = useState<string>('');
+  // Kept only in component memory; this may differ from the local Dashboard login PIN.
+  const [cloudPin, setCloudPin] = useState<string>('');
   const [pinError, setPinError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<
@@ -67,6 +69,8 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
     if (isOpen) {
       setFormConfig(config);
       setSessions(storageService.getAllSessions());
+    } else {
+      setCloudPin('');
     }
   }, [isOpen, config]);
 
@@ -146,7 +150,8 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
     storageService.saveOperatorConfig(formConfig);
     onSaveConfig(formConfig);
     setSaveSuccessMessage('Tersimpan di perangkat ini. Mengirim konfigurasi publik ke cloud...');
-    const cloudSave = await storageService.saveOperatorConfigToCloud(formConfig, pinInput);
+    const syncPin = cloudPin.trim() || pinInput.trim();
+    const cloudSave = await storageService.saveOperatorConfigToCloud(formConfig, syncPin);
     setSaveSuccessMessage(cloudSave.success
       ? 'Konfigurasi tersimpan lokal dan berhasil disinkronkan ke cloud.'
       : 'Tersimpan lokal saja. Sinkronisasi cloud gagal: ' + cloudSave.message);
@@ -664,6 +669,28 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
             {activeTab === 'cloud' && (
               <div className="max-w-2xl space-y-5">
                 <h3 className="text-base font-black text-white">Sinkronisasi Cloud &amp; Delivery API</h3>
+
+                <div className="bg-slate-950 p-4 rounded-2xl border border-amber-800/70 space-y-3">
+                  <span className="text-xs font-bold text-amber-300 uppercase">
+                    PIN Sinkronisasi Server
+                  </span>
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">
+                      PIN ini harus sama dengan BOOTHPRO_ADMIN_PIN di environment Vercel Preview
+                    </label>
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      value={cloudPin}
+                      onChange={(e) => setCloudPin(e.target.value)}
+                      placeholder="Masukkan PIN server Preview"
+                      className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      PIN ini hanya digunakan selama Dashboard terbuka dan tidak disimpan ke konfigurasi lokal. Jika dikosongkan, Dashboard memakai PIN login.
+                    </p>
+                  </div>
+                </div>
 
                 <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
                   <span className="text-xs font-bold text-pink-400 uppercase">

@@ -2,7 +2,7 @@
 const json=(res,status,body)=>res.status(status).setHeader('Content-Type','application/json').setHeader('Cache-Control','no-store').send(JSON.stringify(body));
 const SUPA='https://jnajtcuxlgkpplyvvsik.supabase.co';
 const origin=req=>String(process.env.BOOTHPRO_SHARE_ORIGIN||('https://'+String(req.headers.host||'').trim())).replace(/\/$/,'');
-const safeKeys=['brandName','tagline','logoUrl','coverImageUrl','accentColor','welcomeHeadline','welcomeSubheadline','packages','extraPrintPrice','maxRetakes','countdownSeconds','qrisMerchantName','qrisNmid','qrisStaticQrUrl','voucherCodes','printerPaperSize','printerAutoPrint','kioskTimeoutSeconds'];
+const safeKeys=['brandName','tagline','logoUrl','coverImageUrl','accentColor','welcomeHeadline','welcomeSubheadline','packages','frames','extraPrintPrice','maxRetakes','countdownSeconds','qrisMerchantName','qrisNmid','qrisStaticQrUrl','voucherCodes','printerPaperSize','printerAutoPrint','kioskTimeoutSeconds'];
 const clean=v=>String(v??'').trim();
 const configBase=()=>clean(process.env.SUPABASE_URL||SUPA).replace(/\/+$/,'');
 const configHeaders=()=>{const key=clean(process.env.SUPABASE_SERVICE_ROLE_KEY);if(!key)throw new Error('SUPABASE_SERVICE_ROLE_KEY belum diatur di Vercel.');return {apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'};};

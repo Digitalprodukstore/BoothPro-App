@@ -7,6 +7,7 @@ import {
   SlotTransform,
   SessionData,
 } from '../../types';
+import { DEFAULT_FRAMES } from '../../data/defaultConfig';
 import { storageService } from '../../services/storageService';
 import { audioEffects } from '../../services/audioEffects';
 import { StartScreen } from './StartScreen';
@@ -147,8 +148,9 @@ export const KioskRoot: React.FC = () => {
   };
 
   // STEP 2 -> 3
-  const handleSelectPackage = (pkg: PackageConfig, extra: number, total: number) => {
+  const handleSelectPackage = (pkg: PackageConfig, frame: FrameTemplate, extra: number, total: number) => {
     setSelectedPackage(pkg);
+    setSelectedFrameId(frame.id);
     setExtraPrints(extra);
     setTotalPrice(total);
     setCurrentStep('payment');
@@ -276,6 +278,7 @@ export const KioskRoot: React.FC = () => {
           config={config}
           selectedPackage={selectedPackage}
           capturedPhotos={capturedPhotos}
+          initialFrame={DEFAULT_FRAMES.find((frame) => frame.id === selectedFrameId)}
           onCompleteEdit={handleCompleteEdit}
           onBack={() => setCurrentStep('capture')}
         />

@@ -3,8 +3,8 @@ name: BoothPro Route & Regression Guard
 on:
   push:
     branches:
-      - fix/c8-frame-composer-baseline
       - main
+      - fix/react-migration-route-guard-2026-10-17
   pull_request:
     branches:
       - main
@@ -19,42 +19,46 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify canonical entry files
+      - name: Verify React/Vite application entry points
         run: |
-          test -f kiosk/index.html
-          test -f dashboard/index.html
-          grep -q 'BoothPro Kiosk' kiosk/index.html
-          grep -q '__BP_ENTRY_MODE__=.kiosk.' kiosk/index.html
-          grep -q 'BoothPro Dashboard' dashboard/index.html
-          grep -q '__BP_ENTRY_MODE__=.dashboard.' dashboard/index.html
+          test -f index.html
+          test -f src/main.tsx
+          test -f src/App.tsx
+          test -f src/components/kiosk/KioskRoot.tsx
+          test -f src/components/kiosk/CaptureScreen.tsx
+          test -f src/components/kiosk/EditorScreen.tsx
+          test -f src/components/kiosk/SoftFileScreen.tsx
+          test -f src/components/dashboard/DashboardModal.tsx
+          grep -Fq 'src/main.tsx' index.html
+          grep -Fq 'CaptureScreen' src/components/kiosk/KioskRoot.tsx
+          grep -Fq 'getUserMedia' src/components/kiosk/CaptureScreen.tsx
 
-      - name: Verify kiosk cannot open dashboard
+      - name: Verify cloud configuration API contract
         run: |
-          grep -q 'window.openDashboard=function(){ return false; };' kiosk/index.html
-          grep -q 'dashboardModal' kiosk/index.html
-          grep -q 'resetToHome' kiosk/index.html
+          test -f api/session.js
+          test -f src/services/storageService.ts
+          grep -Fq '"source": "/api/config"' vercel.json
+          grep -Fq '"destination": "/api/session?route=config"' vercel.json
+          grep -Fq 'boothpro_operator_config' api/session.js
+          grep -Fq 'BOOTHPRO_ADMIN_PIN' api/session.js
+          grep -Fq 'loadOperatorConfigFromCloud' src/services/storageService.ts
+          grep -Fq 'saveOperatorConfigToCloud' src/services/storageService.ts
+          grep -Fq 'saveOperatorConfigToCloud' src/components/dashboard/DashboardModal.tsx
 
-      - name: Verify legacy engine and C8 composer remain present
+      - name: Verify soft-file and server-side delivery entry points remain present
         run: |
-          test -f index-legacy.html
-          grep -q 'BoothProC8' index-legacy.html
-          grep -q "id==='editor'" index-legacy.html
-          grep -q 'pointerdown' index-legacy.html
-          grep -q 'touches' index-legacy.html
+          test -f api/softfile.js
+          test -f api/send-direct-media.js
+          test -f src/services/deliveryService.ts
+          test -f src/components/kiosk/SoftFileScreen.tsx
 
-      - name: Verify kiosk camera/session foundation remains present
+      - name: Verify no Pictlord references in runtime entry files
         run: |
-          grep -q 'getUserMedia' index-legacy.html
-          grep -q 'screenCapture' index-legacy.html
-          grep -q 'screenWelcome' index-legacy.html
-
-      - name: Verify no Pictlord contamination
-        run: |
-          if grep -Rni --exclude-dir=.git 'pictlord' kiosk dashboard index.html index-legacy.html; then
+          if grep -Rni --exclude-dir=.git 'pictlord' src api index.html; then
             echo 'FAIL: Pictlord reference detected in BoothPro runtime entry files.'
             exit 1
           fi
 
       - name: Report contract
         run: |
-          echo 'PASS: Kiosk/Dashboard route contract and critical BoothPro regression markers are present.'
+          echo 'PASS: React/Vite routes, kiosk capture, cloud-config API, and soft-file entry points are present.'

@@ -21,7 +21,8 @@ export const PackageScreen: React.FC<PackageScreenProps> = ({
   const [extraPrints, setExtraPrints] = useState<number>(0);
   const [selectedFrameId, setSelectedFrameId] = useState<string>('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const matchingFrames = DEFAULT_FRAMES.filter(
+  const availableFrames = (config.frames || DEFAULT_FRAMES).filter((frame) => frame.isActive !== false);
+  const matchingFrames = availableFrames.filter(
     (frame) => frame.slots.length === selectedPkg.photoCount || frame.layoutType === selectedPkg.recommendedLayout
   );
   const visibleFrames = activeCategory === 'all'

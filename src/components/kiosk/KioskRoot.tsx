@@ -62,6 +62,10 @@ export const KioskRoot: React.FC = () => {
   const [finalPhotoUrl, setFinalPhotoUrl] = useState<string>('');
   const [gifUrl, setGifUrl] = useState<string>('');
 
+  // Final composition state must survive into the saved session/soft-file manifest.
+  const [selectedFrameId, setSelectedFrameId] = useState<string>('');
+  const [slotTransforms, setSlotTransforms] = useState<SlotTransform[]>([]);
+
   // Active Session Object
   const [activeSession, setActiveSession] = useState<SessionData | null>(null);
 
@@ -130,6 +134,8 @@ export const KioskRoot: React.FC = () => {
     setVideoBlobUrl('');
     setFinalPhotoUrl('');
     setGifUrl('');
+    setSelectedFrameId('');
+    setSlotTransforms([]);
     setActiveSession(null);
     setExtraPrints(0);
     setCurrentStep('start');
@@ -169,6 +175,8 @@ export const KioskRoot: React.FC = () => {
     transforms: SlotTransform[],
     finalUrl: string
   ) => {
+    setSelectedFrameId(frame.id);
+    setSlotTransforms(transforms);
     setFinalPhotoUrl(finalUrl);
     setCurrentStep('final');
   };
@@ -185,8 +193,8 @@ export const KioskRoot: React.FC = () => {
       totalPrice,
       paymentMethod,
       capturedPhotos,
-      selectedFrameId: 'frame_strip_noir',
-      slotTransforms: [],
+      selectedFrameId,
+      slotTransforms,
       finalPhotoDataUrl: finalPhotoUrl,
       gifBlobUrl: generatedGifUrl,
       videoBlobUrl,

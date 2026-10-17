@@ -41,6 +41,7 @@ export interface FrameTemplate {
   subtitleText?: string;
   borderWidth?: number;
   overlayImage?: string; // transparent PNG or SVG
+  isActive?: boolean; // false hides this frame from the customer gallery
 }
 
 export type PhotoFilter = 'none' | 'vintage' | 'bw' | 'tokyo' | 'grain' | 'glow' | 'vibrant';
@@ -89,6 +90,7 @@ export interface OperatorConfig {
   adminPin: string;
   cashBypassPin: string;
   packages: PackageConfig[];
+  frames?: FrameTemplate[];
   extraPrintPrice: number;
   maxRetakes: number;
   countdownSeconds: number;

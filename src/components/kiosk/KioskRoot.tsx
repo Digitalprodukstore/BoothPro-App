@@ -278,7 +278,7 @@ export const KioskRoot: React.FC = () => {
           config={config}
           selectedPackage={selectedPackage}
           capturedPhotos={capturedPhotos}
-          initialFrame={DEFAULT_FRAMES.find((frame) => frame.id === selectedFrameId)}
+          initialFrame={(config.frames || DEFAULT_FRAMES).find((frame) => frame.id === selectedFrameId)}
           onCompleteEdit={handleCompleteEdit}
           onBack={() => setCurrentStep('capture')}
         />
